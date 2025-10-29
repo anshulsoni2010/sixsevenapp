@@ -118,7 +118,7 @@ export default function NameScreen() {
             
             <View style={styles.titleBlock}>
               <Text style={styles.title}>Chat, What's my name?</Text>
-              <Text style={styles.subtitle}>Tell us the name you'd like to use in the app.</Text>
+              <Text style={styles.subtitle}>Drop your tag, how do we call the Alpha in you</Text>
             </View>
 
             
