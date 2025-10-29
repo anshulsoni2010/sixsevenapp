@@ -214,9 +214,8 @@ export default function GenderScreen() {
           <IOSBordersWrapper>
             <View style={styles.nextButtonWrapper}>
               <Pressable
-                style={[styles.nextButtonInner, !selected && styles.nextButtonDisabled]}
+                style={[styles.nextButtonInner]}
                 onPress={() => selected && router.push('/onboarding/age' as any)}
-                disabled={!selected}
                 accessibilityRole="button"
                 accessibilityLabel="Next"
               >
@@ -251,9 +250,35 @@ const styles = StyleSheet.create({
   optionSelected: { backgroundColor: '#1E1E1E', borderColor: '#FFE0C2', borderWidth: 2 },
   optionText: { color: '#fff', fontSize: 22, fontFamily: 'SpaceGrotesk_400Regular' },
   optionTextSelected: { color: '#fff' },
-  bottomContainer: { width: '100%', paddingTop: SP.lg, paddingHorizontal: SP.sm, backgroundColor: 'transparent' },
-  nextButtonWrapper: { width: OUTER_WIDTH, borderRadius: 16, padding: 2, backgroundColor: 'rgba(255,224,194,0.9)' },
-  nextButtonInner: { width: '100%', height: 56, borderRadius: 16, backgroundColor: '#FFE0C2', alignItems: 'center', justifyContent: 'center' },
-  nextButtonDisabled: { opacity: 0.45 },
-  nextButtonText: { color: '#000', fontSize: 24, fontFamily: 'Outfit_600SemiBold', fontWeight: '600' },
+  bottomContainer: {
+    width: '100.5%',
+    paddingTop: SP.lg,
+    paddingHorizontal: SP.sm,
+    backgroundColor: 'transparent',
+    borderTopWidth: 1,
+    borderWidth: 1,
+    borderColor: '#1B1B1B',
+    borderTopRightRadius: 18,
+    borderTopLeftRadius: 18,
+  },
+   nextButtonWrapper: {
+        width: OUTER_WIDTH,
+        borderRadius: 16,
+        padding: 2,
+        backgroundColor: 'rgba(255,224,194,0.9)',
+    },
+    nextButtonInner: {
+        width: '100%',
+        height: 56,
+        borderRadius: 16,
+        backgroundColor: '#FFE0C2',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    nextButtonText: {
+        color: '#000000',
+        fontSize: 22,
+        fontFamily: 'Outfit_600SemiBold',
+        fontWeight: '600',
+    }
 });
