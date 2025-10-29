@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -9,6 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import { SvgXml } from 'react-native-svg';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
@@ -20,7 +21,7 @@ import { useRouter } from 'expo-router';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const OUTER_WIDTH = Math.round(SCREEN_WIDTH * 0.9);
 
-// 8px-based spacing scale
+ 
 const SP = {
   xs: 8,
   sm: 16,
@@ -29,23 +30,28 @@ const SP = {
   xl: 48,
 };
 
-// inline SVG content from frontend/assets/icon/left-arrow.svg
+ 
 const leftArrowSvg = `
 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
 <path d="M12.5 16.6L7.06664 11.1667C6.42497 10.525 6.42497 9.475 7.06664 8.83334L12.5 3.4" stroke="white" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
 `;
 
+
+
 export default function NameScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  // Try to load react-ios-borders on iOS to get smooth outer strokes. Fallback to passthrough.
+  const [progress, setProgress] = useState(28);
+  const maskWidthPx = Math.round((OUTER_WIDTH * Math.max(0, Math.min(100, progress))) / 100);
+  const tightOverlayWidth = Math.max( Math.round(maskWidthPx * 0.6), 60 );
+  const wideOverlayWidth = Math.max( Math.round(maskWidthPx * 1.6), 140 );
+
   let IOSBordersWrapper: any = ({ children }: { children: any }) => children;
   if (Platform.OS === 'ios') {
     try {
-      // dynamic require so bundler doesn't fail if module is missing
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      
       const mod = require('react-ios-borders');
       IOSBordersWrapper = mod && (mod.default || mod);
     } catch (e) {
@@ -53,7 +59,6 @@ export default function NameScreen() {
     }
   }
 
-  // mount animation
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(12);
 
@@ -72,7 +77,7 @@ export default function NameScreen() {
       <Animated.View style={[styles.screen, aStyle]}>
         <View style={styles.contentWrapper}>
           <View style={styles.contentContainer}>
-            {/* Header Section */}
+            
             <View style={styles.headerRow}>
               <Pressable
                 style={styles.backButton}
@@ -84,18 +89,39 @@ export default function NameScreen() {
 
               <View style={styles.progressContainer}>
                 <View style={styles.progressTrack}>
-                  <View style={styles.progressFill} />
+                  <View style={[styles.progressMask, { width: `${progress}%` }]}> 
+                    <View style={{ width: '100%', height: '100%' }}>
+                      <LinearGradient
+                        colors={["#592D00", "#FFE1C2"]}
+                        start={[0, 0]}
+                        end={[1, 0]}
+                        style={{ flex: 1 }}
+                      />
+                    </View>
+                           <LinearGradient
+                      colors={[ 'rgba(255,255,255,0.75)', 'rgba(255,255,255,0)' ]}
+                      start={[0, 0.5]}
+                      end={[1, 0.5]}
+                      style={[styles.innerShadowOverlay, { left: -35, width: tightOverlayWidth, opacity: 0.8 }]}
+                    />
+                    <LinearGradient
+                      colors={[ 'rgba(255,255,255,0.38)', 'rgba(255,255,255,0)' ]}
+                      start={[0, 0.5]}
+                      end={[1, 0.5]}
+                      style={[styles.innerShadowOverlay, { left: -35, width: wideOverlayWidth, opacity: 0.38 }]}
+                    />
+                  </View>
                 </View>
               </View>
             </View>
 
-            {/* Title + Subheading */}
+            
             <View style={styles.titleBlock}>
               <Text style={styles.title}>Chat, What's my name?</Text>
               <Text style={styles.subtitle}>Tell us the name you'd like to use in the app.</Text>
             </View>
 
-            {/* Input */}
+            
             <View style={styles.inputWrapper}>
               <TextInput
                 placeholder="Enter Your Name"
@@ -108,8 +134,7 @@ export default function NameScreen() {
           </View>
         </View>
 
-        {/* Bottom Button Section */}
-        <View style={[styles.bottomContainer, { paddingBottom: SP.md + insets.bottom }]}> 
+  <View style={[styles.bottomContainer, { paddingBottom: SP.md + insets.bottom }]}> 
           <IOSBordersWrapper>
             <View style={styles.nextButtonWrapper}>
               <Pressable
@@ -169,9 +194,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   progressTrack: {
-    height: 8,
+    height: 10,
     backgroundColor: '#222222',
-    borderRadius: 8,
+    borderRadius: 10,
     overflow: 'hidden',
   },
   progressFill: {
@@ -179,8 +204,24 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: '#FFE0C2',
   },
+  progressMask: {
+    height: '100%',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  innerShadowOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: '100%',
+    opacity: 0.65,
+    borderRadius: 10,
+    pointerEvents: 'none',
+  },
+  
+
   titleBlock: {
-    // reduced spacing between title/subtitle and input for tighter layout
+    
     marginBottom: SP.md,
   },
   title: {
@@ -211,7 +252,7 @@ const styles = StyleSheet.create({
     fontFamily: 'SpaceGrotesk_400Regular',
   },
   bottomContainer: {
-    width: '101%',
+    width: '100.5%',
     paddingTop: SP.lg,
     paddingHorizontal: SP.sm,
     backgroundColor: 'transparent',
@@ -221,7 +262,6 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 18,
     borderTopLeftRadius: 18
   },
-  // outer wrapper that provides the visual outer stroke (iOS smoothing friendly)
   nextButtonWrapper: {
     width: OUTER_WIDTH,
     borderRadius: 16,
