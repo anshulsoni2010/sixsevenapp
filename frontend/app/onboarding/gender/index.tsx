@@ -12,6 +12,7 @@ import { SvgXml } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import OnboardingHeader from '../OnboardingHeader';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const OUTER_WIDTH = Math.round(SCREEN_WIDTH * 0.9);
@@ -147,42 +148,7 @@ export default function GenderScreen() {
     <SafeAreaView edges={["top"]} style={styles.safeArea}>
       <View style={styles.screen}>
         <View style={styles.contentContainer}>
-          <View style={styles.headerRow}>
-            <Pressable
-              style={styles.backButton}
-              onPress={() => router.back()}
-              accessibilityLabel="Back"
-            >
-              <SvgXml xml={leftArrowSvg} width={20} height={20} />
-            </Pressable>
-
-            <View style={styles.progressContainer}>
-              <View style={styles.progressTrack}>
-                <View style={[styles.progressMask, { width: `${progress}%` }]}>
-                  <View style={{ width: '100%', height: '100%' }}>
-                    <LinearGradient
-                      colors={["#592D00", "#FFE1C2"]}
-                      start={[0, 0]}
-                      end={[1, 0]}
-                      style={{ flex: 1 }}
-                    />
-                  </View>
-                  <LinearGradient
-                    colors={['rgba(255,255,255,0.75)', 'rgba(255,255,255,0)']}
-                    start={[0, 0.5]}
-                    end={[1, 0.5]}
-                    style={[styles.innerShadowOverlay, { left: -35, width: tightOverlayWidth, opacity: 0.8 }]}
-                  />
-                  <LinearGradient
-                    colors={['rgba(255,255,255,0.38)', 'rgba(255,255,255,0)']}
-                    start={[0, 0.5]}
-                    end={[1, 0.5]}
-                    style={[styles.innerShadowOverlay, { left: -35, width: wideOverlayWidth, opacity: 0.38 }]}
-                  />
-                </View>
-              </View>
-            </View>
-          </View>
+          <OnboardingHeader progress={progress} onBack={() => router.back()} />
 
           <View style={styles.titleBlock}>
             <Text style={styles.title}>Chat, What’s my gender?</Text>

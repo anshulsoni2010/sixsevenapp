@@ -4,12 +4,10 @@ import {
     Text,
     View,
     Pressable,
-    TextInput,
     Dimensions,
     Platform,
-    ScrollView,
 } from 'react-native';
-import { SvgXml } from 'react-native-svg';
+import OnboardingHeader from '../OnboardingHeader';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
@@ -35,11 +33,7 @@ const SP = {
 };
 
 
-const leftArrowSvg = `
-<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M12.5 16.6L7.06664 11.1667C6.42497 10.525 6.42497 9.475 7.06664 8.83334L12.5 3.4" stroke="white" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
-`;
+// left arrow handled by OnboardingHeader
 
 
 
@@ -143,49 +137,12 @@ export default function AgeScreen() {
             <Animated.View style={[styles.screen, aStyle]}>
                 <View style={styles.contentWrapper}>
                     <View style={styles.contentContainer}>
-
-                        <View style={styles.headerRow}>
-                            <Pressable
-                                style={styles.backButton}
-                                onPress={() => router.back()}
-                                accessibilityLabel="Back"
-                            >
-                                <SvgXml xml={leftArrowSvg} width={20} height={20} />
-                            </Pressable>
-
-                            <View style={styles.progressContainer}>
-                                <View style={styles.progressTrack}>
-                                    <View style={[styles.progressMask, { width: `${progress}%` }]}>
-                                        <View style={{ width: '100%', height: '100%' }}>
-                                            <LinearGradient
-                                                colors={["#592D00", "#FFE1C2"]}
-                                                start={[0, 0]}
-                                                end={[1, 0]}
-                                                style={{ flex: 1 }}
-                                            />
-                                        </View>
-                                        <LinearGradient
-                                            colors={['rgba(255,255,255,0.75)', 'rgba(255,255,255,0)']}
-                                            start={[0, 0.5]}
-                                            end={[1, 0.5]}
-                                            style={[styles.innerShadowOverlay, { left: -35, width: tightOverlayWidth, opacity: 0.8 }]}
-                                        />
-                                        <LinearGradient
-                                            colors={['rgba(255,255,255,0.38)', 'rgba(255,255,255,0)']}
-                                            start={[0, 0.5]}
-                                            end={[1, 0.5]}
-                                            style={[styles.innerShadowOverlay, { left: -35, width: wideOverlayWidth, opacity: 0.38 }]}
-                                        />
-                                    </View>
-                                </View>
-                            </View>
-                        </View>
-
-
-                        <View style={styles.titleBlock}>
-                            <Text style={styles.title}>Chat, What’s your age?</Text>
-                            <Text style={styles.subtitle}>Age check, how many laps you’ve done around the sun?</Text>
-                        </View>
+                        <OnboardingHeader
+                            progress={progress}
+                            onBack={() => router.back()}
+                            title={"Chat, What’s your age?"}
+                            subtitle={"Age check, how many laps you’ve done around the sun?"}
+                        />
 
 
                         <View style={styles.inputWrapper}>

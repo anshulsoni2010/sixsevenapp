@@ -9,6 +9,7 @@ import {
     Platform,
 } from 'react-native';
 import { SvgXml } from 'react-native-svg';
+import OnboardingHeader from '../OnboardingHeader';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
@@ -78,42 +79,7 @@ export default function NameScreen() {
                 <View style={styles.contentWrapper}>
                     <View style={styles.contentContainer}>
 
-                        <View style={styles.headerRow}>
-                            <Pressable
-                                style={styles.backButton}
-                                onPress={() => router.back()}
-                                accessibilityLabel="Back"
-                            >
-                                <SvgXml xml={leftArrowSvg} width={20} height={20} />
-                            </Pressable>
-
-                            <View style={styles.progressContainer}>
-                                <View style={styles.progressTrack}>
-                                    <View style={[styles.progressMask, { width: `${progress}%` }]}>
-                                        <View style={{ width: '100%', height: '100%' }}>
-                                            <LinearGradient
-                                                colors={["#592D00", "#FFE1C2"]}
-                                                start={[0, 0]}
-                                                end={[1, 0]}
-                                                style={{ flex: 1 }}
-                                            />
-                                        </View>
-                                        <LinearGradient
-                                            colors={['rgba(255,255,255,0.75)', 'rgba(255,255,255,0)']}
-                                            start={[0, 0.5]}
-                                            end={[1, 0.5]}
-                                            style={[styles.innerShadowOverlay, { left: -35, width: tightOverlayWidth, opacity: 0.8 }]}
-                                        />
-                                        <LinearGradient
-                                            colors={['rgba(255,255,255,0.38)', 'rgba(255,255,255,0)']}
-                                            start={[0, 0.5]}
-                                            end={[1, 0.5]}
-                                            style={[styles.innerShadowOverlay, { left: -35, width: wideOverlayWidth, opacity: 0.38 }]}
-                                        />
-                                    </View>
-                                </View>
-                            </View>
-                        </View>
+                        <OnboardingHeader progress={progress} onBack={() => router.back()} />
 
 
                         <View style={styles.titleBlock}>
