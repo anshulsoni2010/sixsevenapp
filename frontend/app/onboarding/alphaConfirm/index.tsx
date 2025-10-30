@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     StyleSheet,
     Text,
@@ -66,8 +66,6 @@ export default function AlphaConfirmScreen() {
     const opacity = useSharedValue(1);
     const translateY = useSharedValue(0);
 
-    const headerRef = useRef<any>(null);
-
     const aStyle = useAnimatedStyle(() => ({
         opacity: opacity.value,
         transform: [{ translateY: translateY.value }],
@@ -80,12 +78,8 @@ export default function AlphaConfirmScreen() {
                     <View style={styles.contentContainer}>
 
                         <OnboardingHeader
-                            ref={headerRef}
                             progress={progress}
-                            onBack={async () => {
-                                await headerRef.current?.animateTo(75, 'back');
-                                router.back();
-                            }}
+                            onBack={() => router.back()}
                             title="How alpha I wanna be?"
                             subtitle="Select 1x to 4x — how much Alpha you feeling?"
                         />
@@ -108,14 +102,11 @@ export default function AlphaConfirmScreen() {
                 </View>
 
                 <View style={[styles.bottomContainer, { paddingBottom: SP.md + insets.bottom }]}>
-                        <IOSBordersWrapper>
+                    <IOSBordersWrapper>
                         <View style={styles.confirmButtonWrapper}>
                             <Pressable
                                 style={styles.confirmButtonInner}
-                                onPress={async () => {
-                                    await headerRef.current?.animateTo(100, 'forward');
-                                    router.push('/onboarding/setup' as any);
-                                }}
+                                onPress={() => router.push('/onboarding/setup' as any)}
                                 accessibilityRole="button"
                                 accessibilityLabel="confirm"
                             >

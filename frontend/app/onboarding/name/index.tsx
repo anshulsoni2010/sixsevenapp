@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     StyleSheet,
     Text,
@@ -70,23 +70,13 @@ export default function NameScreen() {
         transform: [{ translateY: translateY.value }],
     }));
 
-    const headerRef = useRef<any>(null);
-
     return (
         <SafeAreaView edges={["top"]} style={styles.safeArea}>
             <Animated.View style={[styles.screen, aStyle]}>
                 <View style={styles.contentWrapper}>
                     <View style={styles.contentContainer}>
 
-                        <OnboardingHeader
-                            ref={headerRef}
-                            progress={progress}
-                            onBack={async () => {
-                                // animate progress back to 0 (start) then navigate
-                                await headerRef.current?.animateTo(0, 'back');
-                                router.back();
-                            }}
-                        />
+                        <OnboardingHeader progress={progress} onBack={() => router.back()} />
 
 
                         <View style={styles.titleBlock}>
@@ -108,15 +98,11 @@ export default function NameScreen() {
                 </View>
 
                 <View style={[styles.bottomContainer, { paddingBottom: SP.md + insets.bottom }]}>
-                            <IOSBordersWrapper>
+                    <IOSBordersWrapper>
                         <View style={styles.nextButtonWrapper}>
                             <Pressable
                                 style={styles.nextButtonInner}
-                                onPress={async () => {
-                                    // animate forward to 50% then navigate
-                                    await headerRef.current?.animateTo(50, 'forward');
-                                    router.push('/onboarding/gender' as any);
-                                }}
+                                onPress={() => router.push('/onboarding/gender' as any)}
                                 accessibilityRole="button"
                                 accessibilityLabel="Next"
                             >
