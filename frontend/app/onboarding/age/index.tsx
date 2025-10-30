@@ -57,13 +57,12 @@ export default function AgeScreen() {
         }
     }
 
-    const opacity = useSharedValue(0);
-    const translateY = useSharedValue(12);
+    // Disable mount animation: initialize values to final state so the
+    // screen renders instantly when navigated to.
+    const opacity = useSharedValue(1);
+    const translateY = useSharedValue(0);
 
-    useEffect(() => {
-        opacity.value = withTiming(1, { duration: 360 });
-        translateY.value = withTiming(0, { duration: 360 });
-    }, []);
+    const headerRef = useRef<any>(null);
 
     // Age item subcomponent for smooth animation
     function AgeItem({ index, value, scrollY, itemHeight, selectedAge }: { index: number; value: number; scrollY: any; itemHeight: number; selectedAge: number }) {
@@ -137,9 +136,14 @@ export default function AgeScreen() {
             <Animated.View style={[styles.screen, aStyle]}>
                 <View style={styles.contentWrapper}>
                     <View style={styles.contentContainer}>
+                        {/* header ref so we can animate progress before navigating */}
                         <OnboardingHeader
+                            ref={headerRef}
                             progress={progress}
-                            onBack={() => router.back()}
+                            onBack={async () => {
+                                await headerRef.current?.animateTo(50, 'back');
+                                router.back();
+                            }}
                             title={"Chat, What’s your age?"}
                             subtitle={"Age check, how many laps you’ve done around the sun?"}
                         />
@@ -176,7 +180,10 @@ export default function AgeScreen() {
                         <View style={styles.nextButtonWrapper}>
                             <Pressable
                                 style={styles.nextButtonInner}
-                                onPress={() => router.push('/onboarding/alphaConfirm' as any)}
+                                onPress={async () => {
+                                    await headerRef.current?.animateTo(100, 'forward');
+                                    router.push('/onboarding/alphaConfirm' as any);
+                                }}
                                 accessibilityRole="button"
                                 accessibilityLabel="Next"
                             >

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
     StyleSheet,
     Text,
@@ -61,13 +61,12 @@ export default function AlphaConfirmScreen() {
         }
     }
 
-    const opacity = useSharedValue(0);
-    const translateY = useSharedValue(12);
+    // Disable mount animation: initialize values to final state so the
+    // screen renders instantly when navigated to.
+    const opacity = useSharedValue(1);
+    const translateY = useSharedValue(0);
 
-    useEffect(() => {
-        opacity.value = withTiming(1, { duration: 360 });
-        translateY.value = withTiming(0, { duration: 360 });
-    }, []);
+    const headerRef = useRef<any>(null);
 
     const aStyle = useAnimatedStyle(() => ({
         opacity: opacity.value,
@@ -81,8 +80,12 @@ export default function AlphaConfirmScreen() {
                     <View style={styles.contentContainer}>
 
                         <OnboardingHeader
+                            ref={headerRef}
                             progress={progress}
-                            onBack={() => router.back()}
+                            onBack={async () => {
+                                await headerRef.current?.animateTo(75, 'back');
+                                router.back();
+                            }}
                             title="How alpha I wanna be?"
                             subtitle="Select 1x to 4x — how much Alpha you feeling?"
                         />
@@ -105,11 +108,14 @@ export default function AlphaConfirmScreen() {
                 </View>
 
                 <View style={[styles.bottomContainer, { paddingBottom: SP.md + insets.bottom }]}>
-                    <IOSBordersWrapper>
+                        <IOSBordersWrapper>
                         <View style={styles.confirmButtonWrapper}>
                             <Pressable
                                 style={styles.confirmButtonInner}
-                                onPress={() => router.push('/onboarding/setup' as any)}
+                                onPress={async () => {
+                                    await headerRef.current?.animateTo(100, 'forward');
+                                    router.push('/onboarding/setup' as any);
+                                }}
                                 accessibilityRole="button"
                                 accessibilityLabel="confirm"
                             >

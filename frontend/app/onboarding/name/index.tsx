@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
     StyleSheet,
     Text,
@@ -60,18 +60,17 @@ export default function NameScreen() {
         }
     }
 
-    const opacity = useSharedValue(0);
-    const translateY = useSharedValue(12);
-
-    useEffect(() => {
-        opacity.value = withTiming(1, { duration: 360 });
-        translateY.value = withTiming(0, { duration: 360 });
-    }, []);
+    // Disable mount animation: initialize values to final state so the
+    // screen renders instantly when navigated to.
+    const opacity = useSharedValue(1);
+    const translateY = useSharedValue(0);
 
     const aStyle = useAnimatedStyle(() => ({
         opacity: opacity.value,
         transform: [{ translateY: translateY.value }],
     }));
+
+    const headerRef = useRef<any>(null);
 
     return (
         <SafeAreaView edges={["top"]} style={styles.safeArea}>
@@ -79,7 +78,15 @@ export default function NameScreen() {
                 <View style={styles.contentWrapper}>
                     <View style={styles.contentContainer}>
 
-                        <OnboardingHeader progress={progress} onBack={() => router.back()} />
+                        <OnboardingHeader
+                            ref={headerRef}
+                            progress={progress}
+                            onBack={async () => {
+                                // animate progress back to 0 (start) then navigate
+                                await headerRef.current?.animateTo(0, 'back');
+                                router.back();
+                            }}
+                        />
 
 
                         <View style={styles.titleBlock}>
@@ -101,11 +108,15 @@ export default function NameScreen() {
                 </View>
 
                 <View style={[styles.bottomContainer, { paddingBottom: SP.md + insets.bottom }]}>
-                    <IOSBordersWrapper>
+                            <IOSBordersWrapper>
                         <View style={styles.nextButtonWrapper}>
                             <Pressable
                                 style={styles.nextButtonInner}
-                                onPress={() => router.push('/onboarding/gender' as any)}
+                                onPress={async () => {
+                                    // animate forward to 50% then navigate
+                                    await headerRef.current?.animateTo(50, 'forward');
+                                    router.push('/onboarding/gender' as any);
+                                }}
                                 accessibilityRole="button"
                                 accessibilityLabel="Next"
                             >

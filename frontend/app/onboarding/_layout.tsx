@@ -1,19 +1,8 @@
 import React from 'react';
 import { Stack } from 'expo-router';
 
-// Hide the default header/title for all onboarding routes
+// Hide the default header/title and disable screen transition animation
+// for all onboarding routes so screen changes are instantaneous.
 export default function OnboardingLayout() {
-  // Disable the iOS swipe-back gesture and use a standard slide-from-right animation
-  // so onboarding screens feel like a normal push navigation.
-  return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        // native-stack option to disable swipe back gesture
-        gestureEnabled: false,
-        // use a standard slide-from-right animation on supported navigators
-        animation: 'slide_from_right',
-      }}
-    />
-  );
+  return <Stack screenOptions={{ headerShown: false, animation: 'none' }} />;
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -144,11 +144,20 @@ export default function GenderScreen() {
     );
   }
 
+  const headerRef = useRef<any>(null);
+
   return (
     <SafeAreaView edges={["top"]} style={styles.safeArea}>
       <View style={styles.screen}>
         <View style={styles.contentContainer}>
-          <OnboardingHeader progress={progress} onBack={() => router.back()} />
+          <OnboardingHeader
+            ref={headerRef}
+            progress={progress}
+            onBack={async () => {
+              await headerRef.current?.animateTo(25, 'back');
+              router.back();
+            }}
+          />
 
           <View style={styles.titleBlock}>
             <Text style={styles.title}>Chat, What’s my gender?</Text>
@@ -181,7 +190,11 @@ export default function GenderScreen() {
             <View style={styles.nextButtonWrapper}>
               <Pressable
                 style={[styles.nextButtonInner]}
-                onPress={() => selected && router.push('/onboarding/age' as any)}
+                onPress={async () => {
+                  if (!selected) return;
+                  await headerRef.current?.animateTo(75, 'forward');
+                  router.push('/onboarding/age' as any);
+                }}
                 accessibilityRole="button"
                 accessibilityLabel="Next"
               >

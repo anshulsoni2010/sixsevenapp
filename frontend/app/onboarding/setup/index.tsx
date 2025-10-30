@@ -4,14 +4,11 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-na
 import { useRouter } from 'expo-router';
 
 export default function SetupScreen() {
-  const opacity = useSharedValue(0);
-  const translateY = useSharedValue(8);
+  // Disable mount animation: initialize values to final state so the
+  // screen renders instantly when navigated to.
+  const opacity = useSharedValue(1);
+  const translateY = useSharedValue(0);
   const router = useRouter();
-
-  useEffect(() => {
-    opacity.value = withTiming(1, { duration: 360 });
-    translateY.value = withTiming(0, { duration: 360 });
-  }, []);
 
   const aStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
