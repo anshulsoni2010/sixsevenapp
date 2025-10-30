@@ -43,7 +43,7 @@ export default function NameScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
 
-    const [progress, setProgress] = useState(28);
+    const [progress, setProgress] = useState(25);
     const maskWidthPx = Math.round((OUTER_WIDTH * Math.max(0, Math.min(100, progress))) / 100);
     const tightOverlayWidth = Math.max(Math.round(maskWidthPx * 0.6), 60);
     const wideOverlayWidth = Math.max(Math.round(maskWidthPx * 1.6), 140);
