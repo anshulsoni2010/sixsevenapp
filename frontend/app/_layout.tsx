@@ -1,8 +1,9 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
+import { Platform, StatusBar as RNStatusBar } from 'react-native';
 import 'react-native-reanimated';
 import React, { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, StyleSheet } from 'react-native';
 import Splash from '@/components/Splash';
 import { useRouter } from 'expo-router';
@@ -41,6 +42,7 @@ export default function RootLayout() {
 
   const router = useRouter();
   const navigatedRef = useRef(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (fontsLoaded) {
@@ -50,15 +52,42 @@ export default function RootLayout() {
     setSplashVisible(true);
   }, [fontsLoaded]);
 
+  // read a simple persisted auth flag so we can restrict navigation for
+  // unauthenticated users. This uses a lightweight AsyncStorage key so we
+  // don't depend on a full auth provider here. Key: 'isLoggedIn' = 'true'.
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const v = await AsyncStorage.getItem('isLoggedIn');
+        if (mounted) setIsAuthenticated(v === 'true');
+      } catch (e) {
+        if (mounted) setIsAuthenticated(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   // after splash hides, navigate to the onboarding route once so the router
   // can manage nested onboarding screens (this avoids the overlay blocking
   // router screens). Use a ref to ensure we only replace once.
   useEffect(() => {
-    if (!splashVisible && fontsLoaded && !navigatedRef.current) {
+    // Wait until splash is hidden, fonts are loaded, and we've resolved auth.
+    if (!splashVisible && fontsLoaded && isAuthenticated !== null && !navigatedRef.current) {
       navigatedRef.current = true;
-      router.replace('/onboarding' as any);
+      // If the user is authenticated, send them to the tabs, otherwise
+      // direct them to onboarding and keep the main tabs out of the
+      // navigation stack (below) so unauthenticated users cannot navigate
+      // to app screens.
+      if (isAuthenticated) {
+        router.replace('/(tabs)' as any);
+      } else {
+        router.replace('/onboarding' as any);
+      }
     }
-  }, [splashVisible, fontsLoaded, router]);
+  }, [splashVisible, fontsLoaded, isAuthenticated, router]);
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
@@ -66,15 +95,29 @@ export default function RootLayout() {
         {/* Navigation stack (hidden behind onboarding/splash) */}
         <View style={styles.stackContainer}>
           <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" />
+            {/* Only register the main tabs when authenticated. When
+                unauthenticated we avoid exposing the (tabs) group so the
+                router can't navigate there. Modal remains available. */}
+            {isAuthenticated ? <Stack.Screen name="(tabs)" /> : null}
             <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
           </Stack>
         </View>
 
-        {/* Layered fullscreen container for splash */}
-        <View style={styles.overlayContainer}>{splashVisible ? <Splash /> : null}</View>
+  {/* Layered fullscreen container for splash (also show while auth is resolving) */}
+  <View style={styles.overlayContainer}>{splashVisible || isAuthenticated === null ? <Splash /> : null}</View>
 
-        <StatusBar style="light" />
+        {/* Use native StatusBar so we can set translucent + transparent on Android
+            This allows page backgrounds (gradients/images/dark pages) to show
+            behind the status bar while keeping light-content icons. */}
+        <RNStatusBar
+          barStyle="light-content"
+          translucent={true}
+          // keep transparent so pages that extend under the inset can show
+          // their own background. Individual screens that use SafeAreaView
+          // with a top background will set an Android-only backgroundColor
+          // to match their page where needed.
+          backgroundColor="transparent"
+        />
       </View>
     </ThemeProvider>
   );

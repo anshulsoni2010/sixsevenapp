@@ -1,14 +1,34 @@
-import React, { useEffect } from 'react';
-import { StyleSheet, Text, TouchableOpacity } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
-import { useRouter } from 'expo-router';
+import React from 'react';
+import { 
+  StyleSheet, 
+  Text, 
+  View, 
+  Dimensions, 
+  ImageBackground, 
+  Image, 
+  ActivityIndicator 
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 
-export default function SetupScreen() {
-  // Disable mount animation: initialize values to final state so the
-  // screen renders instantly when navigated to.
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const OUTER_WIDTH = Math.round(SCREEN_WIDTH * 0.9);
+
+const SP = {
+  xs: 8,
+  sm: 16,
+  md: 24,
+  lg: 32,
+  xl: 48,
+};
+
+export default function NameScreen() {
+  const bg = require('../../../assets/images/setupdonebg.png');
+  const successImg = require('../../../assets/images/success.png');
+
+  // Disable mount animation: initialize values to final state
   const opacity = useSharedValue(1);
   const translateY = useSharedValue(0);
-  const router = useRouter();
 
   const aStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
@@ -16,36 +36,56 @@ export default function SetupScreen() {
   }));
 
   return (
-    <Animated.View style={[styles.container, aStyle]}>
-      <Text style={styles.text}>SetupScreen</Text>
-      <TouchableOpacity style={styles.button} onPress={() => router.replace('/(tabs)' as any)}>
-        <Text style={styles.buttonText}>Finish</Text>
-      </TouchableOpacity>
-    </Animated.View>
+    <ImageBackground source={bg} style={styles.bg} imageStyle={styles.bgImage}>
+      <SafeAreaView edges={['top']} style={styles.safeArea}>
+        <Animated.View style={[styles.screen, aStyle]}>
+          <View style={styles.contentWrapper}>
+            <Image source={successImg} style={styles.successImage} />
+            <Text style={styles.title}>Setting up 6 7 for you...</Text>
+            <ActivityIndicator size="large" color="#ffffff" style={styles.loader} />
+          </View>
+        </Animated.View>
+      </SafeAreaView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
+    backgroundColor: 'transparent',
+  },
+  bg: {
+    flex: 1,
+    width: '100%',
+  },
+  bgImage: {
+    resizeMode: 'cover',
+  },
+  screen: {
+    flex: 1,
+    justifyContent: 'center', // center vertically
+    alignItems: 'center', // center horizontally
+  },
+  contentWrapper: {
+    width: OUTER_WIDTH,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
-    padding: 24,
   },
-  text: {
-    fontSize: 18,
-    color: '#222',
-    marginBottom: 24,
+  title: {
+    color: '#fff',
+    fontSize: 28,
+    fontFamily: 'SpaceGrotesk_700Bold',
+    fontWeight: '700',
+    textAlign: 'center',
+    marginTop: 16,
   },
-  button: {
-    backgroundColor: '#FFE0C2',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
+  successImage: {
+    width: 150,
+    height: 150,
+    marginBottom: 16,
   },
-  buttonText: {
-    fontSize: 16,
-    color: '#111',
+  loader: {
+    marginTop: SP.md,
   },
 });

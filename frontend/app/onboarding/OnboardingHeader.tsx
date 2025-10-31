@@ -13,15 +13,27 @@ const leftArrowSvg = `
 `;
 
 type OnboardingHeaderProps = {
+  // legacy raw percent progress (0-100). If provided, it takes precedence.
   progress?: number;
+  // Preferred: pass the current step and totalSteps (e.g. step=2 totalSteps=4)
+  step?: number;
+  totalSteps?: number;
   onBack?: () => void;
   title?: string;
   subtitle?: string;
   children?: React.ReactNode;
 };
 
-export default function OnboardingHeader({ progress = 0, onBack, title, subtitle, children }: OnboardingHeaderProps) {
-  const maskWidthPx = Math.round((OUTER_WIDTH * Math.max(0, Math.min(100, progress))) / 100);
+export default function OnboardingHeader({ progress, step, totalSteps, onBack, title, subtitle, children }: OnboardingHeaderProps) {
+  // Determine effective percent progress. Priority: explicit `progress` prop, else compute from step/totalSteps.
+  let effectiveProgress = 0;
+  if (typeof progress === 'number') {
+    effectiveProgress = Math.max(0, Math.min(100, progress));
+  } else if (typeof step === 'number' && typeof totalSteps === 'number' && totalSteps > 0) {
+    effectiveProgress = Math.round((step / totalSteps) * 100);
+  }
+
+  const maskWidthPx = Math.round((OUTER_WIDTH * Math.max(0, Math.min(100, effectiveProgress))) / 100);
   const tightOverlayWidth = Math.max(Math.round(maskWidthPx * 0.6), 60);
   const wideOverlayWidth = Math.max(Math.round(maskWidthPx * 1.6), 140);
 
@@ -34,7 +46,7 @@ export default function OnboardingHeader({ progress = 0, onBack, title, subtitle
 
         <View style={styles.progressContainer}>
           <View style={styles.progressTrack}>
-            <View style={[styles.progressMask, { width: `${progress}%` }]}>
+            <View style={[styles.progressMask, { width: `${effectiveProgress}%` }]}>
               <View style={{ width: '100%', height: '100%' }}>
                 <LinearGradient colors={["#592D00", "#FFE1C2"]} start={[0, 0]} end={[1, 0]} style={{ flex: 1 }} />
               </View>

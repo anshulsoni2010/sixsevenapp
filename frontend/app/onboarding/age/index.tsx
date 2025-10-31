@@ -10,6 +10,7 @@ import {
 import OnboardingHeader from '../OnboardingHeader';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar as RNStatusBar } from 'react-native';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -41,7 +42,7 @@ export default function AgeScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
 
-    const [progress, setProgress] = useState(75);
+    const [progress, setProgress] = useState(60);
     const maskWidthPx = Math.round((OUTER_WIDTH * Math.max(0, Math.min(100, progress))) / 100);
     const tightOverlayWidth = Math.max(Math.round(maskWidthPx * 0.6), 60);
     const wideOverlayWidth = Math.max(Math.round(maskWidthPx * 1.6), 140);
@@ -76,7 +77,9 @@ export default function AgeScreen() {
             const center = index * itemHeight;
             const stops = [center - 3 * itemHeight, center - 2 * itemHeight, center - itemHeight, center, center + itemHeight, center + 2 * itemHeight, center + 3 * itemHeight];
             const color = interpolateColor(scrollY.value, stops, ['#666666', '#888888', '#999999', '#FFE0C2', '#999999', '#888888', '#666666']);
-            const fontSize = interpolate(scrollY.value, stops, [18, 20, 22, 30, 22, 20, 18]);
+            const rawFontSize = interpolate(scrollY.value, stops, [18, 20, 22, 30, 22, 20, 18]);
+            // Ensure fontSize is a positive value (Android Fabric requires > 0)
+            const fontSize = Math.max(1, rawFontSize);
             const fontWeight = Math.abs((scrollY.value - center) / itemHeight) < 0.5 ? '700' : '400';
             return {
                 color,
@@ -131,11 +134,13 @@ export default function AgeScreen() {
 
     return (
         <SafeAreaView edges={["top"]} style={styles.safeArea}>
+            {Platform.OS === 'android' ? <RNStatusBar backgroundColor="#111111" barStyle="light-content" /> : null}
             <Animated.View style={[styles.screen, aStyle]}>
                 <View style={styles.contentWrapper}>
                     <View style={styles.contentContainer}>
                         <OnboardingHeader
-                            progress={progress}
+                            step={3}
+                            totalSteps={4}
                             onBack={() => router.back()}
                             title={"Chat, What’s your age?"}
                             subtitle={"Age check, how many laps you’ve done around the sun?"}

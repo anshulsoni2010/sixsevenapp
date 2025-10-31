@@ -4,7 +4,6 @@ import {
     Text,
     View,
     Pressable,
-    TextInput,
     Dimensions,
     Platform,
 } from 'react-native';
@@ -39,13 +38,19 @@ const leftArrowSvg = `
 </svg>
 `;
 
+const bellSvg = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+    <path d="M12 22a2 2 0 0 0 2-2H10a2 2 0 0 0 2 2zm6-6V11c0-3.07-1.63-5.64-4.5-6.32V4a1.5 1.5 0 0 0-3 0v.68C7.63 5.36 6 7.92 6 11v5l-1.99 2h15.98L18 16z" fill="#FFE0C2"/>
+</svg>
+`;
+
 
 
 export default function NameScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
 
-    const [progress, setProgress] = useState(20);
+    const [progress, setProgress] = useState(100);
     const maskWidthPx = Math.round((OUTER_WIDTH * Math.max(0, Math.min(100, progress))) / 100);
     const tightOverlayWidth = Math.max(Math.round(maskWidthPx * 0.6), 60);
     const wideOverlayWidth = Math.max(Math.round(maskWidthPx * 1.6), 140);
@@ -71,6 +76,24 @@ export default function NameScreen() {
         transform: [{ translateY: translateY.value }],
     }));
 
+    // automatically request notification permission when this screen mounts
+    useEffect(() => {
+        (async () => {
+            try {
+                // @ts-ignore - dynamic import of expo-notifications
+                const Notifications: any = await import('expo-notifications');
+                await Notifications.requestPermissionsAsync();
+            } catch (e) {
+                try {
+                    const { Linking }: any = await import('react-native');
+                    Linking.openSettings && Linking.openSettings();
+                } catch (_err) {
+                    // ignore
+                }
+            }
+        })();
+    }, []);
+
     return (
         <SafeAreaView edges={["top"]} style={styles.safeArea}>
             {Platform.OS === 'android' ? <RNStatusBar backgroundColor="#111111" barStyle="light-content" /> : null}
@@ -78,23 +101,17 @@ export default function NameScreen() {
                 <View style={styles.contentWrapper}>
                     <View style={styles.contentContainer}>
 
-                        <OnboardingHeader step={1} totalSteps={4} onBack={() => router.back()} />
+                        <OnboardingHeader step={4} totalSteps={4} onBack={() => router.back()} />
 
 
                         <View style={styles.titleBlock}>
-                            <Text style={styles.title}>Chat, What's my name?</Text>
-                            <Text style={styles.subtitle}>Drop your tag, how do we call the Alpha in you</Text>
+                            <Text style={styles.title}>Allow notification access</Text>
+                            <Text style={styles.subtitle}>Enable notifications so we can send you updates and reminders.</Text>
                         </View>
 
 
                         <View style={styles.inputWrapper}>
-                            <TextInput
-                                placeholder="Enter Your Name"
-                                placeholderTextColor="#727272"
-                                style={styles.input}
-                                returnKeyType="done"
-                                accessibilityLabel="Name input"
-                            />
+                            <SvgXml xml={bellSvg} width="96" height="96" />
                         </View>
                     </View>
                 </View>
@@ -104,7 +121,7 @@ export default function NameScreen() {
                         <View style={styles.nextButtonWrapper}>
                             <Pressable
                                 style={styles.nextButtonInner}
-                                onPress={() => router.push('/onboarding/gender' as any)}
+                                onPress={() => router.push('/onboarding/setup' as any)}
                                 accessibilityRole="button"
                                 accessibilityLabel="Next"
                             >
@@ -135,6 +152,7 @@ const styles = StyleSheet.create({
     },
     contentContainer: {
         width: OUTER_WIDTH,
+        alignItems: 'center',
     },
     headerRow: {
         flexDirection: 'row',
@@ -203,6 +221,8 @@ const styles = StyleSheet.create({
     },
     inputWrapper: {
         marginBottom: SP.xl,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     input: {
         width: '100%',
@@ -215,6 +235,12 @@ const styles = StyleSheet.create({
         color: '#ffffff',
         fontSize: 20,
         fontFamily: 'SpaceGrotesk_400Regular',
+    },
+    bell: {
+        fontSize: 56,
+        marginBottom: SP.md,
+        color: '#fff',
+        textAlign: 'center',
     },
     bottomContainer: {
         width: '100.5%',

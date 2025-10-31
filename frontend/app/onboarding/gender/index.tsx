@@ -11,6 +11,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolateColo
 import { SvgXml } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar as RNStatusBar } from 'react-native';
 import { useRouter } from 'expo-router';
 import OnboardingHeader from '../OnboardingHeader';
 
@@ -101,7 +102,7 @@ export default function GenderScreen() {
   const maleAnim = useSharedValue(0);
   const femaleAnim = useSharedValue(0);
   const otherAnim = useSharedValue(0);
-  const [progress, setProgress] = useState(50);
+  const [progress, setProgress] = useState(40);
   const maskWidthPx = Math.round((OUTER_WIDTH * Math.max(0, Math.min(100, progress))) / 100);
   const tightOverlayWidth = Math.max(Math.round(maskWidthPx * 0.6), 60);
   const wideOverlayWidth = Math.max(Math.round(maskWidthPx * 1.6), 140);
@@ -146,9 +147,10 @@ export default function GenderScreen() {
 
   return (
     <SafeAreaView edges={["top"]} style={styles.safeArea}>
+      {Platform.OS === 'android' ? <RNStatusBar backgroundColor="#111111" barStyle="light-content" /> : null}
       <View style={styles.screen}>
         <View style={styles.contentContainer}>
-          <OnboardingHeader progress={progress} onBack={() => router.back()} />
+          <OnboardingHeader step={2} totalSteps={4} onBack={() => router.back()} />
 
           <View style={styles.titleBlock}>
             <Text style={styles.title}>Chat, What’s my gender?</Text>

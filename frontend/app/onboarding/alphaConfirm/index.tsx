@@ -1,27 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
     StyleSheet,
     Text,
     View,
     Pressable,
-    // TextInput removed for Alpha selection
     Dimensions,
     Platform,
+    Animated as RNAnimated,
+    PanResponder,
+    TouchableWithoutFeedback,
 } from 'react-native';
-import { SvgXml } from 'react-native-svg';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, {
-    useSharedValue,
-    useAnimatedStyle,
-    withTiming,
-} from 'react-native-reanimated';
+import { StatusBar as RNStatusBar } from 'react-native';
+import Reanimated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import OnboardingHeader from '../OnboardingHeader';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const OUTER_WIDTH = Math.round(SCREEN_WIDTH * 0.9);
-
 
 const SP = {
     xs: 8,
@@ -31,69 +29,139 @@ const SP = {
     xl: 48,
 };
 
-
-const leftArrowSvg = `
-<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M12.5 16.6L7.06664 11.1667C6.42497 10.525 6.42497 9.475 7.06664 8.83334L12.5 3.4" stroke="white" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
-`;
-
-
-
 export default function AlphaConfirmScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
 
-    const [progress, setProgress] = useState(100);
     const [selectedAlpha, setSelectedAlpha] = useState<string | null>(null);
-    const maskWidthPx = Math.round((OUTER_WIDTH * Math.max(0, Math.min(100, progress))) / 100);
-    const tightOverlayWidth = Math.max(Math.round(maskWidthPx * 0.6), 60);
-    const wideOverlayWidth = Math.max(Math.round(maskWidthPx * 1.6), 140);
+    const [sheetVisible, setSheetVisible] = useState(false);
 
-    let IOSBordersWrapper: any = ({ children }: { children: any }) => children;
-    if (Platform.OS === 'ios') {
-        try {
+    const sheetHeightRef = useRef<number>(460);
+    const sheetTranslateY = useRef(new RNAnimated.Value(sheetHeightRef.current)).current;
+    const overlayOpacity = useRef(new RNAnimated.Value(0)).current;
 
-            const mod = require('react-ios-borders');
-            IOSBordersWrapper = mod && (mod.default || mod);
-        } catch (e) {
-            IOSBordersWrapper = ({ children }: { children: any }) => children;
-        }
-    }
+    const openSheet = () => {
+        setSheetVisible(true);
+        overlayOpacity.setValue(0);
+        sheetTranslateY.setValue(sheetHeightRef.current);
+        RNAnimated.parallel([
+            RNAnimated.timing(overlayOpacity, {
+                toValue: 1,
+                duration: 260,
+                useNativeDriver: true,
+            }),
+            RNAnimated.timing(sheetTranslateY, {
+                toValue: 0,
+                duration: 320,
+                useNativeDriver: true,
+            }),
+        ]).start();
+    };
 
-    // Disable mount animation: initialize values to final state so the
-    // screen renders instantly when navigated to.
+    const closeSheet = () => {
+        RNAnimated.parallel([
+            RNAnimated.timing(overlayOpacity, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+            }),
+            RNAnimated.timing(sheetTranslateY, {
+                toValue: sheetHeightRef.current,
+                duration: 260,
+                useNativeDriver: true,
+            }),
+        ]).start(() => setSheetVisible(false));
+    };
+
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: () => true,
+            onPanResponderMove: (evt, gestureState) => {
+                const dy = Math.max(0, gestureState.dy);
+                sheetTranslateY.setValue(dy);
+                overlayOpacity.setValue(Math.max(0, 1 - dy / sheetHeightRef.current));
+            },
+            onPanResponderRelease: (evt, gestureState) => {
+                const dy = gestureState.dy;
+                const vy = gestureState.vy || 0;
+                if (dy > 120 || vy > 0.8) {
+                    closeSheet();
+                } else {
+                    RNAnimated.parallel([
+                        RNAnimated.timing(overlayOpacity, {
+                            toValue: 1,
+                            duration: 200,
+                            useNativeDriver: true,
+                        }),
+                        RNAnimated.timing(sheetTranslateY, {
+                            toValue: 0,
+                            duration: 220,
+                            useNativeDriver: true,
+                        }),
+                    ]).start();
+                }
+            },
+        })
+    ).current;
+
+    const [BlurViewComponent, setBlurViewComponent] = useState<any>(null);
+    useEffect(() => {
+        let mounted = true;
+        (async () => {
+            try {
+                const mod: any = await import('expo-blur');
+                const Blur = mod?.BlurView || mod?.default || null;
+                if (mounted && Blur) setBlurViewComponent(() => Blur);
+            } catch {}
+        })();
+        return () => {
+            mounted = false;
+        };
+    }, []);
+
     const opacity = useSharedValue(1);
     const translateY = useSharedValue(0);
-
     const aStyle = useAnimatedStyle(() => ({
         opacity: opacity.value,
         transform: [{ translateY: translateY.value }],
     }));
 
     return (
-        <SafeAreaView edges={["top"]} style={styles.safeArea}>
-            <Animated.View style={[styles.screen, aStyle]}>
+        <SafeAreaView edges={['top']} style={styles.safeArea}>
+            {Platform.OS === 'android' && (
+                <RNStatusBar backgroundColor="#111111" barStyle="light-content" />
+            )}
+
+            <Reanimated.View style={[styles.screen, aStyle]}>
                 <View style={styles.contentWrapper}>
                     <View style={styles.contentContainer}>
-
                         <OnboardingHeader
-                            progress={progress}
+                            step={4}
+                            totalSteps={4}
                             onBack={() => router.back()}
                             title="How alpha I wanna be?"
                             subtitle="Select 1x to 4x — how much Alpha you feeling?"
                         />
-
                         <View style={styles.inputWrapper}>
                             <View style={styles.optionsContainer}>
                                 {['1x', '2x', '3x', '4x'].map((o) => (
                                     <Pressable
                                         key={o}
                                         onPress={() => setSelectedAlpha(o)}
-                                        style={[styles.option, selectedAlpha === o ? styles.optionSelected : null]}
-                                        accessibilityRole="button"
+                                        style={[
+                                            styles.option,
+                                            selectedAlpha === o && styles.optionSelected,
+                                        ]}
                                     >
-                                        <Text style={[styles.optionText, selectedAlpha === o ? styles.optionTextSelected : null]}>{o}</Text>
+                                        <Text
+                                            style={[
+                                                styles.optionText,
+                                                selectedAlpha === o && styles.optionTextSelected,
+                                            ]}
+                                        >
+                                            {o}
+                                        </Text>
                                     </Pressable>
                                 ))}
                             </View>
@@ -102,168 +170,203 @@ export default function AlphaConfirmScreen() {
                 </View>
 
                 <View style={[styles.bottomContainer, { paddingBottom: SP.md + insets.bottom }]}>
-                    <IOSBordersWrapper>
-                        <View style={styles.confirmButtonWrapper}>
-                            <Pressable
-                                style={styles.confirmButtonInner}
-                                onPress={() => router.push('/onboarding/setup' as any)}
-                                accessibilityRole="button"
-                                accessibilityLabel="confirm"
-                            >
-                                <Text style={styles.confirmButtonText}>Confirm</Text>
-                            </Pressable>
-                        </View>
-                    </IOSBordersWrapper>
+                    <View style={styles.confirmButtonWrapper}>
+                        <Pressable style={styles.confirmButtonInner} onPress={openSheet}>
+                            <Text style={styles.confirmButtonText}>Confirm</Text>
+                        </Pressable>
+                    </View>
                 </View>
-            </Animated.View>
+            </Reanimated.View>
+
+            {sheetVisible && (
+                <>
+                    {/* Blur + Gradient Overlay */}
+                    <RNAnimated.View
+                        pointerEvents="auto"
+                        style={[StyleSheet.absoluteFill, { zIndex: 998, opacity: overlayOpacity }]}
+                    >
+                        {BlurViewComponent ? (
+                            <BlurViewComponent intensity={50} tint="dark" style={StyleSheet.absoluteFill}>
+                                <LinearGradient
+                                    colors={[
+                                        'rgba(0,0,0,0.6)',
+                                        'rgba(0,0,0,0.4)',
+                                        'transparent',
+                                    ]}
+                                    style={StyleSheet.absoluteFill}
+                                />
+                            </BlurViewComponent>
+                        ) : (
+                            <LinearGradient
+                                colors={[
+                                    'rgba(0,0,0,0.6)',
+                                    'rgba(0,0,0,0.4)',
+                                    'transparent',
+                                ]}
+                                style={StyleSheet.absoluteFill}
+                            />
+                        )}
+                    </RNAnimated.View>
+
+                    <TouchableWithoutFeedback onPress={closeSheet}>
+                        <View pointerEvents="box-only" style={[StyleSheet.absoluteFill, { zIndex: 999 }]} />
+                    </TouchableWithoutFeedback>
+
+                    {/* Bottom Sheet */}
+                    <RNAnimated.View
+                        {...panResponder.panHandlers}
+                        onLayout={(e) => {
+                            const h = e.nativeEvent.layout.height;
+                            if (h && sheetHeightRef.current !== h) {
+                                sheetHeightRef.current = h;
+                                sheetTranslateY.setValue(h);
+                                RNAnimated.timing(sheetTranslateY, {
+                                    toValue: 0,
+                                    duration: 260,
+                                    useNativeDriver: true,
+                                }).start();
+                            }
+                        }}
+                        style={[
+                            styles.sheetContainer,
+                            {
+                                paddingBottom: SP.lg + insets.bottom,
+                                transform: [{ translateY: sheetTranslateY }],
+                                zIndex: 1000,
+                            },
+                        ]}
+                    >
+                        <View style={styles.authSection}>
+                            <View style={styles.sheetHeader}>
+                                <View style={styles.tabBar} />
+                                <Text style={styles.sheetHeading}>Sign in to continue</Text>
+                                <Text style={styles.sheetSubheading}>
+                                    Choose how you wanna roll with 6 7
+                                </Text>
+                            </View>
+
+                            <View style={styles.buttonContainer}>
+                                <Pressable style={styles.authButton}>
+                                    <Image
+                                        source={require('../../../assets/icon/google.png')}
+                                        style={styles.iconImage}
+                                    />
+                                    <Text style={styles.authButtonText}>Continue with Google</Text>
+                                </Pressable>
+
+                                <Pressable style={[styles.authButton, { marginTop: 14 }]}>
+                                    <Image
+                                        source={require('../../../assets/icon/apple.png')}
+                                        style={styles.iconImage}
+                                    />
+                                    <Text style={styles.authButtonText}>Continue with Apple</Text>
+                                </Pressable>
+                            </View>
+                        </View>
+
+                        <View style={styles.termsSection}>
+                            <Text style={styles.termsText}>
+                                By continuing, you accept our Terms & Privacy Policy
+                            </Text>
+                        </View>
+                    </RNAnimated.View>
+                </>
+            )}
         </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    safeArea: {
-        flex: 1,
-        backgroundColor: '#111111',
-    },
-    screen: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    contentWrapper: {
-        width: '100%',
-        alignItems: 'center',
-        paddingTop: SP.lg,
-    },
-    contentContainer: {
-        width: OUTER_WIDTH,
-    },
-    headerRow: {
+    safeArea: { flex: 1, backgroundColor: '#111111' },
+    screen: { flex: 1, alignItems: 'center', justifyContent: 'space-between' },
+    contentWrapper: { width: '100%', alignItems: 'center', paddingTop: SP.lg },
+    contentContainer: { width: OUTER_WIDTH },
+    inputWrapper: { marginBottom: SP.xl },
+    optionsContainer: {
         flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: SP.lg,
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+        marginTop: SP.sm,
     },
-    backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#222222',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: SP.md,
-    },
-    backIcon: {
-        color: '#fff',
-        fontSize: 18,
-        lineHeight: 18,
-    },
-    progressContainer: {
-        flex: 1,
-    },
-    progressTrack: {
-        height: 10,
-        backgroundColor: '#222222',
-        borderRadius: 10,
-        overflow: 'hidden',
-    },
-    progressFill: {
-        width: '28%',
-        height: '100%',
-        backgroundColor: '#FFE0C2',
-    },
-    progressMask: {
-        height: '100%',
-        overflow: 'hidden',
-        position: 'relative',
-    },
-    innerShadowOverlay: {
-        position: 'absolute',
-        top: 0,
-        bottom: 0,
-        width: '100%',
-        opacity: 0.65,
-        borderRadius: 10,
-        pointerEvents: 'none',
-    },
-
-
-    titleBlock: {
-
-        marginBottom: SP.md,
-    },
-    title: {
-        color: '#fff',
-        fontSize: 32,
-        fontFamily: 'SpaceGrotesk_700Bold',
-        fontWeight: '700',
-    },
-    subtitle: {
-        color: '#fff',
-        fontSize: 16,
-        marginTop: 4,
-        fontFamily: 'SpaceGrotesk_400Regular',
-    },
-    inputWrapper: {
-        marginBottom: SP.xl,
-    },
-    optionsContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginTop: SP.sm, paddingHorizontal: 0, alignItems: 'stretch' },
     option: {
         flexBasis: '48%',
         marginBottom: SP.md,
         paddingVertical: 22,
-        paddingHorizontal: 50,
         borderRadius: 16,
         backgroundColor: '#141414',
         borderWidth: 2,
         borderColor: '#191919',
         alignItems: 'center',
         justifyContent: 'center',
-        alignSelf: 'stretch',
     },
-    optionSelected: { backgroundColor: '#1E1E1E', borderColor: '#FFE0C2', borderWidth: 2 },
-    optionText: { color: '#fff', fontSize: 22, fontFamily: 'SpaceGrotesk_700Bold' },
+    optionSelected: { backgroundColor: '#1E1E1E', borderColor: '#FFE0C2' },
+    optionText: { color: '#fff', fontSize: 22, fontWeight: '700' },
     optionTextSelected: { color: '#FFE0C2' },
-    input: {
-        width: '100%',
-        backgroundColor: '#141414',
-        borderColor: '#191919',
-        borderWidth: 2,
-        borderRadius: 16,
-        paddingVertical: 16,
-        paddingHorizontal: 24,
-        color: '#ffffff',
-        fontSize: 20,
-        fontFamily: 'SpaceGrotesk_400Regular',
-    },
     bottomContainer: {
         width: '100.5%',
         paddingTop: SP.lg,
         paddingHorizontal: SP.sm,
-        backgroundColor: 'transparent',
-        borderTopWidth: 1,
-        borderWidth: 1,
         borderColor: '#1B1B1B',
+        borderWidth: 1,
         borderTopRightRadius: 18,
-        borderTopLeftRadius: 18
+        borderTopLeftRadius: 18,
     },
     confirmButtonWrapper: {
         width: OUTER_WIDTH,
-        borderRadius: 16,
+        borderRadius: 18,
         padding: 2,
         backgroundColor: 'rgba(255,224,194,0.9)',
     },
     confirmButtonInner: {
         width: '100%',
-        height: 56,
+        height: 58,
         borderRadius: 16,
         backgroundColor: '#FFE0C2',
         alignItems: 'center',
         justifyContent: 'center',
     },
-    confirmButtonText: {
-        color: '#000000',
-        fontSize: 22,
-        fontFamily: 'Outfit_600SemiBold',
-        fontWeight: '600',
+    confirmButtonText: { color: '#000000', fontSize: 22, fontWeight: '600' },
+    sheetContainer: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: '#151515',
+        borderTopLeftRadius: 28,
+        borderTopRightRadius: 28,
+        paddingHorizontal: 28,
+        paddingTop: SP.lg,
     },
+    authSection: { gap: 20 },
+    sheetHeader: { alignItems: 'center', marginBottom: 20 },
+    tabBar: {
+        width: 56,
+        height: 5,
+        borderRadius: 2.5,
+        backgroundColor: 'rgba(255,255,255,0.25)',
+        marginBottom: 14,
+    },
+    sheetHeading: { color: '#FFFFFF', fontSize: 22, fontWeight: '700' },
+    sheetSubheading: { color: '#FFFFFF', fontSize: 16, opacity: 0.75, marginTop: 6 },
+    buttonContainer: { paddingTop: 8 },
+    authButton: {
+        width: '100%',
+        backgroundColor: '#222222',
+        height: 56,
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'row',
+        paddingHorizontal: 18,
+    },
+    iconImage: { width: 24, height: 24, marginRight: 12, resizeMode: 'contain' },
+    authButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '700',
+        flex: 1,
+        textAlign: 'center',
+    },
+    termsSection: { paddingHorizontal: 12, paddingTop: 16, marginBottom: 6 },
+    termsText: { color: '#999999', fontSize: 12.5, textAlign: 'center', lineHeight: 18 },
 });
