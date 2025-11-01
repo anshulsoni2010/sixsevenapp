@@ -13,6 +13,8 @@ model User {
   name       String?
   picture    String?
   googleId   String?  @unique
+  appleId    String?  @unique
+  provider   String?  // 'google' or 'apple'
   age        Int?
   gender     String?
   alphaLevel String?

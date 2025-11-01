@@ -62,10 +62,10 @@ export async function GET(req: Request) {
       user = await prisma.user.findUnique({ where: { email } });
       if (user) {
         if (!user.googleId) {
-          user = await prisma.user.update({ where: { email }, data: { googleId, name, picture } });
+          user = await prisma.user.update({ where: { email }, data: { googleId, name, picture, provider: 'google' } as any });
         }
       } else {
-        user = await prisma.user.create({ data: { email, googleId, name, picture } });
+        user = await prisma.user.create({ data: { email, googleId, name, picture, provider: 'google' } as any });
       }
     }
 

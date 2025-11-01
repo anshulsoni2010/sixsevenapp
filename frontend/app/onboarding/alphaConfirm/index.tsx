@@ -223,6 +223,37 @@ export default function AlphaConfirmScreen() {
         }
     };
 
+    const handleApplePress = async () => {
+        try {
+            const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
+            const authUrl = `${BACKEND}/api/auth/apple/initiate`;
+
+            console.log('Opening Apple OAuth flow:', authUrl);
+
+            const result = await WebBrowser.openAuthSessionAsync(
+                authUrl,
+                Linking.createURL('/')
+            );
+
+            console.log('Apple WebBrowser result:', result);
+
+            if (result.type === 'success' && result.url) {
+                const parsed = Linking.parse(result.url);
+                const token = parsed.queryParams?.token as string;
+                const onboarded = parsed.queryParams?.onboarded === 'true';
+                
+                if (token) {
+                    await handleAuthSuccess(token, onboarded);
+                }
+            } else if (result.type === 'cancel') {
+                Alert.alert('Sign-in cancelled', 'You cancelled the sign-in flow.');
+            }
+        } catch (e) {
+            console.error('handleApplePress error', e);
+            Alert.alert('Sign-in error', 'Unable to start Apple sign-in. See console for details.');
+        }
+    };
+
     const checkExistingAccount = async (email: string) => {
         try {
             const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
@@ -393,7 +424,7 @@ export default function AlphaConfirmScreen() {
                                     </Text>
                                 </Pressable>
 
-                                <Pressable style={[styles.authButton, { marginTop: 14 }]}>
+                                <Pressable style={[styles.authButton, { marginTop: 14 }]} onPress={handleApplePress}>
                                     <Image
                                         source={require('../../../assets/icon/apple.png')}
                                         style={styles.iconImage}
