@@ -46,17 +46,21 @@ export default function NameScreen() {
     let mounted = true;
     (async () => {
       try {
+        console.log('Setup screen: starting onboarding data save...');
         const onboard = await AsyncStorage.getItem('onboarding');
         if (!onboard) {
+          console.log('Setup screen: no onboarding data found, redirecting back');
           if (mounted) router.replace('/onboarding' as any);
           return;
         }
         const data = JSON.parse(onboard);
+        console.log('Setup screen: onboarding data:', data);
         const token = await SecureStore.getItemAsync('session_token');
         const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
 
         // Show the setup animation for at least 2 seconds
         const startTime = Date.now();
+        console.log('Setup screen: saving to backend...');
 
         const res = await fetch(`${BACKEND}/api/auth/onboard`, {
           method: 'POST',
@@ -68,6 +72,7 @@ export default function NameScreen() {
         });
 
         if (res.ok) {
+          console.log('Setup screen: save successful');
           await AsyncStorage.removeItem('onboarding');
           await AsyncStorage.setItem('isLoggedIn', 'true');
           
@@ -75,8 +80,11 @@ export default function NameScreen() {
           const elapsed = Date.now() - startTime;
           const remainingTime = Math.max(0, 2000 - elapsed);
           
+          console.log(`Setup screen: waiting ${remainingTime}ms before navigating (elapsed: ${elapsed}ms)`);
+          
           // Wait for remaining time before navigating
           setTimeout(() => {
+            console.log('Setup screen: navigating to tabs');
             if (mounted) router.replace('/(tabs)' as any);
           }, remainingTime);
         } else {

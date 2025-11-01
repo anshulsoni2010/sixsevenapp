@@ -42,6 +42,7 @@ export default function AlphaConfirmScreen() {
 
     const [selectedAlpha, setSelectedAlpha] = useState<string | null>(null);
     const [sheetVisible, setSheetVisible] = useState(false);
+    const [isAuthInProgress, setIsAuthInProgress] = useState(false);
 
     const sheetHeightRef = useRef<number>(460);
     const sheetTranslateY = useRef(new RNAnimated.Value(sheetHeightRef.current)).current;
@@ -174,13 +175,16 @@ export default function AlphaConfirmScreen() {
 
     const handleAuthSuccess = async (token: string, onboarded: boolean) => {
         try {
+            console.log('handleAuthSuccess: onboarded =', onboarded);
             // Store token in SecureStore for native clients
             await SecureStore.setItemAsync('session_token', token);
 
             if (onboarded) {
+                console.log('handleAuthSuccess: user already onboarded, going to tabs');
                 await AsyncStorage.setItem('isLoggedIn', 'true');
                 router.replace('/(tabs)');
             } else {
+                console.log('handleAuthSuccess: new user, going to setup screen');
                 // new user: go to setup screen to save onboarding data
                 // Don't set isLoggedIn yet - setup screen will set it after saving data
                 router.push('/onboarding/setup');
@@ -191,7 +195,13 @@ export default function AlphaConfirmScreen() {
     };
 
     const handleGooglePress = async () => {
+        if (isAuthInProgress) {
+            console.log('Auth already in progress, ignoring click');
+            return;
+        }
+
         try {
+            setIsAuthInProgress(true);
             const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
             const authUrl = `${BACKEND}/api/auth/google/initiate`;
 
@@ -220,11 +230,19 @@ export default function AlphaConfirmScreen() {
         } catch (e) {
             console.error('handleGooglePress error', e);
             Alert.alert('Sign-in error', 'Unable to start Google sign-in. See console for details.');
+        } finally {
+            setIsAuthInProgress(false);
         }
     };
 
     const handleApplePress = async () => {
+        if (isAuthInProgress) {
+            console.log('Auth already in progress, ignoring click');
+            return;
+        }
+
         try {
+            setIsAuthInProgress(true);
             const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
             const authUrl = `${BACKEND}/api/auth/apple/initiate`;
 
@@ -251,6 +269,8 @@ export default function AlphaConfirmScreen() {
         } catch (e) {
             console.error('handleApplePress error', e);
             Alert.alert('Sign-in error', 'Unable to start Apple sign-in. See console for details.');
+        } finally {
+            setIsAuthInProgress(false);
         }
     };
 
