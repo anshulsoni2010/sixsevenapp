@@ -132,9 +132,17 @@ export default function ChatScreen() {
             <Text style={styles.headerTitle}>Gen Alpha Chat</Text>
             <Text style={styles.headerSubtitle}>Talk the Alpha, Walk the Alpha</Text>
           </View>
-          <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-            <Text style={styles.logoutText}>Logout</Text>
-          </TouchableOpacity>
+          <View style={styles.headerButtons}>
+            <TouchableOpacity 
+              onPress={() => router.push('/subscription' as any)} 
+              style={styles.subscriptionButton}
+            >
+              <Text style={styles.subscriptionText}>💎</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+              <Text style={styles.logoutText}>Logout</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Messages */}
@@ -251,6 +259,24 @@ const styles = StyleSheet.create({
     color: '#9ca3af',
     fontFamily: 'Outfit_400Regular',
     marginTop: 2,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  subscriptionButton: {
+    width: 40,
+    height: 40,
+    backgroundColor: '#1f1f1f',
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFE0C2',
+  },
+  subscriptionText: {
+    fontSize: 20,
   },
   logoutButton: {
     paddingHorizontal: 16,

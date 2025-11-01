@@ -18,10 +18,10 @@ import * as WebBrowser from 'expo-web-browser';
 
 interface SubscriptionData {
   subscribed: boolean;
-  subscriptionPlan?: string;
-  subscriptionStatus?: string;
-  subscriptionEndsAt?: string;
-  stripeCustomerId?: string;
+  plan?: string;
+  status?: string;
+  endsAt?: string;
+  onboarded?: boolean;
 }
 
 export default function SubscriptionScreen() {
@@ -43,60 +43,112 @@ export default function SubscriptionScreen() {
       }
 
       const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
+      console.log('Fetching subscription from:', `${BACKEND}/api/user/me`);
+      
+      // First, try to sync subscription data from Stripe
+      try {
+        await fetch(`${BACKEND}/api/stripe/sync-subscription`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        console.log('Synced subscription from Stripe');
+      } catch (syncError) {
+        console.log('Could not sync subscription, continuing with cached data');
+      }
+      
+      // Then fetch the updated subscription data
       const response = await fetch(`${BACKEND}/api/user/me`, {
         headers: { 'Authorization': `Bearer ${token}` },
       });
 
       if (response.ok) {
         const data = await response.json();
+        console.log('Subscription data:', data);
         setSubscription(data);
+      } else {
+        console.error('Failed to fetch subscription:', response.status);
+        // Set empty subscription data to show "No Active Subscription"
+        setSubscription({ subscribed: false });
       }
     } catch (error) {
       console.error('Error loading subscription:', error);
-      Alert.alert('Error', 'Failed to load subscription details');
+      // Set empty subscription data instead of showing alert
+      setSubscription({ subscribed: false });
     } finally {
       setLoading(false);
     }
   };
 
   const handleManageSubscription = async () => {
-    try {
-      setManagingSubscription(true);
-      
-      const token = await SecureStore.getItemAsync('session_token');
-      if (!token) {
-        Alert.alert('Error', 'Please sign in again');
-        return;
-      }
-
-      const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
-      
-      // Create Stripe customer portal session
-      const response = await fetch(`${BACKEND}/api/stripe/create-portal-session`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+    Alert.alert(
+      'Manage Subscription',
+      'Choose how you want to manage your subscription:',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
         },
-      });
+        {
+          text: 'View Billing Details',
+          onPress: async () => {
+            try {
+              setManagingSubscription(true);
+              
+              const token = await SecureStore.getItemAsync('session_token');
+              if (!token) {
+                Alert.alert('Error', 'Please sign in again');
+                return;
+              }
 
-      const data = await response.json();
+              const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
+              
+              // Create Stripe customer portal session
+              const response = await fetch(`${BACKEND}/api/stripe/create-portal-session`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`,
+                },
+              });
 
-      if (response.ok && data.url) {
-        // Open Stripe customer portal
-        await WebBrowser.openBrowserAsync(data.url);
-        
-        // Reload subscription after portal closes
-        await loadSubscription();
-      } else {
-        Alert.alert('Error', data.error || 'Failed to open subscription portal');
-      }
-    } catch (error) {
-      console.error('Portal error:', error);
-      Alert.alert('Error', 'Failed to open subscription management');
-    } finally {
-      setManagingSubscription(false);
-    }
+              const data = await response.json();
+
+              if (response.ok && data.url) {
+                // Open Stripe customer portal
+                await WebBrowser.openBrowserAsync(data.url);
+                
+                // Reload subscription after portal closes
+                await loadSubscription();
+              } else {
+                Alert.alert(
+                  'Portal Not Available',
+                  'The billing portal is being set up. In the meantime, you can:\n\n• View your plan details here\n• Change plans from the "Change Plan" button\n• Contact support@sixseven.app for billing questions'
+                );
+              }
+            } catch (error) {
+              console.error('Portal error:', error);
+              Alert.alert(
+                'Portal Not Available',
+                'The billing portal is being set up. You can contact support@sixseven.app for billing assistance.'
+              );
+            } finally {
+              setManagingSubscription(false);
+            }
+          },
+        },
+        {
+          text: 'Cancel Subscription',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Cancel Subscription',
+              'To cancel your subscription, please contact us at support@sixseven.app and we\'ll process your cancellation immediately.',
+              [{ text: 'OK' }]
+            );
+          },
+        },
+      ]
+    );
   };
 
   const handleUpgrade = () => {
@@ -177,9 +229,9 @@ export default function SubscriptionScreen() {
               <View style={styles.statusCard}>
                 <View style={styles.statusHeader}>
                   <Ionicons name="card" size={32} color="#FFE0C2" />
-                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(subscription?.subscriptionStatus) }]}>
+                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(subscription?.status) }]}>
                     <Text style={styles.statusBadgeText}>
-                      {subscription?.subscriptionStatus?.toUpperCase() || 'INACTIVE'}
+                      {subscription?.status?.toUpperCase() || 'INACTIVE'}
                     </Text>
                   </View>
                 </View>
@@ -187,8 +239,20 @@ export default function SubscriptionScreen() {
                 <View style={styles.statusDetails}>
                   <Text style={styles.statusLabel}>Current Plan</Text>
                   <Text style={styles.statusValue}>
-                    {subscription?.subscribed ? getPlanName(subscription?.subscriptionPlan) : 'No Active Subscription'}
+                    {subscription?.subscribed 
+                      ? getPlanName(subscription?.plan) 
+                      : 'No Active Subscription'}
                   </Text>
+                  {!subscription?.subscribed && (
+                    <Text style={styles.planTypeLabel}>
+                      Subscribe to unlock all features
+                    </Text>
+                  )}
+                  {subscription?.plan && (
+                    <Text style={styles.planTypeLabel}>
+                      {subscription.plan === 'weekly' ? '🔄 Weekly Billing' : '📅 Annual Billing'}
+                    </Text>
+                  )}
                 </View>
 
                 {subscription?.subscribed && (
@@ -198,14 +262,21 @@ export default function SubscriptionScreen() {
                     <View style={styles.statusDetails}>
                       <Text style={styles.statusLabel}>Next Billing Date</Text>
                       <Text style={styles.statusValue}>
-                        {formatDate(subscription?.subscriptionEndsAt)}
+                        {subscription?.endsAt 
+                          ? formatDate(subscription?.endsAt)
+                          : 'View in billing portal'}
                       </Text>
+                      {!subscription?.endsAt && (
+                        <Text style={styles.planTypeLabel}>
+                          Tap "Manage Subscription" to view billing details
+                        </Text>
+                      )}
                     </View>
 
                     <View style={styles.statusDetails}>
                       <Text style={styles.statusLabel}>Status</Text>
-                      <Text style={[styles.statusValue, { color: getStatusColor(subscription?.subscriptionStatus) }]}>
-                        {subscription?.subscriptionStatus || 'Unknown'}
+                      <Text style={[styles.statusValue, { color: getStatusColor(subscription?.status) }]}>
+                        {subscription?.status || 'Unknown'}
                       </Text>
                     </View>
                   </>
@@ -225,8 +296,8 @@ export default function SubscriptionScreen() {
                       <ActivityIndicator color="#111111" size="small" />
                     ) : (
                       <>
-                        <Ionicons name="settings" size={20} color="#111111" />
-                        <Text style={styles.primaryButtonText}>Manage Subscription</Text>
+                        <Ionicons name="card" size={20} color="#111111" />
+                        <Text style={styles.primaryButtonText}>Billing & Cancellation</Text>
                       </>
                     )}
                   </TouchableOpacity>
@@ -371,6 +442,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
     fontFamily: 'SpaceGrotesk_700Bold',
+  },
+  planTypeLabel: {
+    fontSize: 13,
+    color: '#FFE0C2',
+    fontFamily: 'Outfit_400Regular',
+    marginTop: 4,
   },
   divider: {
     height: 1,
