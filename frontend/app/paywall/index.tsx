@@ -63,6 +63,7 @@ export default function PaywallScreen() {
   const router = useRouter();
   const [selectedPlan, setSelectedPlan] = useState<string>('yearly');
   const [loading, setLoading] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
 
   const handleLogout = async () => {
     Alert.alert(
@@ -151,6 +152,11 @@ export default function PaywallScreen() {
         
         // After browser closes, check subscription status
         if (result.type === 'cancel' || result.type === 'dismiss') {
+          setLoading(true);
+          
+          // Wait a moment for webhook to process
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
           // User closed the browser, check if payment was completed
           const checkResponse = await fetch(`${BACKEND}/api/user/me`, {
             headers: { 'Authorization': `Bearer ${token}` },
@@ -159,21 +165,24 @@ export default function PaywallScreen() {
           if (checkResponse.ok) {
             const userData = await checkResponse.json();
             if (userData.subscribed) {
-              Alert.alert(
-                'Success!',
-                'Your subscription is now active.',
-                [{ 
-                  text: 'Continue', 
-                  onPress: () => router.replace('/chat' as any) 
-                }]
-              );
+              // Show success state with checkmark
+              setPaymentSuccess(true);
+              setLoading(false);
+              
+              // Wait 2 seconds to show success animation, then navigate
+              setTimeout(() => {
+                router.replace('/chat' as any);
+              }, 2000);
             } else {
+              setLoading(false);
               Alert.alert(
                 'Payment Incomplete',
                 'Your payment was not completed. Please try again.',
                 [{ text: 'OK' }]
               );
             }
+          } else {
+            setLoading(false);
           }
         }
       } else {
@@ -232,6 +241,32 @@ export default function PaywallScreen() {
       setLoading(false);
     }
   };
+
+  // Success overlay
+  if (paymentSuccess) {
+    return (
+      <View style={styles.container}>
+        <LinearGradient
+          colors={['#4D3A28', '#000000', '#000000']}
+          locations={[0, 0.35, 1]}
+          style={styles.gradient}
+        >
+          <SafeAreaView edges={['top']} style={styles.safeArea}>
+            <View style={styles.successContainer}>
+              <View style={styles.successIconContainer}>
+                <Ionicons name="checkmark-circle" size={120} color="#4CAF50" />
+              </View>
+              <Text style={styles.successTitle}>Payment Successful!</Text>
+              <Text style={styles.successSubtitle}>
+                Your subscription is now active
+              </Text>
+              <ActivityIndicator color="#FFE0C2" size="large" style={{ marginTop: 20 }} />
+            </View>
+          </SafeAreaView>
+        </LinearGradient>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -639,5 +674,29 @@ const styles = StyleSheet.create({
     color: '#FFE0C2',
     fontFamily: 'SpaceGrotesk_700Bold',
     textDecorationLine: 'underline',
+  },
+  successContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  successIconContainer: {
+    marginBottom: 30,
+  },
+  successTitle: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    fontFamily: 'SpaceGrotesk_700Bold',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  successSubtitle: {
+    fontSize: 16,
+    color: '#E6E6E6',
+    fontFamily: 'Outfit_400Regular',
+    textAlign: 'center',
+    lineHeight: 24,
   },
 });
