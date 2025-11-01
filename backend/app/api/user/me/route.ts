@@ -31,6 +31,7 @@ export async function GET(req: Request) {
         subscriptionPlan: true,
         subscriptionStatus: true,
         subscriptionEndsAt: true,
+        stripeSubscriptionId: true,
         onboarded: true,
       },
     });
@@ -38,6 +39,14 @@ export async function GET(req: Request) {
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
+
+    console.log('User subscription data:', {
+      subscribed: user.subscribed,
+      plan: user.subscriptionPlan,
+      status: user.subscriptionStatus,
+      endsAt: user.subscriptionEndsAt,
+      stripeSubId: user.stripeSubscriptionId,
+    });
 
     return NextResponse.json({
       subscribed: user.subscribed,

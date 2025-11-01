@@ -55,6 +55,10 @@ export default function SubscriptionScreen() {
         if (syncResponse.ok) {
           const syncData = await syncResponse.json();
           console.log('Synced subscription from Stripe:', syncData);
+          console.log('Sync returned subscriptionEndsAt:', syncData.subscriptionEndsAt);
+        } else {
+          const errorText = await syncResponse.text();
+          console.log('Sync failed with status:', syncResponse.status, errorText);
         }
       } catch (syncError) {
         console.log('Could not sync subscription:', syncError);
@@ -71,6 +75,8 @@ export default function SubscriptionScreen() {
       if (response.ok) {
         const data = await response.json();
         console.log('Subscription data after sync:', data);
+        console.log('endsAt value:', data.endsAt);
+        console.log('endsAt type:', typeof data.endsAt);
         setSubscription(data);
       } else {
         console.error('Failed to fetch subscription:', response.status);

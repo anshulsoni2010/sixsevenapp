@@ -37,21 +37,43 @@ export async function POST(req: Request) {
 
     // Fetch subscription from Stripe
     const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
-    const periodEnd = (subscription as any).current_period_end;
+    const subData = subscription as any;
+    
+    // Log the full subscription to see what fields are available
+    console.log('Full Stripe subscription object keys:', Object.keys(subscription));
+    console.log('Subscription details:', {
+      id: subscription.id,
+      status: subscription.status,
+      created: subscription.created,
+      current_period_start: subData.current_period_start,
+      current_period_end: subData.current_period_end,
+    });
+    
+    const periodEnd = subData.current_period_end;
+    const periodEndDate = periodEnd ? new Date(periodEnd * 1000) : null;
+
+    console.log('Stripe subscription data:', {
+      id: subscription.id,
+      status: subscription.status,
+      current_period_end: periodEnd,
+      current_period_end_date: periodEndDate,
+    });
 
     // Update user with latest subscription data
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
         subscribed: subscription.status === 'active',
         subscriptionStatus: subscription.status,
-        subscriptionEndsAt: periodEnd ? new Date(periodEnd * 1000) : null,
+        subscriptionEndsAt: periodEndDate,
       },
     });
 
+    console.log('Updated user with subscriptionEndsAt:', updatedUser.subscriptionEndsAt);
+
     return NextResponse.json({ 
       success: true,
-      subscriptionEndsAt: periodEnd ? new Date(periodEnd * 1000) : null,
+      subscriptionEndsAt: periodEndDate,
       status: subscription.status,
     });
 

@@ -85,20 +85,31 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   // Get subscription details
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-  const periodEnd = (subscription as any).current_period_end;
+  const subData = subscription as any;
+  const periodEnd = subData.current_period_end;
+  const periodEndDate = periodEnd ? new Date(periodEnd * 1000) : null;
 
-  await prisma.user.update({
+  console.log('Checkout completed - Subscription details:', {
+    subscriptionId,
+    status: subscription.status,
+    current_period_end: periodEnd,
+    current_period_end_date: periodEndDate,
+    userId,
+    planType,
+  });
+
+  const updatedUser = await prisma.user.update({
     where: { id: userId },
     data: {
       subscribed: true,
       subscriptionPlan: planType || 'monthly',
       stripeSubscriptionId: subscriptionId,
       subscriptionStatus: subscription.status,
-      subscriptionEndsAt: periodEnd ? new Date(periodEnd * 1000) : null,
+      subscriptionEndsAt: periodEndDate,
     },
   });
 
-  console.log(`Subscription activated for user ${userId}`);
+  console.log(`Subscription activated for user ${userId}, ends at: ${updatedUser.subscriptionEndsAt}`);
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
