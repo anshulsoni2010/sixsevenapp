@@ -48,6 +48,12 @@ export async function POST(req: Request) {
         break;
       }
 
+      case 'invoice.payment_succeeded': {
+        const invoice = event.data.object as Stripe.Invoice;
+        await handlePaymentSucceeded(invoice);
+        break;
+      }
+
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice;
         await handlePaymentFailed(invoice);
@@ -141,6 +147,36 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   });
 
   console.log(`Subscription canceled for user ${user.id}`);
+}
+
+async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
+  const subscriptionId = (invoice as any).subscription as string;
+  
+  if (!subscriptionId) return;
+
+  const user = await prisma.user.findUnique({
+    where: { stripeSubscriptionId: subscriptionId },
+  });
+
+  if (!user) {
+    console.error('User not found for subscription:', subscriptionId);
+    return;
+  }
+
+  // Get updated subscription details
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  const periodEnd = (subscription as any).current_period_end;
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      subscribed: true,
+      subscriptionStatus: 'active',
+      subscriptionEndsAt: periodEnd ? new Date(periodEnd * 1000) : null,
+    },
+  });
+
+  console.log(`Payment succeeded for user ${user.id}, subscription extended to ${periodEnd ? new Date(periodEnd * 1000) : 'unknown'}`);
 }
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {

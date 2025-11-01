@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   ScrollView,
   Alert,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -16,6 +17,7 @@ import Constants from 'expo-constants';
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import * as WebBrowser from 'expo-web-browser';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -35,7 +37,7 @@ const plans: Plan[] = [
     name: 'Weekly',
     price: '$7',
     period: 'per week',
-    priceId: 'price_weekly', // Replace with actual Stripe price ID
+    priceId: 'price_1SOY36SqLmTfZy1OrNwstW46',
     features: [
       'Unlimited Gen Alpha translations',
       'Chat screenshot analysis',
@@ -47,7 +49,7 @@ const plans: Plan[] = [
     name: 'Yearly',
     price: '$67',
     period: 'per year',
-    priceId: 'price_yearly', // Replace with actual Stripe price ID
+    priceId: 'price_1SOY45SqLmTfZy1OjEZptDuV',
     popular: true,
     features: [
       'Everything in Weekly',
@@ -144,26 +146,36 @@ export default function PaywallScreen() {
       const data = await response.json();
 
       if (response.ok && data.url) {
-        // TODO: Open Stripe checkout URL in WebBrowser
-        // For now, we'll simulate success after a delay
-        console.log('Stripe checkout URL:', data.url);
+        // Open Stripe checkout in browser
+        const result = await WebBrowser.openBrowserAsync(data.url);
         
-        // In production, you would:
-        // 1. Open WebBrowser with the checkout URL
-        // 2. Listen for redirect back to app
-        // 3. Verify subscription status
-        
-        Alert.alert(
-          'Subscription',
-          'In production, this would open Stripe checkout. For now, navigate to chat?',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { 
-              text: 'Continue to Chat', 
-              onPress: () => router.replace('/chat' as any) 
-            },
-          ]
-        );
+        // After browser closes, check subscription status
+        if (result.type === 'cancel' || result.type === 'dismiss') {
+          // User closed the browser, check if payment was completed
+          const checkResponse = await fetch(`${BACKEND}/api/user/me`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+          });
+          
+          if (checkResponse.ok) {
+            const userData = await checkResponse.json();
+            if (userData.subscribed) {
+              Alert.alert(
+                'Success!',
+                'Your subscription is now active.',
+                [{ 
+                  text: 'Continue', 
+                  onPress: () => router.replace('/chat' as any) 
+                }]
+              );
+            } else {
+              Alert.alert(
+                'Payment Incomplete',
+                'Your payment was not completed. Please try again.',
+                [{ text: 'OK' }]
+              );
+            }
+          }
+        }
       } else {
         Alert.alert('Error', data.error || 'Failed to create checkout session');
       }
