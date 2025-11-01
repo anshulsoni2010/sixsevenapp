@@ -31,11 +31,11 @@ interface Plan {
 
 const plans: Plan[] = [
   {
-    id: 'monthly',
-    name: 'Alpha Plus',
-    price: '$9.99',
-    period: 'per month',
-    priceId: 'price_monthly', // Replace with actual Stripe price ID
+    id: 'weekly',
+    name: 'Weekly',
+    price: '$7',
+    period: 'per week',
+    priceId: 'price_weekly', // Replace with actual Stripe price ID
     features: [
       'Unlimited Gen Alpha translations',
       'Chat screenshot analysis',
@@ -44,16 +44,15 @@ const plans: Plan[] = [
   },
   {
     id: 'yearly',
-    name: 'Alpha Max',
-    price: '$79.99',
+    name: 'Yearly',
+    price: '$67',
     period: 'per year',
     priceId: 'price_yearly', // Replace with actual Stripe price ID
     popular: true,
     features: [
-      'Everything in Alpha Plus',
-      'Save 33% compared to monthly',
-      '2 months free',
-      'Early access to new features',
+      'Everything in Weekly',
+      'Save over 80%',
+      'Priority support',
     ],
   },
 ];
@@ -316,7 +315,6 @@ export default function PaywallScreen() {
 
                     <Text style={styles.planName}>{plan.name}</Text>
                     <Text style={styles.planPrice}>{plan.price}</Text>
-                    <Text style={styles.planPeriod}>{plan.period}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -343,7 +341,7 @@ export default function PaywallScreen() {
                   <ActivityIndicator color="#4D3A28" size="small" />
                 ) : (
                   <Text style={styles.subscribeButtonText}>
-                    Start Free Trial
+                    Subscribe Now
                   </Text>
                 )}
               </TouchableOpacity>

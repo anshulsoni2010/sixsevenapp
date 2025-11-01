@@ -46,7 +46,7 @@
     },
     "extra": {
       "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "835051220341-681sotsfbku3vi0n4r23o4cfbvgpp8o5.apps.googleusercontent.com",
-      "BACKEND_URL": "http://localhost:3000",
+      "BACKEND_URL": "https://sixsevenapi.vercel.app",
       "router": {},
       "eas": {
         "projectId": "c9a7bd8f-1acb-4c65-8051-39007e62322f"
