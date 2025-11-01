@@ -45,16 +45,23 @@ export default function SubscriptionScreen() {
       const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
       console.log('Fetching subscription from:', `${BACKEND}/api/user/me`);
       
-      // First, try to sync subscription data from Stripe
+      // First, sync subscription data from Stripe to get latest billing date
       try {
-        await fetch(`${BACKEND}/api/stripe/sync-subscription`, {
+        const syncResponse = await fetch(`${BACKEND}/api/stripe/sync-subscription`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` },
         });
-        console.log('Synced subscription from Stripe');
+        
+        if (syncResponse.ok) {
+          const syncData = await syncResponse.json();
+          console.log('Synced subscription from Stripe:', syncData);
+        }
       } catch (syncError) {
-        console.log('Could not sync subscription, continuing with cached data');
+        console.log('Could not sync subscription:', syncError);
       }
+      
+      // Small delay to ensure database is updated
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       // Then fetch the updated subscription data
       const response = await fetch(`${BACKEND}/api/user/me`, {
@@ -63,16 +70,14 @@ export default function SubscriptionScreen() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Subscription data:', data);
+        console.log('Subscription data after sync:', data);
         setSubscription(data);
       } else {
         console.error('Failed to fetch subscription:', response.status);
-        // Set empty subscription data to show "No Active Subscription"
         setSubscription({ subscribed: false });
       }
     } catch (error) {
       console.error('Error loading subscription:', error);
-      // Set empty subscription data instead of showing alert
       setSubscription({ subscribed: false });
     } finally {
       setLoading(false);
@@ -260,24 +265,42 @@ export default function SubscriptionScreen() {
                     <View style={styles.divider} />
                     
                     <View style={styles.statusDetails}>
-                      <Text style={styles.statusLabel}>Next Billing Date</Text>
+                      <Text style={styles.statusLabel}>Plan Details</Text>
                       <Text style={styles.statusValue}>
-                        {subscription?.endsAt 
-                          ? formatDate(subscription?.endsAt)
-                          : 'View in billing portal'}
+                        {subscription?.plan === 'weekly' ? '$7 charged weekly' : '$67 charged annually'}
                       </Text>
-                      {!subscription?.endsAt && (
-                        <Text style={styles.planTypeLabel}>
-                          Tap "Manage Subscription" to view billing details
-                        </Text>
-                      )}
                     </View>
 
                     <View style={styles.statusDetails}>
-                      <Text style={styles.statusLabel}>Status</Text>
-                      <Text style={[styles.statusValue, { color: getStatusColor(subscription?.status) }]}>
-                        {subscription?.status || 'Unknown'}
+                      <Text style={styles.statusLabel}>Next Billing Date</Text>
+                      <Text style={styles.statusValue}>
+                        {subscription.endsAt 
+                          ? new Date(subscription.endsAt).toLocaleDateString('en-US', { 
+                              year: 'numeric', 
+                              month: 'long', 
+                              day: 'numeric' 
+                            })
+                          : 'Loading...'}
                       </Text>
+                    </View>
+
+                    <View style={styles.statusDetails}>
+                      <Text style={styles.statusLabel}>Subscription Status</Text>
+                      <Text style={[styles.statusValue, { color: getStatusColor(subscription?.status) }]}>
+                        {subscription?.status === 'active' 
+                          ? '✓ Active & Renewing' 
+                          : subscription?.status || 'Unknown'}
+                      </Text>
+                    </View>
+
+                    <View style={styles.statusDetails}>
+                      <Text style={styles.statusLabel}>Benefits Included</Text>
+                      <View style={styles.benefitsList}>
+                        <Text style={styles.benefitItem}>• Unlimited Gen Alpha translations</Text>
+                        <Text style={styles.benefitItem}>• Chat screenshot analysis</Text>
+                        <Text style={styles.benefitItem}>• Priority support</Text>
+                        <Text style={styles.benefitItem}>• Cancel anytime</Text>
+                      </View>
                     </View>
                   </>
                 )}
@@ -448,6 +471,16 @@ const styles = StyleSheet.create({
     color: '#FFE0C2',
     fontFamily: 'Outfit_400Regular',
     marginTop: 4,
+  },
+  benefitsList: {
+    marginTop: 8,
+    gap: 6,
+  },
+  benefitItem: {
+    fontSize: 14,
+    color: '#E6E6E6',
+    fontFamily: 'Outfit_400Regular',
+    lineHeight: 20,
   },
   divider: {
     height: 1,
