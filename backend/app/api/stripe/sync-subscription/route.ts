@@ -39,18 +39,20 @@ export async function POST(req: Request) {
     const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
     const subData = subscription as any;
     
-    // Log the full subscription to see what fields are available
-    console.log('Full Stripe subscription object keys:', Object.keys(subscription));
+    // Get period end from either top-level or from subscription items
+    let periodEnd = subData.current_period_end;
+    if (!periodEnd && subData.items?.data?.[0]?.current_period_end) {
+      periodEnd = subData.items.data[0].current_period_end;
+    }
+    
+    const periodEndDate = periodEnd ? new Date(periodEnd * 1000) : null;
+    
     console.log('Subscription details:', {
       id: subscription.id,
       status: subscription.status,
-      created: subscription.created,
-      current_period_start: subData.current_period_start,
-      current_period_end: subData.current_period_end,
+      current_period_end: periodEnd,
+      current_period_end_date: periodEndDate,
     });
-    
-    const periodEnd = subData.current_period_end;
-    const periodEndDate = periodEnd ? new Date(periodEnd * 1000) : null;
 
     console.log('Stripe subscription data:', {
       id: subscription.id,

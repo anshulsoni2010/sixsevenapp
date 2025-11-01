@@ -86,7 +86,13 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   // Get subscription details
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
   const subData = subscription as any;
-  const periodEnd = subData.current_period_end;
+  
+  // Get period end from either top-level or from subscription items
+  let periodEnd = subData.current_period_end;
+  if (!periodEnd && subData.items?.data?.[0]?.current_period_end) {
+    periodEnd = subData.items.data[0].current_period_end;
+  }
+  
   const periodEndDate = periodEnd ? new Date(periodEnd * 1000) : null;
 
   console.log('Checkout completed - Subscription details:', {
@@ -122,7 +128,11 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     return;
   }
 
-  const periodEnd = (subscription as any).current_period_end;
+  const subData = subscription as any;
+  let periodEnd = subData.current_period_end;
+  if (!periodEnd && subData.items?.data?.[0]?.current_period_end) {
+    periodEnd = subData.items.data[0].current_period_end;
+  }
 
   await prisma.user.update({
     where: { id: user.id },
@@ -146,7 +156,11 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     return;
   }
 
-  const periodEnd = (subscription as any).current_period_end;
+  const subData = subscription as any;
+  let periodEnd = subData.current_period_end;
+  if (!periodEnd && subData.items?.data?.[0]?.current_period_end) {
+    periodEnd = subData.items.data[0].current_period_end;
+  }
 
   await prisma.user.update({
     where: { id: user.id },
@@ -176,7 +190,11 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
 
   // Get updated subscription details
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-  const periodEnd = (subscription as any).current_period_end;
+  const subData = subscription as any;
+  let periodEnd = subData.current_period_end;
+  if (!periodEnd && subData.items?.data?.[0]?.current_period_end) {
+    periodEnd = subData.items.data[0].current_period_end;
+  }
 
   await prisma.user.update({
     where: { id: user.id },
