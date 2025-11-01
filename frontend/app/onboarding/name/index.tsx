@@ -7,6 +7,7 @@ import {
     TextInput,
     Dimensions,
     Platform,
+    KeyboardAvoidingView,
 } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import OnboardingHeader from '../OnboardingHeader';
@@ -77,56 +78,61 @@ export default function NameScreen() {
     return (
         <SafeAreaView edges={["top"]} style={styles.safeArea}>
             {Platform.OS === 'android' ? <RNStatusBar backgroundColor="#111111" barStyle="light-content" /> : null}
-            <Animated.View style={[styles.screen, aStyle]}>
-                <View style={styles.contentWrapper}>
-                    <View style={styles.contentContainer}>
+            <KeyboardAvoidingView 
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1 }}
+            >
+                <Animated.View style={[styles.screen, aStyle]}>
+                    <View style={styles.contentWrapper}>
+                        <View style={styles.contentContainer}>
 
-                        <OnboardingHeader step={1} totalSteps={4} onBack={() => router.back()} />
-
-
-                        <View style={styles.titleBlock}>
-                            <Text style={styles.title}>Chat, What's my name?</Text>
-                            <Text style={styles.subtitle}>Drop your tag, how do we call the Alpha in you</Text>
-                        </View>
+                            <OnboardingHeader step={1} totalSteps={4} onBack={() => router.back()} />
 
 
-                        <View style={styles.inputWrapper}>
-                            <TextInput
-                                placeholder="Enter Your Name"
-                                placeholderTextColor="#727272"
-                                style={styles.input}
-                                returnKeyType="done"
-                                accessibilityLabel="Name input"
-                                value={name}
-                                onChangeText={setName}
-                            />
+                            <View style={styles.titleBlock}>
+                                <Text style={styles.title}>Chat, What's my name?</Text>
+                                <Text style={styles.subtitle}>Drop your tag, how do we call the Alpha in you</Text>
+                            </View>
+
+
+                            <View style={styles.inputWrapper}>
+                                <TextInput
+                                    placeholder="Enter Your Name"
+                                    placeholderTextColor="#727272"
+                                    style={styles.input}
+                                    returnKeyType="done"
+                                    accessibilityLabel="Name input"
+                                    value={name}
+                                    onChangeText={setName}
+                                />
+                            </View>
                         </View>
                     </View>
-                </View>
 
-                <View style={[styles.bottomContainer, { paddingBottom: SP.md + insets.bottom }]}>
-                    <IOSBordersWrapper>
-                        <View style={styles.nextButtonWrapper}>
-                            <Pressable
-                                style={styles.nextButtonInner}
-                                onPress={async () => {
-                                    try {
-                                        const existing = await AsyncStorage.getItem('onboarding');
-                                        const obj = existing ? JSON.parse(existing) : {};
-                                        obj.name = name;
-                                        await AsyncStorage.setItem('onboarding', JSON.stringify(obj));
-                                    } catch (e) {}
-                                    router.push('/onboarding/gender' as any);
-                                }}
-                                accessibilityRole="button"
-                                accessibilityLabel="Next"
-                            >
-                                <Text style={styles.nextButtonText}>Next</Text>
-                            </Pressable>
-                        </View>
-                    </IOSBordersWrapper>
-                </View>
-            </Animated.View>
+                    <View style={[styles.bottomContainer, { paddingBottom: SP.md + insets.bottom }]}>
+                        <IOSBordersWrapper>
+                            <View style={styles.nextButtonWrapper}>
+                                <Pressable
+                                    style={styles.nextButtonInner}
+                                    onPress={async () => {
+                                        try {
+                                            const existing = await AsyncStorage.getItem('onboarding');
+                                            const obj = existing ? JSON.parse(existing) : {};
+                                            obj.name = name;
+                                            await AsyncStorage.setItem('onboarding', JSON.stringify(obj));
+                                        } catch (e) {}
+                                        router.push('/onboarding/gender' as any);
+                                    }}
+                                    accessibilityRole="button"
+                                    accessibilityLabel="Next"
+                                >
+                                    <Text style={styles.nextButtonText}>Next</Text>
+                                </Pressable>
+                            </View>
+                        </IOSBordersWrapper>
+                    </View>
+                </Animated.View>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }
