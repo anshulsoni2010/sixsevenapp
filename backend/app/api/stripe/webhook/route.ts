@@ -79,6 +79,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   // Get subscription details
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  const periodEnd = (subscription as any).current_period_end;
 
   await prisma.user.update({
     where: { id: userId },
@@ -87,7 +88,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       subscriptionPlan: planType || 'monthly',
       stripeSubscriptionId: subscriptionId,
       subscriptionStatus: subscription.status,
-      subscriptionEndsAt: new Date(subscription.current_period_end * 1000),
+      subscriptionEndsAt: periodEnd ? new Date(periodEnd * 1000) : null,
     },
   });
 
@@ -104,12 +105,14 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     return;
   }
 
+  const periodEnd = (subscription as any).current_period_end;
+
   await prisma.user.update({
     where: { id: user.id },
     data: {
       subscribed: subscription.status === 'active',
       subscriptionStatus: subscription.status,
-      subscriptionEndsAt: new Date(subscription.current_period_end * 1000),
+      subscriptionEndsAt: periodEnd ? new Date(periodEnd * 1000) : null,
     },
   });
 
@@ -126,12 +129,14 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     return;
   }
 
+  const periodEnd = (subscription as any).current_period_end;
+
   await prisma.user.update({
     where: { id: user.id },
     data: {
       subscribed: false,
       subscriptionStatus: 'canceled',
-      subscriptionEndsAt: new Date(subscription.current_period_end * 1000),
+      subscriptionEndsAt: periodEnd ? new Date(periodEnd * 1000) : null,
     },
   });
 
@@ -139,7 +144,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 }
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
-  const subscriptionId = invoice.subscription as string;
+  const subscriptionId = (invoice as any).subscription as string;
   
   if (!subscriptionId) return;
 
