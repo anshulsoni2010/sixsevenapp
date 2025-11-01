@@ -240,13 +240,15 @@ export default function PaywallScreen() {
           </TouchableOpacity>
 
           <ScrollView 
+            style={styles.scrollView}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
+            <View style={styles.content}>
             {/* Header */}
             <View style={styles.header}>
               <View style={styles.headerIconContainer}>
-                <Ionicons name="rocket" size={40} color="#FFE0C2" />
+                <Ionicons name="rocket" size={32} color="#FFE0C2" />
               </View>
               <Text style={styles.title}>Unlock Full Access</Text>
               <Text style={styles.subtitle}>
@@ -258,7 +260,7 @@ export default function PaywallScreen() {
             <View style={styles.featuresSection}>
               <View style={styles.featureItem}>
                 <View style={styles.featureIconContainer}>
-                  <Ionicons name="chatbubbles" size={22} color="#FFE0C2" />
+                  <Ionicons name="chatbubbles" size={20} color="#FFE0C2" />
                 </View>
                 <View style={styles.featureContent}>
                   <Text style={styles.featureTitle}>Unlimited Translations</Text>
@@ -270,7 +272,7 @@ export default function PaywallScreen() {
 
               <View style={styles.featureItem}>
                 <View style={styles.featureIconContainer}>
-                  <Ionicons name="camera" size={22} color="#FFE0C2" />
+                  <Ionicons name="camera" size={20} color="#FFE0C2" />
                 </View>
                 <View style={styles.featureContent}>
                   <Text style={styles.featureTitle}>Screenshot Analysis</Text>
@@ -282,7 +284,7 @@ export default function PaywallScreen() {
 
               <View style={styles.featureItem}>
                 <View style={styles.featureIconContainer}>
-                  <Ionicons name="flash" size={22} color="#FFE0C2" />
+                  <Ionicons name="flash" size={20} color="#FFE0C2" />
                 </View>
                 <View style={styles.featureContent}>
                   <Text style={styles.featureTitle}>Real-Time Updates</Text>
@@ -321,7 +323,8 @@ export default function PaywallScreen() {
             </View>
 
             {/* Spacer for fixed bottom */}
-            <View style={{ height: 180 }} />
+            <View style={{ height: 200 }} />
+          </View>
           </ScrollView>
         </SafeAreaView>
 
@@ -396,6 +399,12 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
   logoutButton: {
     position: 'absolute',
     top: 60,
@@ -410,55 +419,56 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
   },
-  scrollContent: {
+  content: {
     paddingHorizontal: 24,
+    paddingTop: 20,
     paddingBottom: 20,
   },
   header: {
-    marginTop: 40,
-    marginBottom: 40,
+    marginTop: 24,
+    marginBottom: 28,
     alignItems: 'center',
   },
   headerIconContainer: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: 'rgba(255, 224, 194, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
     borderWidth: 1,
     borderColor: 'rgba(255, 224, 194, 0.2)',
   },
   title: {
-    fontSize: 36,
+    fontSize: 30,
     fontWeight: '700',
     color: '#FFFFFF',
     fontFamily: 'SpaceGrotesk_700Bold',
-    marginBottom: 12,
+    marginBottom: 10,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 17,
+    fontSize: 15,
     color: '#E6E6E6',
     fontFamily: 'Outfit_400Regular',
     textAlign: 'center',
-    lineHeight: 26,
+    lineHeight: 22,
     paddingHorizontal: 20,
   },
   featuresSection: {
-    marginBottom: 32,
-    gap: 20,
+    marginBottom: 28,
+    gap: 18,
   },
   featureItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 16,
+    gap: 14,
   },
   featureIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     backgroundColor: 'rgba(255, 224, 194, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -467,36 +477,36 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   featureTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
     fontFamily: 'SpaceGrotesk_700Bold',
     marginBottom: 4,
   },
   featureDescription: {
-    fontSize: 15,
+    fontSize: 14,
     color: '#E6E6E6',
     fontFamily: 'Outfit_400Regular',
-    lineHeight: 22,
+    lineHeight: 21,
     opacity: 0.8,
   },
   plansContainer: {
-    marginBottom: 32,
+    marginBottom: 28,
   },
   plansRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
   },
   planCard: {
     flex: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 12,
-    padding: 20,
+    padding: 18,
     borderWidth: 2,
     borderColor: 'rgba(255, 255, 255, 0.15)',
     position: 'relative',
     alignItems: 'center',
-    minHeight: 160,
+    minHeight: 150,
     justifyContent: 'center',
   },
   planCardSelected: {
@@ -508,19 +518,19 @@ const styles = StyleSheet.create({
     top: -10,
     alignSelf: 'center',
     backgroundColor: '#FFE0C2',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
   popularText: {
     color: '#111111',
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
     fontFamily: 'SpaceGrotesk_700Bold',
     letterSpacing: 0.5,
   },
   planName: {
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: '700',
     color: '#FFFFFF',
     fontFamily: 'SpaceGrotesk_700Bold',
@@ -528,7 +538,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   planPrice: {
-    fontSize: 32,
+    fontSize: 30,
     fontWeight: '700',
     color: '#FFE0C2',
     fontFamily: 'SpaceGrotesk_700Bold',
@@ -547,7 +557,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    backgroundColor: 'rgba(0, 0, 0, 0.98)',
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 224, 194, 0.2)',
   },
@@ -559,10 +569,10 @@ const styles = StyleSheet.create({
   subscribeButton: {
     backgroundColor: '#FFE0C2',
     borderRadius: 12,
-    paddingVertical: 18,
+    paddingVertical: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: 11,
   },
   subscribeButtonDisabled: {
     opacity: 0.6,
@@ -574,10 +584,10 @@ const styles = StyleSheet.create({
     fontFamily: 'SpaceGrotesk_700Bold',
   },
   restoreButton: {
-    paddingVertical: 12,
+    paddingVertical: 11,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: 11,
   },
   restoreButtonText: {
     fontSize: 15,
