@@ -141,12 +141,28 @@ export default function OnboardingStart() {
   const handleAuthSuccess = async (token: string, onboarded: boolean) => {
     try {
       await SecureStore.setItemAsync('session_token', token);
+      await AsyncStorage.setItem('isLoggedIn', 'true');
+      
       if (onboarded) {
-        await AsyncStorage.setItem('isLoggedIn', 'true');
-        router.replace('/(tabs)');
+        // User already onboarded - check subscription and route accordingly
+        const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
+        const response = await fetch(`${BACKEND}/api/user/me`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.subscribed) {
+            router.replace('/chat');
+          } else {
+            router.replace('/paywall');
+          }
+        } else {
+          // Error - default to paywall
+          router.replace('/paywall');
+        }
       } else {
         // new user: go to setup screen to save onboarding data
-        // Don't set isLoggedIn yet - setup screen will set it after saving data
         router.push('/onboarding/setup');
       }
     } catch (e) {

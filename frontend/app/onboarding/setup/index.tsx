@@ -76,16 +76,36 @@ export default function NameScreen() {
           await AsyncStorage.removeItem('onboarding');
           await AsyncStorage.setItem('isLoggedIn', 'true');
           
+          // Check subscription status
+          const userRes = await fetch(`${BACKEND}/api/user/me`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+
+          let shouldShowPaywall = true;
+          if (userRes.ok) {
+            const userData = await userRes.json();
+            shouldShowPaywall = !userData.subscribed;
+          }
+          
           // Calculate remaining time to reach 2 seconds
           const elapsed = Date.now() - startTime;
           const remainingTime = Math.max(0, 2000 - elapsed);
           
           console.log(`Setup screen: waiting ${remainingTime}ms before navigating (elapsed: ${elapsed}ms)`);
+          console.log(`Setup screen: will show ${shouldShowPaywall ? 'paywall' : 'chat'}`);
           
           // Wait for remaining time before navigating
           setTimeout(() => {
-            console.log('Setup screen: navigating to tabs');
-            if (mounted) router.replace('/(tabs)' as any);
+            if (mounted) {
+              // Route to paywall if not subscribed, otherwise to chat
+              if (shouldShowPaywall) {
+                router.replace('/paywall');
+              } else {
+                router.replace('/chat');
+              }
+            }
           }, remainingTime);
         } else {
           console.warn('onboard failed', await res.text());

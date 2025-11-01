@@ -3,11 +3,8 @@ import { Stack } from 'expo-router';
 import { Platform, StatusBar as RNStatusBar } from 'react-native';
 import 'react-native-reanimated';
 import React, { useEffect, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, StyleSheet } from 'react-native';
 import Splash from '@/components/Splash';
-import { useRouter } from 'expo-router';
-import { useRef } from 'react';
 import {
   SpaceGrotesk_400Regular,
   SpaceGrotesk_700Bold,
@@ -40,10 +37,6 @@ export default function RootLayout() {
   });
   const fontsLoaded = spaceLoaded && outfitLoaded;
 
-  const router = useRouter();
-  const navigatedRef = useRef(false);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-
   useEffect(() => {
     if (fontsLoaded) {
       const t = setTimeout(() => setSplashVisible(false), 400);
@@ -52,59 +45,18 @@ export default function RootLayout() {
     setSplashVisible(true);
   }, [fontsLoaded]);
 
-  // read a simple persisted auth flag so we can restrict navigation for
-  // unauthenticated users. This uses a lightweight AsyncStorage key so we
-  // don't depend on a full auth provider here. Key: 'isLoggedIn' = 'true'.
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const v = await AsyncStorage.getItem('isLoggedIn');
-        if (mounted) setIsAuthenticated(v === 'true');
-      } catch (e) {
-        if (mounted) setIsAuthenticated(false);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  // after splash hides, navigate to the onboarding route once so the router
-  // can manage nested onboarding screens (this avoids the overlay blocking
-  // router screens). Use a ref to ensure we only replace once.
-  useEffect(() => {
-    // Wait until splash is hidden, fonts are loaded, and we've resolved auth.
-    if (!splashVisible && fontsLoaded && isAuthenticated !== null && !navigatedRef.current) {
-      navigatedRef.current = true;
-      // If the user is authenticated, send them to the tabs, otherwise
-      // direct them to onboarding and keep the main tabs out of the
-      // navigation stack (below) so unauthenticated users cannot navigate
-      // to app screens.
-      if (isAuthenticated) {
-        router.replace('/(tabs)' as any);
-      } else {
-        router.replace('/onboarding' as any);
-      }
-    }
-  }, [splashVisible, fontsLoaded, isAuthenticated, router]);
-
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <View style={styles.root}>
         {/* Navigation stack (hidden behind onboarding/splash) */}
         <View style={styles.stackContainer}>
           <Stack screenOptions={{ headerShown: false }}>
-            {/* Only register the main tabs when authenticated. When
-                unauthenticated we avoid exposing the (tabs) group so the
-                router can't navigate there. Modal remains available. */}
-            {isAuthenticated ? <Stack.Screen name="(tabs)" /> : null}
-            <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+            {/* File-based routing - all screens auto-registered */}
           </Stack>
         </View>
 
-  {/* Layered fullscreen container for splash (also show while auth is resolving) */}
-  <View style={styles.overlayContainer}>{splashVisible || isAuthenticated === null ? <Splash /> : null}</View>
+  {/* Layered fullscreen container for splash */}
+  <View style={styles.overlayContainer}>{splashVisible ? <Splash /> : null}</View>
 
         {/* Use native StatusBar so we can set translucent + transparent on Android
             This allows page backgrounds (gradients/images/dark pages) to show

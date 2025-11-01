@@ -178,15 +178,33 @@ export default function AlphaConfirmScreen() {
             console.log('handleAuthSuccess: onboarded =', onboarded);
             // Store token in SecureStore for native clients
             await SecureStore.setItemAsync('session_token', token);
+            await AsyncStorage.setItem('isLoggedIn', 'true');
 
             if (onboarded) {
-                console.log('handleAuthSuccess: user already onboarded, going to tabs');
-                await AsyncStorage.setItem('isLoggedIn', 'true');
-                router.replace('/(tabs)');
+                // User already onboarded - check subscription and route accordingly
+                console.log('handleAuthSuccess: user already onboarded, checking subscription...');
+                const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
+                const response = await fetch(`${BACKEND}/api/user/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.subscribed) {
+                        console.log('handleAuthSuccess: user subscribed, going to chat');
+                        router.replace('/chat');
+                    } else {
+                        console.log('handleAuthSuccess: user not subscribed, going to paywall');
+                        router.replace('/paywall');
+                    }
+                } else {
+                    // Error - default to paywall
+                    console.log('handleAuthSuccess: error checking subscription, going to paywall');
+                    router.replace('/paywall');
+                }
             } else {
                 console.log('handleAuthSuccess: new user, going to setup screen');
                 // new user: go to setup screen to save onboarding data
-                // Don't set isLoggedIn yet - setup screen will set it after saving data
                 router.push('/onboarding/setup');
             }
         } catch (e) {
