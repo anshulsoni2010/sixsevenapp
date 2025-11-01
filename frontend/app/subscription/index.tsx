@@ -9,7 +9,6 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import Constants from 'expo-constants';
 import * as SecureStore from 'expo-secure-store';
@@ -194,29 +193,18 @@ export default function SubscriptionScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <LinearGradient
-          colors={['#4D3A28', '#000000', '#000000']}
-          locations={[0, 0.35, 1]}
-          style={styles.gradient}
-        >
-          <SafeAreaView style={styles.safeArea}>
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#FFE0C2" />
-            </View>
-          </SafeAreaView>
-        </LinearGradient>
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#FFE0C2" />
+          </View>
+        </SafeAreaView>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#4D3A28', '#000000', '#000000']}
-        locations={[0, 0.35, 1]}
-        style={styles.gradient}
-      >
-        <SafeAreaView edges={['top']} style={styles.safeArea}>
+      <SafeAreaView edges={['top']} style={styles.safeArea}>
           <ScrollView 
             style={styles.scrollView}
             contentContainerStyle={styles.scrollContent}
@@ -380,7 +368,6 @@ export default function SubscriptionScreen() {
             </View>
           </ScrollView>
         </SafeAreaView>
-      </LinearGradient>
     </View>
   );
 }
@@ -388,9 +375,7 @@ export default function SubscriptionScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  gradient: {
-    flex: 1,
+    backgroundColor: '#111111',
   },
   safeArea: {
     flex: 1,
