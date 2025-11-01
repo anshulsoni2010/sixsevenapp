@@ -8,18 +8,18 @@ datasource db {
 }
 
 model User {
-  id         String   @id @default(uuid())
-  email      String   @unique
-  name       String?
-  picture    String?
-  googleId   String?  @unique
-  appleId    String?  @unique
-  provider   String?  // 'google' or 'apple'
-  age        Int?
-  gender     String?
-  alphaLevel String?
-  notifications Boolean @default(false)
-  onboarded  Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id            String   @id @default(uuid())
+  email         String   @unique
+  name          String?
+  picture       String?
+  googleId      String?  @unique
+  onboarded     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  age           Int?
+  alphaLevel    String?
+  gender        String?
+  notifications Boolean  @default(false)
+  appleId       String?  @unique
+  provider      String?
 }
