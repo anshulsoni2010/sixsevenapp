@@ -13,6 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar as RNStatusBar } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import OnboardingHeader from '../OnboardingHeader';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -183,7 +184,17 @@ export default function GenderScreen() {
             <View style={styles.nextButtonWrapper}>
               <Pressable
                 style={[styles.nextButtonInner]}
-                onPress={() => selected && router.push('/onboarding/age' as any)}
+                onPress={async () => {
+                  if (selected) {
+                    try {
+                      const existing = await AsyncStorage.getItem('onboarding');
+                      const obj = existing ? JSON.parse(existing) : {};
+                      obj.gender = selected;
+                      await AsyncStorage.setItem('onboarding', JSON.stringify(obj));
+                    } catch (e) {}
+                    router.push('/onboarding/age' as any);
+                  }
+                }}
                 accessibilityRole="button"
                 accessibilityLabel="Next"
               >

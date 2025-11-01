@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import OnboardingHeader from '../OnboardingHeader';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar as RNStatusBar } from 'react-native';
@@ -121,7 +122,15 @@ export default function NameScreen() {
                         <View style={styles.nextButtonWrapper}>
                             <Pressable
                                 style={styles.nextButtonInner}
-                                onPress={() => router.push('/onboarding/setup' as any)}
+                                onPress={async () => {
+                                    try {
+                                        const existing = await AsyncStorage.getItem('onboarding');
+                                        const obj = existing ? JSON.parse(existing) : {};
+                                        obj.notifications = true;
+                                        await AsyncStorage.setItem('onboarding', JSON.stringify(obj));
+                                    } catch (e) {}
+                                    router.push('/onboarding/setup' as any);
+                                }}
                                 accessibilityRole="button"
                                 accessibilityLabel="Next"
                             >

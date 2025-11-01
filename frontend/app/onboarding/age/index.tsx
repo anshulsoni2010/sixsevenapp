@@ -20,6 +20,7 @@ import Animated, {
     interpolateColor,
 } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const OUTER_WIDTH = Math.round(SCREEN_WIDTH * 0.9);
@@ -178,7 +179,15 @@ export default function AgeScreen() {
                         <View style={styles.nextButtonWrapper}>
                             <Pressable
                                 style={styles.nextButtonInner}
-                                onPress={() => router.push('/onboarding/alphaConfirm' as any)}
+                                onPress={async () => {
+                                    try {
+                                        const existing = await AsyncStorage.getItem('onboarding');
+                                        const obj = existing ? JSON.parse(existing) : {};
+                                        obj.age = Number(selectedAge);
+                                        await AsyncStorage.setItem('onboarding', JSON.stringify(obj));
+                                    } catch (e) {}
+                                    router.push('/onboarding/alphaConfirm' as any);
+                                }}
                                 accessibilityRole="button"
                                 accessibilityLabel="Next"
                             >

@@ -1,26 +1,208 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, Dimensions, Platform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState, useRef, useEffect } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  Image, 
+  TouchableOpacity, 
+  Dimensions, 
+  Platform,
+  Animated as RNAnimated,
+  PanResponder,
+  TouchableWithoutFeedback,
+  Pressable,
+  TextInput,
+  Alert
+} from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
+import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 
 const { width, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const OUTER_WIDTH = Math.floor(width * 0.9);
 const LOGO_SIZE = 140; // per spec
 
+const SP = {
+  xs: 8,
+  sm: 16,
+  md: 24,
+  lg: 32,
+  xl: 48,
+};
+
 export default function OnboardingStart() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const [isExistingUser, setIsExistingUser] = useState(false); // track which sheet to show
+  const [existingEmail, setExistingEmail] = useState('');
+  const [showExistingInput, setShowExistingInput] = useState(false);
+
+  const sheetHeightRef = useRef<number>(460);
+  const sheetTranslateY = useRef(new RNAnimated.Value(sheetHeightRef.current)).current;
+  const overlayOpacity = useRef(new RNAnimated.Value(0)).current;
+
+  const [BlurViewComponent, setBlurViewComponent] = useState<any>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const mod: any = await import('expo-blur');
+        const Blur = mod?.BlurView || mod?.default || null;
+        if (mounted && Blur) setBlurViewComponent(() => Blur);
+      } catch {}
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   function handleGetStarted() {
-    // navigate to the Name screen in the onboarding flow
-    // use a relative route so expo-router resolves the nested path correctly
-    // cast to any to satisfy typed router signatures in this workspace
     router.push('/onboarding/name' as any);
   }
 
-  function handleExistingAccount() {
-    router.push('/modal');
-  }
+  const openSheet = (existingUser = false) => {
+    setIsExistingUser(existingUser);
+    setSheetVisible(true);
+    overlayOpacity.setValue(0);
+    sheetTranslateY.setValue(sheetHeightRef.current);
+    RNAnimated.parallel([
+      RNAnimated.timing(overlayOpacity, {
+        toValue: 1,
+        duration: 260,
+        useNativeDriver: true,
+      }),
+      RNAnimated.timing(sheetTranslateY, {
+        toValue: 0,
+        duration: 320,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const closeSheet = () => {
+    RNAnimated.parallel([
+      RNAnimated.timing(overlayOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      RNAnimated.timing(sheetTranslateY, {
+        toValue: sheetHeightRef.current,
+        duration: 260,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setSheetVisible(false);
+      setShowExistingInput(false);
+      setExistingEmail('');
+    });
+  };
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderMove: (evt, gestureState) => {
+        const dy = Math.max(0, gestureState.dy);
+        sheetTranslateY.setValue(dy);
+        overlayOpacity.setValue(Math.max(0, 1 - dy / sheetHeightRef.current));
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        const dy = gestureState.dy;
+        const vy = gestureState.vy || 0;
+        if (dy > 120 || vy > 0.8) {
+          closeSheet();
+        } else {
+          RNAnimated.parallel([
+            RNAnimated.timing(overlayOpacity, {
+              toValue: 1,
+              duration: 200,
+              useNativeDriver: true,
+            }),
+            RNAnimated.timing(sheetTranslateY, {
+              toValue: 0,
+              duration: 220,
+              useNativeDriver: true,
+            }),
+          ]).start();
+        }
+      },
+    })
+  ).current;
+
+  const handleAuthSuccess = async (token: string, onboarded: boolean) => {
+    try {
+      await SecureStore.setItemAsync('session_token', token);
+      if (onboarded) {
+        await AsyncStorage.setItem('isLoggedIn', 'true');
+        router.replace('/(tabs)');
+      } else {
+        // new user: go to setup screen to save onboarding data
+        // Don't set isLoggedIn yet - setup screen will set it after saving data
+        router.push('/onboarding/setup');
+      }
+    } catch (e) {
+      console.error('handleAuthSuccess error', e);
+    }
+  };
+
+  const handleGooglePress = async () => {
+    try {
+      const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
+      const authUrl = `${BACKEND}/api/auth/google/initiate`;
+
+      const result = await WebBrowser.openAuthSessionAsync(
+        authUrl,
+        Linking.createURL('/')
+      );
+
+      if (result.type === 'success' && result.url) {
+        const parsed = Linking.parse(result.url);
+        const token = parsed.queryParams?.token as string;
+        const onboarded = parsed.queryParams?.onboarded === 'true';
+        
+        if (token) {
+          await handleAuthSuccess(token, onboarded);
+        }
+      } else if (result.type === 'cancel') {
+        Alert.alert('Sign-in cancelled', 'You cancelled the sign-in flow.');
+      }
+    } catch (e) {
+      console.error('handleGooglePress error', e);
+      Alert.alert('Sign-in error', 'Unable to start Google sign-in. See console for details.');
+    }
+  };
+
+  const checkExistingAccount = async (email: string) => {
+    try {
+      const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
+      const res = await fetch(`${BACKEND}/api/auth/check`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        if (data.exists) {
+          handleGooglePress();
+        } else {
+          handleGooglePress();
+        }
+      } else {
+        console.warn('check failed', data);
+      }
+    } catch (e) {
+      console.error('checkExistingAccount error', e);
+    }
+  };
 
   // fixed headline sizing per Figma (48px, line-height 1.08)
   const HEADLINE_SIZE = 48;
@@ -92,7 +274,7 @@ export default function OnboardingStart() {
 
                 <IOSBordersWrapper>
                   <View style={styles.existingButtonWrapper}>
-                    <TouchableOpacity style={styles.existingButtonInner} onPress={handleExistingAccount} activeOpacity={0.85}>
+                    <TouchableOpacity style={styles.existingButtonInner} onPress={() => openSheet(true)} activeOpacity={0.85}>
                       <Text style={styles.existingButtonText}>Add an existing account</Text>
                     </TouchableOpacity>
                   </View>
@@ -101,6 +283,104 @@ export default function OnboardingStart() {
             </View>
           </View>
         </View>
+
+        {/* Auth Bottom Sheet */}
+        {sheetVisible && (
+          <>
+            <RNAnimated.View
+              pointerEvents="auto"
+              style={[StyleSheet.absoluteFill, { zIndex: 998, opacity: overlayOpacity }]}
+            >
+              {BlurViewComponent ? (
+                <BlurViewComponent intensity={50} tint="dark" style={StyleSheet.absoluteFill}>
+                  <LinearGradient
+                    colors={['rgba(0,0,0,0.6)', 'rgba(0,0,0,0.4)', 'transparent']}
+                    style={StyleSheet.absoluteFill}
+                  />
+                </BlurViewComponent>
+              ) : (
+                <LinearGradient
+                  colors={['rgba(0,0,0,0.6)', 'rgba(0,0,0,0.4)', 'transparent']}
+                  style={StyleSheet.absoluteFill}
+                />
+              )}
+            </RNAnimated.View>
+
+            <TouchableWithoutFeedback onPress={closeSheet}>
+              <View pointerEvents="box-only" style={[StyleSheet.absoluteFill, { zIndex: 999 }]} />
+            </TouchableWithoutFeedback>
+
+            <RNAnimated.View
+              {...panResponder.panHandlers}
+              onLayout={(e) => {
+                const h = e.nativeEvent.layout.height;
+                if (h && sheetHeightRef.current !== h) {
+                  sheetHeightRef.current = h;
+                  sheetTranslateY.setValue(h);
+                  RNAnimated.timing(sheetTranslateY, {
+                    toValue: 0,
+                    duration: 260,
+                    useNativeDriver: true,
+                  }).start();
+                }
+              }}
+              style={[
+                styles.sheetContainer,
+                {
+                  paddingBottom: SP.lg + insets.bottom,
+                  transform: [{ translateY: sheetTranslateY }],
+                  zIndex: 1000,
+                },
+              ]}
+            >
+              <View style={styles.authSection}>
+                <View style={styles.sheetHeader}>
+                  <View style={styles.tabBar} />
+                  <Text style={styles.sheetHeading}>
+                    {isExistingUser ? 'Sign in to existing account' : 'Sign in to continue'}
+                  </Text>
+                  <Text style={styles.sheetSubheading}>
+                    {isExistingUser 
+                      ? 'Sign in with the account you already have'
+                      : 'Choose how you wanna roll with 6 7'
+                    }
+                  </Text>
+                </View>
+
+                <View style={styles.buttonContainer}>
+                  <Pressable style={styles.authButton} onPress={handleGooglePress}>
+                    <Image
+                      source={require('../../assets/icon/google.png')}
+                      style={styles.iconImage}
+                    />
+                    <Text style={styles.authButtonText}>Continue with Google</Text>
+                  </Pressable>
+
+                  <Pressable style={[styles.authButton, { marginTop: 14 }]}>
+                    <Image
+                      source={require('../../assets/icon/apple.png')}
+                      style={styles.iconImage}
+                    />
+                    <Text style={styles.authButtonText}>Continue with Apple</Text>
+                  </Pressable>
+                </View>
+              </View>
+
+              <View style={styles.termsSection}>
+                <Text style={styles.termsText}>
+                  By continuing, you accept our{' '}
+                  <Text style={styles.termsLink} onPress={() => router.push('/terms')}>
+                    Terms
+                  </Text>
+                  {' & '}
+                  <Text style={styles.termsLink} onPress={() => router.push('/privacy')}>
+                    Privacy Policy
+                  </Text>
+                </Text>
+              </View>
+            </RNAnimated.View>
+          </>
+        )}
       </LinearGradient>
     </SafeAreaView>
   );
@@ -235,4 +515,53 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#FFFFFF',
   },
+  // Auth Sheet Styles
+  sheetContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#151515',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 28,
+    paddingTop: SP.lg,
+  },
+  authSection: { gap: 20 },
+  sheetHeader: { alignItems: 'center', marginBottom: 20 },
+  tabBar: {
+    width: 56,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    marginBottom: 14,
+  },
+  sheetHeading: { color: '#FFFFFF', fontSize: 22, fontWeight: '700' },
+  sheetSubheading: { color: '#FFFFFF', fontSize: 16, opacity: 0.75, marginTop: 6 },
+  buttonContainer: { paddingTop: 8 },
+  authButton: {
+    width: '100%',
+    backgroundColor: '#222222',
+    height: 56,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    paddingHorizontal: 18,
+  },
+  iconImage: { width: 24, height: 24, marginRight: 12 },
+  authButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+  existingInput: {
+    backgroundColor: '#1E1E1E',
+    borderWidth: 1,
+    borderColor: '#333',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    color: '#FFFFFF',
+    fontSize: 16,
+  },
+  termsSection: { paddingTop: 12 },
+  termsText: { color: '#888888', fontSize: 12, textAlign: 'center' },
+  termsLink: { color: '#FFE0C2', textDecorationLine: 'underline' },
 });

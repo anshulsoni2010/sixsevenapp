@@ -19,6 +19,7 @@ import Animated, {
     withTiming,
 } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const OUTER_WIDTH = Math.round(SCREEN_WIDTH * 0.9);
@@ -71,6 +72,8 @@ export default function NameScreen() {
         transform: [{ translateY: translateY.value }],
     }));
 
+    const [name, setName] = React.useState('');
+
     return (
         <SafeAreaView edges={["top"]} style={styles.safeArea}>
             {Platform.OS === 'android' ? <RNStatusBar backgroundColor="#111111" barStyle="light-content" /> : null}
@@ -94,6 +97,8 @@ export default function NameScreen() {
                                 style={styles.input}
                                 returnKeyType="done"
                                 accessibilityLabel="Name input"
+                                value={name}
+                                onChangeText={setName}
                             />
                         </View>
                     </View>
@@ -104,7 +109,15 @@ export default function NameScreen() {
                         <View style={styles.nextButtonWrapper}>
                             <Pressable
                                 style={styles.nextButtonInner}
-                                onPress={() => router.push('/onboarding/gender' as any)}
+                                onPress={async () => {
+                                    try {
+                                        const existing = await AsyncStorage.getItem('onboarding');
+                                        const obj = existing ? JSON.parse(existing) : {};
+                                        obj.name = name;
+                                        await AsyncStorage.setItem('onboarding', JSON.stringify(obj));
+                                    } catch (e) {}
+                                    router.push('/onboarding/gender' as any);
+                                }}
                                 accessibilityRole="button"
                                 accessibilityLabel="Next"
                             >

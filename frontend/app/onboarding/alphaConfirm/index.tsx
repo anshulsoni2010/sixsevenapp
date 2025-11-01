@@ -8,6 +8,7 @@ import {
     Platform,
     Animated as RNAnimated,
     PanResponder,
+    TextInput,
     TouchableWithoutFeedback,
 } from 'react-native';
 import { Image } from 'expo-image';
@@ -17,6 +18,12 @@ import { StatusBar as RNStatusBar } from 'react-native';
 import Reanimated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import OnboardingHeader from '../OnboardingHeader';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
+import Constants from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
+import { Alert } from 'react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const OUTER_WIDTH = Math.round(SCREEN_WIDTH * 0.9);
@@ -40,7 +47,19 @@ export default function AlphaConfirmScreen() {
     const sheetTranslateY = useRef(new RNAnimated.Value(sheetHeightRef.current)).current;
     const overlayOpacity = useRef(new RNAnimated.Value(0)).current;
 
-    const openSheet = () => {
+    const openSheet = async () => {
+        // Save alpha level to AsyncStorage before opening auth sheet
+        if (selectedAlpha) {
+            try {
+                const existing = await AsyncStorage.getItem('onboarding');
+                const obj = existing ? JSON.parse(existing) : {};
+                obj.alphaLevel = selectedAlpha;
+                await AsyncStorage.setItem('onboarding', JSON.stringify(obj));
+            } catch (e) {
+                console.error('Error saving alpha level:', e);
+            }
+        }
+
         setSheetVisible(true);
         overlayOpacity.setValue(0);
         sheetTranslateY.setValue(sheetHeightRef.current);
@@ -120,6 +139,117 @@ export default function AlphaConfirmScreen() {
         };
     }, []);
 
+    // Server-side OAuth flow: open backend initiate endpoint in browser
+    const [existingEmail, setExistingEmail] = useState('');
+    const [showExistingInput, setShowExistingInput] = useState(false);
+
+    // Listen for deep link callback from OAuth flow
+    useEffect(() => {
+        const handleUrl = ({ url }: { url: string }) => {
+            console.log('Deep link received:', url);
+            const parsed = Linking.parse(url);
+            const token = parsed.queryParams?.token as string;
+            const onboarded = parsed.queryParams?.onboarded === 'true';
+            const error = parsed.queryParams?.error as string;
+
+            if (error) {
+                Alert.alert('Sign-in error', 'Google sign-in was cancelled or failed.');
+                return;
+            }
+
+            if (token) {
+                handleAuthSuccess(token, onboarded);
+            }
+        };
+
+        const subscription = Linking.addEventListener('url', handleUrl);
+
+        // Check if app was opened with a URL (cold start)
+        Linking.getInitialURL().then((url) => {
+            if (url) handleUrl({ url });
+        });
+
+        return () => subscription.remove();
+    }, []);
+
+    const handleAuthSuccess = async (token: string, onboarded: boolean) => {
+        try {
+            // Store token in SecureStore for native clients
+            await SecureStore.setItemAsync('session_token', token);
+
+            if (onboarded) {
+                await AsyncStorage.setItem('isLoggedIn', 'true');
+                router.replace('/(tabs)');
+            } else {
+                // new user: go to setup screen to save onboarding data
+                // Don't set isLoggedIn yet - setup screen will set it after saving data
+                router.push('/onboarding/setup');
+            }
+        } catch (e) {
+            console.error('handleAuthSuccess error', e);
+        }
+    };
+
+    const handleGooglePress = async () => {
+        try {
+            const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
+            const authUrl = `${BACKEND}/api/auth/google/initiate`;
+
+            console.log('Opening OAuth flow:', authUrl);
+
+            // Open the backend OAuth initiate endpoint in system browser
+            const result = await WebBrowser.openAuthSessionAsync(
+                authUrl,
+                Linking.createURL('/')
+            );
+
+            console.log('WebBrowser result:', result);
+
+            if (result.type === 'success' && result.url) {
+                // Parse the URL from WebBrowser result
+                const parsed = Linking.parse(result.url);
+                const token = parsed.queryParams?.token as string;
+                const onboarded = parsed.queryParams?.onboarded === 'true';
+                
+                if (token) {
+                    await handleAuthSuccess(token, onboarded);
+                }
+            } else if (result.type === 'cancel') {
+                Alert.alert('Sign-in cancelled', 'You cancelled the sign-in flow.');
+            }
+        } catch (e) {
+            console.error('handleGooglePress error', e);
+            Alert.alert('Sign-in error', 'Unable to start Google sign-in. See console for details.');
+        }
+    };
+
+    const checkExistingAccount = async (email: string) => {
+        try {
+            const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
+            const res = await fetch(`${BACKEND}/api/auth/check`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                // If exists, prompt the user to sign in with Google to complete login.
+                if (data.exists) {
+                    // quick UX: tell user and open Google prompt
+                    // Auto-open Google sign-in so they can authenticate
+                    handleGooglePress();
+                } else {
+                    // Not found: offer to create via Google sign in
+                    handleGooglePress();
+                }
+            } else {
+                console.warn('check failed', data);
+            }
+        } catch (e) {
+            console.error('checkExistingAccount error', e);
+        }
+    };
+
     const opacity = useSharedValue(1);
     const translateY = useSharedValue(0);
     const aStyle = useAnimatedStyle(() => ({
@@ -171,7 +301,14 @@ export default function AlphaConfirmScreen() {
 
                 <View style={[styles.bottomContainer, { paddingBottom: SP.md + insets.bottom }]}>
                     <View style={styles.confirmButtonWrapper}>
-                        <Pressable style={styles.confirmButtonInner} onPress={openSheet}>
+                        <Pressable 
+                            style={[
+                                styles.confirmButtonInner,
+                                !selectedAlpha && styles.confirmButtonDisabled
+                            ]} 
+                            onPress={openSheet}
+                            disabled={!selectedAlpha}
+                        >
                             <Text style={styles.confirmButtonText}>Confirm</Text>
                         </Pressable>
                     </View>
@@ -246,12 +383,14 @@ export default function AlphaConfirmScreen() {
                             </View>
 
                             <View style={styles.buttonContainer}>
-                                <Pressable style={styles.authButton}>
+                                <Pressable style={styles.authButton} onPress={handleGooglePress}>
                                     <Image
                                         source={require('../../../assets/icon/google.png')}
                                         style={styles.iconImage}
                                     />
-                                    <Text style={styles.authButtonText}>Continue with Google</Text>
+                                    <Text style={styles.authButtonText}>
+                                        Continue with Google
+                                    </Text>
                                 </Pressable>
 
                                 <Pressable style={[styles.authButton, { marginTop: 14 }]}>
@@ -266,7 +405,14 @@ export default function AlphaConfirmScreen() {
 
                         <View style={styles.termsSection}>
                             <Text style={styles.termsText}>
-                                By continuing, you accept our Terms & Privacy Policy
+                                By continuing, you accept our{' '}
+                                <Text style={styles.termsLink} onPress={() => router.push('/terms' as any)}>
+                                    Terms
+                                </Text>
+                                {' & '}
+                                <Text style={styles.termsLink} onPress={() => router.push('/privacy' as any)}>
+                                    Privacy Policy
+                                </Text>
                             </Text>
                         </View>
                     </RNAnimated.View>
@@ -325,6 +471,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    confirmButtonDisabled: {
+        backgroundColor: '#444444',
+        opacity: 0.5,
+    },
     confirmButtonText: { color: '#000000', fontSize: 22, fontWeight: '600' },
     sheetContainer: {
         position: 'absolute',
@@ -369,4 +519,12 @@ const styles = StyleSheet.create({
     },
     termsSection: { paddingHorizontal: 12, paddingTop: 16, marginBottom: 6 },
     termsText: { color: '#999999', fontSize: 12.5, textAlign: 'center', lineHeight: 18 },
+    termsLink: { color: '#FFE0C2', textDecorationLine: 'underline' },
+    existingInput: {
+        height: 48,
+        borderRadius: 12,
+        backgroundColor: '#0F0F0F',
+        paddingHorizontal: 12,
+        color: '#fff',
+    },
 });

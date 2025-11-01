@@ -10,6 +10,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
+import Constants from 'expo-constants';
+import { useRouter } from 'expo-router';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const OUTER_WIDTH = Math.round(SCREEN_WIDTH * 0.9);
@@ -26,6 +30,8 @@ export default function NameScreen() {
   const bg = require('../../../assets/images/setupdonebg.png');
   const successImg = require('../../../assets/images/success.png');
 
+  const router = useRouter();
+
   // Disable mount animation: initialize values to final state
   const opacity = useSharedValue(1);
   const translateY = useSharedValue(0);
@@ -34,6 +40,56 @@ export default function NameScreen() {
     opacity: opacity.value,
     transform: [{ translateY: translateY.value }],
   }));
+
+  // On mount, read onboarding data and send to backend
+  React.useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const onboard = await AsyncStorage.getItem('onboarding');
+        if (!onboard) {
+          if (mounted) router.replace('/onboarding' as any);
+          return;
+        }
+        const data = JSON.parse(onboard);
+        const token = await SecureStore.getItemAsync('session_token');
+        const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
+
+        // Show the setup animation for at least 2 seconds
+        const startTime = Date.now();
+
+        const res = await fetch(`${BACKEND}/api/auth/onboard`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify(data),
+        });
+
+        if (res.ok) {
+          await AsyncStorage.removeItem('onboarding');
+          await AsyncStorage.setItem('isLoggedIn', 'true');
+          
+          // Calculate remaining time to reach 2 seconds
+          const elapsed = Date.now() - startTime;
+          const remainingTime = Math.max(0, 2000 - elapsed);
+          
+          // Wait for remaining time before navigating
+          setTimeout(() => {
+            if (mounted) router.replace('/(tabs)' as any);
+          }, remainingTime);
+        } else {
+          console.warn('onboard failed', await res.text());
+        }
+      } catch (e) {
+        console.error('setup/onboard error', e);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [router]);
 
   return (
     <ImageBackground source={bg} style={styles.bg} imageStyle={styles.bgImage}>
