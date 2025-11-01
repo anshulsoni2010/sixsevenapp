@@ -14,6 +14,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import Constants from 'expo-constants';
 import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -30,29 +32,27 @@ interface Plan {
 const plans: Plan[] = [
   {
     id: 'monthly',
-    name: 'Monthly',
+    name: 'Alpha Plus',
     price: '$9.99',
     period: 'per month',
     priceId: 'price_monthly', // Replace with actual Stripe price ID
     features: [
       'Unlimited Gen Alpha translations',
       'Chat screenshot analysis',
-      'Priority support',
       'Cancel anytime',
     ],
   },
   {
     id: 'yearly',
-    name: 'Yearly',
+    name: 'Alpha Max',
     price: '$79.99',
     period: 'per year',
     priceId: 'price_yearly', // Replace with actual Stripe price ID
     popular: true,
     features: [
-      'Everything in Monthly',
+      'Everything in Alpha Plus',
       'Save 33% compared to monthly',
       '2 months free',
-      'Priority support',
       'Early access to new features',
     ],
   },
@@ -62,6 +62,25 @@ export default function PaywallScreen() {
   const router = useRouter();
   const [selectedPlan, setSelectedPlan] = useState<string>('yearly');
   const [loading, setLoading] = useState(false);
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            await SecureStore.deleteItemAsync('session_token');
+            await AsyncStorage.removeItem('isLoggedIn');
+            router.replace('/onboarding');
+          },
+        },
+      ]
+    );
+  };
 
   // Check if user is already subscribed - if so, redirect to chat
   React.useEffect(() => {
@@ -157,126 +176,213 @@ export default function PaywallScreen() {
     }
   };
 
+  const handleRestorePurchases = async () => {
+    try {
+      setLoading(true);
+      
+      const token = await SecureStore.getItemAsync('session_token');
+      if (!token) {
+        Alert.alert('Error', 'Please sign in again');
+        return;
+      }
+
+      const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
+      
+      // Check subscription status from backend
+      const response = await fetch(`${BACKEND}/api/user/me`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data.subscribed) {
+          Alert.alert(
+            'Success',
+            'Your subscription has been restored!',
+            [{ 
+              text: 'Continue', 
+              onPress: () => router.replace('/chat' as any) 
+            }]
+          );
+        } else {
+          Alert.alert(
+            'No Subscription Found',
+            'We couldn\'t find an active subscription for your account. If you believe this is an error, please contact support at support@sixseven.app'
+          );
+        }
+      } else {
+        Alert.alert('Error', 'Failed to check subscription status');
+      }
+    } catch (error) {
+      console.error('Restore error:', error);
+      Alert.alert('Error', 'Failed to restore purchases');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <LinearGradient
-      colors={['#1a1a1a', '#0a0a0a']}
-      style={styles.container}
-    >
-      <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
-        <ScrollView 
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Choose Your Plan</Text>
-            <Text style={styles.subtitle}>
-              Unlock unlimited Gen Alpha translations and chat analysis
-            </Text>
-          </View>
-
-          {/* What You Get Section */}
-          <View style={styles.benefitsSection}>
-            <Text style={styles.benefitsTitle}>What You Get</Text>
-            <View style={styles.benefitsGrid}>
-              <View style={styles.benefitItem}>
-                <Text style={styles.benefitIcon}>💎</Text>
-                <Text style={styles.benefitLabel}>Plan Title</Text>
-                <Text style={styles.benefitValue}>
-                  {plans.find(p => p.id === selectedPlan)?.name || 'Yearly'}
-                </Text>
-              </View>
-              <View style={styles.benefitItem}>
-                <Text style={styles.benefitIcon}>💰</Text>
-                <Text style={styles.benefitLabel}>Plan Cost</Text>
-                <Text style={styles.benefitValue}>
-                  {plans.find(p => p.id === selectedPlan)?.price || '$79.99'}
-                </Text>
-              </View>
-              <View style={styles.benefitItem}>
-                <Text style={styles.benefitIcon}>⏱️</Text>
-                <Text style={styles.benefitLabel}>Plan Duration</Text>
-                <Text style={styles.benefitValue}>
-                  {plans.find(p => p.id === selectedPlan)?.period.replace('per ', '') || 'year'}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Plans */}
-          <View style={styles.plansContainer}>
-            {plans.map((plan) => (
-              <TouchableOpacity
-                key={plan.id}
-                style={[
-                  styles.planCard,
-                  selectedPlan === plan.id && styles.planCardSelected,
-                ]}
-                onPress={() => setSelectedPlan(plan.id)}
-                activeOpacity={0.8}
-              >
-                {plan.popular && (
-                  <View style={styles.popularBadge}>
-                    <Text style={styles.popularText}>MOST POPULAR</Text>
-                  </View>
-                )}
-
-                <View style={styles.planHeader}>
-                  <Text style={styles.planName}>{plan.name}</Text>
-                  <View style={styles.priceContainer}>
-                    <Text style={styles.planPrice}>{plan.price}</Text>
-                    <Text style={styles.planPeriod}>{plan.period}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.featuresContainer}>
-                  {plan.features.map((feature, index) => (
-                    <View key={index} style={styles.featureRow}>
-                      <Text style={styles.checkmark}>✓</Text>
-                      <Text style={styles.featureText}>{feature}</Text>
-                    </View>
-                  ))}
-                </View>
-
-                {selectedPlan === plan.id && (
-                  <View style={styles.selectedIndicator}>
-                    <View style={styles.selectedDot} />
-                  </View>
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Subscribe Button */}
-          <TouchableOpacity
-            style={[styles.subscribeButton, loading && styles.subscribeButtonDisabled]}
-            onPress={handleSubscribe}
-            disabled={loading}
-            activeOpacity={0.8}
+    <View style={styles.container}>
+      <LinearGradient
+        colors={['#4D3A28', '#000000', '#000000']}
+        locations={[0, 0.35, 1]}
+        style={styles.gradient}
+      >
+        <SafeAreaView edges={['top']} style={styles.safeArea}>
+          {/* Logout Button - Top Right */}
+          <TouchableOpacity 
+            style={styles.logoutButton}
+            onPress={handleLogout}
+            activeOpacity={0.7}
           >
-            <LinearGradient
-              colors={['#6366f1', '#4f46e5']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.subscribeGradient}
-            >
-              {loading ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : (
-                <Text style={styles.subscribeButtonText}>
-                  Subscribe to {plans.find(p => p.id === selectedPlan)?.name}
-                </Text>
-              )}
-            </LinearGradient>
+            <Ionicons name="log-out-outline" size={24} color="#FFFFFF" />
           </TouchableOpacity>
 
-          {/* Footer */}
-          <Text style={styles.footerText}>
-            Secure payment powered by Stripe • Cancel anytime
-          </Text>
-        </ScrollView>
-      </SafeAreaView>
-    </LinearGradient>
+          <ScrollView 
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Header */}
+            <View style={styles.header}>
+              <View style={styles.headerIconContainer}>
+                <Ionicons name="rocket" size={40} color="#FFE0C2" />
+              </View>
+              <Text style={styles.title}>Unlock Full Access</Text>
+              <Text style={styles.subtitle}>
+                Join thousands speaking fluent Gen Alpha
+              </Text>
+            </View>
+
+            {/* Features List */}
+            <View style={styles.featuresSection}>
+              <View style={styles.featureItem}>
+                <View style={styles.featureIconContainer}>
+                  <Ionicons name="chatbubbles" size={22} color="#FFE0C2" />
+                </View>
+                <View style={styles.featureContent}>
+                  <Text style={styles.featureTitle}>Unlimited Translations</Text>
+                  <Text style={styles.featureDescription}>
+                    Translate any text to and from Gen Alpha instantly
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.featureItem}>
+                <View style={styles.featureIconContainer}>
+                  <Ionicons name="camera" size={22} color="#FFE0C2" />
+                </View>
+                <View style={styles.featureContent}>
+                  <Text style={styles.featureTitle}>Screenshot Analysis</Text>
+                  <Text style={styles.featureDescription}>
+                    Understand any Gen Alpha chat or meme
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.featureItem}>
+                <View style={styles.featureIconContainer}>
+                  <Ionicons name="flash" size={22} color="#FFE0C2" />
+                </View>
+                <View style={styles.featureContent}>
+                  <Text style={styles.featureTitle}>Real-Time Updates</Text>
+                  <Text style={styles.featureDescription}>
+                    Stay current with the latest slang and trends
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Plans - Side by Side */}
+            <View style={styles.plansContainer}>
+              <View style={styles.plansRow}>
+                {plans.map((plan) => (
+                  <TouchableOpacity
+                    key={plan.id}
+                    style={[
+                      styles.planCard,
+                      selectedPlan === plan.id && styles.planCardSelected,
+                    ]}
+                    onPress={() => setSelectedPlan(plan.id)}
+                    activeOpacity={0.8}
+                  >
+                    {plan.popular && (
+                      <View style={styles.popularBadge}>
+                        <Text style={styles.popularText}>BEST VALUE</Text>
+                      </View>
+                    )}
+
+                    <Text style={styles.planName}>{plan.name}</Text>
+                    <Text style={styles.planPrice}>{plan.price}</Text>
+                    <Text style={styles.planPeriod}>{plan.period}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Spacer for fixed bottom */}
+            <View style={{ height: 180 }} />
+          </ScrollView>
+        </SafeAreaView>
+
+        {/* Fixed Bottom Section */}
+        <View style={styles.fixedBottom}>
+          <SafeAreaView edges={['bottom']}>
+            <View style={styles.bottomContent}>
+              {/* Subscribe Button */}
+              <TouchableOpacity
+                style={[styles.subscribeButton, loading && styles.subscribeButtonDisabled]}
+                onPress={handleSubscribe}
+                disabled={loading}
+                activeOpacity={0.8}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#4D3A28" size="small" />
+                ) : (
+                  <Text style={styles.subscribeButtonText}>
+                    Start Free Trial
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              {/* Restore Button */}
+              <TouchableOpacity
+                style={styles.restoreButton}
+                onPress={handleRestorePurchases}
+                disabled={loading}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.restoreButtonText}>
+                  Restore Purchases
+                </Text>
+              </TouchableOpacity>
+
+              {/* Footer Text */}
+              <View style={styles.footer}>
+                <Text style={styles.footerText}>
+                  Cancel anytime • Secure payment via Stripe
+                </Text>
+                
+                {/* Legal Links */}
+                <View style={styles.legalLinks}>
+                  <TouchableOpacity onPress={() => router.push('/terms' as any)}>
+                    <Text style={styles.legalLink}>Terms</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.legalSeparator}>•</Text>
+                  <TouchableOpacity onPress={() => router.push('/privacy' as any)}>
+                    <Text style={styles.legalLink}>Privacy</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.legalSeparator}>•</Text>
+                  <TouchableOpacity onPress={() => router.push('/refund' as any)}>
+                    <Text style={styles.legalLink}>Refund</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </SafeAreaView>
+        </View>
+      </LinearGradient>
+    </View>
   );
 }
 
@@ -284,202 +390,234 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  gradient: {
+    flex: 1,
+  },
   safeArea: {
     flex: 1,
   },
+  logoutButton: {
+    position: 'absolute',
+    top: 60,
+    right: 20,
+    zIndex: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 40,
+    paddingHorizontal: 24,
+    paddingBottom: 20,
   },
   header: {
-    marginTop: 20,
-    marginBottom: 32,
+    marginTop: 40,
+    marginBottom: 40,
     alignItems: 'center',
   },
+  headerIconContainer: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: 'rgba(255, 224, 194, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 224, 194, 0.2)',
+  },
   title: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#FFFFFF',
     fontFamily: 'SpaceGrotesk_700Bold',
-    marginBottom: 8,
+    marginBottom: 12,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
-    color: '#9ca3af',
+    fontSize: 17,
+    color: '#E6E6E6',
     fontFamily: 'Outfit_400Regular',
     textAlign: 'center',
-    lineHeight: 24,
+    lineHeight: 26,
     paddingHorizontal: 20,
   },
-  benefitsSection: {
-    backgroundColor: '#1f1f1f',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-    borderWidth: 2,
-    borderColor: '#2a2a2a',
+  featuresSection: {
+    marginBottom: 32,
+    gap: 20,
   },
-  benefitsTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#ffffff',
-    fontFamily: 'SpaceGrotesk_700Bold',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  benefitsGrid: {
+  featureItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
+    alignItems: 'flex-start',
+    gap: 16,
   },
-  benefitItem: {
-    flex: 1,
+  featureIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 224, 194, 0.1)',
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#2a2a2a',
-    borderRadius: 12,
-    padding: 16,
   },
-  benefitIcon: {
-    fontSize: 32,
-    marginBottom: 8,
+  featureContent: {
+    flex: 1,
   },
-  benefitLabel: {
-    fontSize: 12,
-    color: '#9ca3af',
-    fontFamily: 'Outfit_400Regular',
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  benefitValue: {
-    fontSize: 16,
+  featureTitle: {
+    fontSize: 18,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#FFFFFF',
     fontFamily: 'SpaceGrotesk_700Bold',
-    textAlign: 'center',
+    marginBottom: 4,
+  },
+  featureDescription: {
+    fontSize: 15,
+    color: '#E6E6E6',
+    fontFamily: 'Outfit_400Regular',
+    lineHeight: 22,
+    opacity: 0.8,
   },
   plansContainer: {
-    gap: 16,
-    marginBottom: 24,
+    marginBottom: 32,
+  },
+  plansRow: {
+    flexDirection: 'row',
+    gap: 12,
   },
   planCard: {
-    backgroundColor: '#1f1f1f',
-    borderRadius: 16,
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
     padding: 20,
     borderWidth: 2,
-    borderColor: '#2a2a2a',
+    borderColor: 'rgba(255, 255, 255, 0.15)',
     position: 'relative',
+    alignItems: 'center',
+    minHeight: 160,
+    justifyContent: 'center',
   },
   planCardSelected: {
-    borderColor: '#6366f1',
-    backgroundColor: '#1a1d3a',
+    borderColor: '#FFE0C2',
+    backgroundColor: 'rgba(255, 224, 194, 0.08)',
   },
   popularBadge: {
     position: 'absolute',
     top: -10,
-    right: 20,
-    backgroundColor: '#6366f1',
-    paddingHorizontal: 12,
+    alignSelf: 'center',
+    backgroundColor: '#FFE0C2',
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 8,
   },
   popularText: {
-    color: '#ffffff',
-    fontSize: 11,
+    color: '#111111',
+    fontSize: 10,
     fontWeight: '700',
     fontFamily: 'SpaceGrotesk_700Bold',
     letterSpacing: 0.5,
   },
-  planHeader: {
-    marginBottom: 20,
-  },
   planName: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#FFFFFF',
     fontFamily: 'SpaceGrotesk_700Bold',
     marginBottom: 8,
-  },
-  priceContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 6,
+    textAlign: 'center',
   },
   planPrice: {
-    fontSize: 36,
+    fontSize: 32,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#FFE0C2',
     fontFamily: 'SpaceGrotesk_700Bold',
+    marginBottom: 4,
+    textAlign: 'center',
   },
   planPeriod: {
-    fontSize: 16,
-    color: '#9ca3af',
+    fontSize: 13,
+    color: '#E6E6E6',
     fontFamily: 'Outfit_400Regular',
+    opacity: 0.7,
+    textAlign: 'center',
   },
-  featuresContainer: {
-    gap: 12,
-  },
-  featureRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  checkmark: {
-    fontSize: 18,
-    color: '#6366f1',
-    fontWeight: '700',
-  },
-  featureText: {
-    flex: 1,
-    fontSize: 15,
-    color: '#d1d5db',
-    fontFamily: 'Outfit_400Regular',
-    lineHeight: 22,
-  },
-  selectedIndicator: {
+  fixedBottom: {
     position: 'absolute',
-    top: 20,
-    right: 20,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#6366f1',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#1a1d3a',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 224, 194, 0.2)',
   },
-  selectedDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#6366f1',
+  bottomContent: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 8,
   },
   subscribeButton: {
-    marginTop: 8,
-    marginBottom: 16,
+    backgroundColor: '#FFE0C2',
     borderRadius: 12,
-    overflow: 'hidden',
+    paddingVertical: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
   },
   subscribeButtonDisabled: {
     opacity: 0.6,
   },
-  subscribeGradient: {
-    paddingVertical: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   subscribeButtonText: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#111111',
     fontFamily: 'SpaceGrotesk_700Bold',
+  },
+  restoreButton: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  restoreButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFE0C2',
+    fontFamily: 'SpaceGrotesk_700Bold',
+    opacity: 0.8,
+  },
+  footer: {
+    alignItems: 'center',
+    gap: 8,
   },
   footerText: {
     fontSize: 13,
-    color: '#6b7280',
+    color: '#E6E6E6',
     fontFamily: 'Outfit_400Regular',
     textAlign: 'center',
-    lineHeight: 20,
+    opacity: 0.7,
+  },
+  legalLinks: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 4,
+  },
+  legalLink: {
+    fontSize: 13,
+    color: '#FFE0C2',
+    fontFamily: 'SpaceGrotesk_700Bold',
+    textDecorationLine: 'underline',
+  },
+  legalSeparator: {
+    fontSize: 13,
+    color: '#E6E6E6',
+    opacity: 0.5,
+  },
+  refundLink: {
+    fontSize: 13,
+    color: '#FFE0C2',
+    fontFamily: 'SpaceGrotesk_700Bold',
+    textDecorationLine: 'underline',
   },
 });
