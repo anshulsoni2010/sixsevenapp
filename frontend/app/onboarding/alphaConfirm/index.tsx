@@ -21,6 +21,8 @@ import OnboardingHeader from '../OnboardingHeader';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import { Alert } from 'react-native';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 
@@ -230,7 +232,9 @@ export default function AlphaConfirmScreen() {
             setIsAuthInProgress(true);
 
             // Check if Google Play Services are available (Android only)
-            await GoogleSignin.hasPlayServices();
+            if (Platform.OS === 'android') {
+                await GoogleSignin.hasPlayServices();
+            }
 
             // Sign in with Google
             const userInfo = await GoogleSignin.signIn();
@@ -268,16 +272,7 @@ export default function AlphaConfirmScreen() {
 
         } catch (error: any) {
             console.error('Google Sign-In error:', error);
-
-            if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-                Alert.alert('Sign-in cancelled', 'You cancelled the sign-in flow.');
-            } else if (error.code === statusCodes.IN_PROGRESS) {
-                Alert.alert('Sign-in in progress', 'Please wait for the current sign-in to complete.');
-            } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-                Alert.alert('Google Play Services', 'Google Play Services are not available on this device.');
-            } else {
-                Alert.alert('Sign-in error', 'Unable to sign in with Google. Please try again.');
-            }
+            Alert.alert('Sign-in error', 'Google sign-in was cancelled or failed.');
         } finally {
             setIsAuthInProgress(false);
         }
