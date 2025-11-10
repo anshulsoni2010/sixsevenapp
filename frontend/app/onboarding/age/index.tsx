@@ -6,6 +6,7 @@ import {
     Pressable,
     Dimensions,
     Platform,
+    ActivityIndicator,
 } from 'react-native';
 import OnboardingHeader from '../OnboardingHeader';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -108,6 +109,7 @@ export default function AgeScreen() {
     const CONTAINER_HEIGHT = ITEM_HEIGHT * VISIBLE_COUNT;
     const ages = Array.from({ length: 88 }, (_, i) => i + 13); // 13..100
     const [selectedAge, setSelectedAge] = useState<number>(25);
+    const [isSaving, setIsSaving] = useState(false);
     const scrollRef = useRef<any>(null);
 
     // shared scroll position for smooth animation
@@ -137,17 +139,6 @@ export default function AgeScreen() {
         }
     }, []);
 
-    // Auto-advance to next screen after age selection
-    useEffect(() => {
-        if (selectedAge) {
-            const timer = setTimeout(async () => {
-                await AsyncStorage.setItem('onboarding_age', selectedAge.toString());
-                router.push('/onboarding/gender');
-            }, 1000);
-            return () => clearTimeout(timer);
-        }
-    }, [selectedAge]);
-
     return (
         <SafeAreaView edges={["top"]} style={styles.safeArea}>
             {Platform.OS === 'android' ? <RNStatusBar backgroundColor="#111111" barStyle="light-content" /> : null}
@@ -155,11 +146,11 @@ export default function AgeScreen() {
                 <View style={styles.contentWrapper}>
                     <View style={styles.contentContainer}>
                         <OnboardingHeader
-                            step={3}
+                            step={2}
                             totalSteps={4}
                             onBack={() => router.back()}
-                            title={"Chat, What’s your age?"}
-                            subtitle={"Age check, how many laps you’ve done around the sun?"}
+                            title={"How old are you? 🎂"}
+                            subtitle={"Help us personalize your experience - scroll to find your age!"}
                         />
 
 
@@ -196,21 +187,46 @@ export default function AgeScreen() {
                                 style={styles.nextButtonInner}
                                 onPress={async () => {
                                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                                    setIsSaving(true);
                                     try {
                                         const existing = await AsyncStorage.getItem('onboarding');
                                         const obj = existing ? JSON.parse(existing) : {};
                                         obj.age = Number(selectedAge);
                                         await AsyncStorage.setItem('onboarding', JSON.stringify(obj));
                                     } catch (e) {}
+                                    setIsSaving(false);
                                     router.push('/onboarding/gender' as any);
                                 }}
                                 accessibilityRole="button"
                                 accessibilityLabel="Next"
                             >
-                                <Text style={styles.nextButtonText}>Next</Text>
+                                {isSaving ? (
+                                    <ActivityIndicator color="#000000" size="small" />
+                                ) : (
+                                    <Text style={styles.nextButtonText}>Next</Text>
+                                )}
                             </Pressable>
                         </View>
                     </IOSBordersWrapper>
+                    
+                    {/* Skip option */}
+                    <Pressable
+                        style={styles.skipButton}
+                        onPress={async () => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            try {
+                                const existing = await AsyncStorage.getItem('onboarding');
+                                const obj = existing ? JSON.parse(existing) : {};
+                                // Don't set age if skipping
+                                await AsyncStorage.setItem('onboarding', JSON.stringify(obj));
+                            } catch (e) {}
+                            router.push('/onboarding/gender' as any);
+                        }}
+                        accessibilityRole="button"
+                        accessibilityLabel="Skip age selection"
+                    >
+                        <Text style={styles.skipButtonText}>Skip for now</Text>
+                    </Pressable>
                 </View>
             </Animated.View>
         </SafeAreaView>
@@ -384,5 +400,17 @@ const styles = StyleSheet.create({
         fontSize: 22,
         fontFamily: 'Outfit_600SemiBold',
         fontWeight: '600',
+    },
+    skipButton: {
+        marginTop: 12,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        alignSelf: 'center',
+    },
+    skipButtonText: {
+        color: '#888888',
+        fontSize: 16,
+        fontFamily: 'Outfit_400Regular',
+        textDecorationLine: 'underline',
     },
 });

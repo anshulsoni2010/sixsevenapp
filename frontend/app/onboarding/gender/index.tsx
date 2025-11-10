@@ -6,6 +6,7 @@ import {
   Pressable,
   Dimensions,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolateColor } from 'react-native-reanimated';
 import { SvgXml } from 'react-native-svg';
@@ -105,6 +106,7 @@ export default function GenderScreen() {
   const femaleAnim = useSharedValue(0);
   const otherAnim = useSharedValue(0);
   const [progress, setProgress] = useState(40);
+  const [isSaving, setIsSaving] = useState(false);
   const maskWidthPx = Math.round((OUTER_WIDTH * Math.max(0, Math.min(100, progress))) / 100);
   const tightOverlayWidth = Math.max(Math.round(maskWidthPx * 0.6), 60);
   const wideOverlayWidth = Math.max(Math.round(maskWidthPx * 1.6), 140);
@@ -126,17 +128,6 @@ export default function GenderScreen() {
     femaleAnim.value = withTiming(key === 'Female' ? 1 : 0, { duration: 260 });
     otherAnim.value = withTiming(key === 'Other' ? 1 : 0, { duration: 260 });
   };
-
-  // Auto-advance to next screen after gender selection
-  useEffect(() => {
-    if (selected) {
-      const timer = setTimeout(async () => {
-        await AsyncStorage.setItem('onboarding_gender', selected);
-        router.push('/onboarding/alphaConfirm');
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [selected]);
 
   function OptionItem({ label, iconXml, anim, onPress }: { label: string; iconXml: string; anim: any; onPress: () => void }) {
     const animatedStyle = useAnimatedStyle(() => ({
@@ -163,11 +154,11 @@ export default function GenderScreen() {
       {Platform.OS === 'android' ? <RNStatusBar backgroundColor="#111111" barStyle="light-content" /> : null}
       <View style={styles.screen}>
         <View style={styles.contentContainer}>
-          <OnboardingHeader step={2} totalSteps={4} onBack={() => router.back()} />
+          <OnboardingHeader step={3} totalSteps={4} onBack={() => router.back()} />
 
           <View style={styles.titleBlock}>
-            <Text style={styles.title}>Chat, What’s my gender?</Text>
-            <Text style={styles.subtitle}>Who you rollin’ as? Boy, girl?</Text>
+            <Text style={styles.title}>How do you identify? 🌈</Text>
+            <Text style={styles.subtitle}>Choose what feels right for you - we're all about being authentic! 💫</Text>
           </View>
 
           <View style={styles.optionsContainer}>
@@ -196,26 +187,51 @@ export default function GenderScreen() {
           <IOSBordersWrapper>
             <View style={styles.nextButtonWrapper}>
               <Pressable
-                style={[styles.nextButtonInner]}
+                style={styles.nextButtonInner}
                 onPress={async () => {
                   if (selected) {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    setIsSaving(true);
                     try {
                       const existing = await AsyncStorage.getItem('onboarding');
                       const obj = existing ? JSON.parse(existing) : {};
                       obj.gender = selected;
                       await AsyncStorage.setItem('onboarding', JSON.stringify(obj));
                     } catch (e) {}
+                    setIsSaving(false);
                     router.push('/onboarding/alphaConfirm' as any);
                   }
                 }}
                 accessibilityRole="button"
                 accessibilityLabel="Next"
               >
-                <Text style={styles.nextButtonText}>Next</Text>
+                {isSaving ? (
+                  <ActivityIndicator color="#111111" size="small" />
+                ) : (
+                  <Text style={styles.nextButtonText}>Next</Text>
+                )}
               </Pressable>
             </View>
           </IOSBordersWrapper>
+          
+          {/* Skip option */}
+          <Pressable
+            style={styles.skipButton}
+            onPress={async () => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              try {
+                const existing = await AsyncStorage.getItem('onboarding');
+                const obj = existing ? JSON.parse(existing) : {};
+                // Don't set gender if skipping
+                await AsyncStorage.setItem('onboarding', JSON.stringify(obj));
+              } catch (e) {}
+              router.push('/onboarding/alphaConfirm' as any);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Skip gender selection"
+          >
+            <Text style={styles.skipButtonText}>Skip for now</Text>
+          </Pressable>
         </View>
       </View>
     </SafeAreaView>
@@ -273,5 +289,17 @@ const styles = StyleSheet.create({
         fontSize: 22,
         fontFamily: 'Outfit_600SemiBold',
         fontWeight: '600',
+    },
+    skipButton: {
+        marginTop: 12,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        alignSelf: 'center',
+    },
+    skipButtonText: {
+        color: '#888888',
+        fontSize: 16,
+        fontFamily: 'Outfit_400Regular',
+        textDecorationLine: 'underline',
     }
 });

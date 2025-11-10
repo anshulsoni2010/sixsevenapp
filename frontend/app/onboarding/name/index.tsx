@@ -8,6 +8,7 @@ import {
     Dimensions,
     Platform,
     KeyboardAvoidingView,
+    ActivityIndicator,
 } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import OnboardingHeader from '../OnboardingHeader';
@@ -79,6 +80,8 @@ export default function NameScreen() {
     // Validation state
     const [isNameValid, setIsNameValid] = useState(false);
     const [showValidation, setShowValidation] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveError, setSaveError] = useState<string | null>(null);
 
     // Validate name in real-time
     useEffect(() => {
@@ -105,8 +108,8 @@ export default function NameScreen() {
 
 
                             <View style={styles.titleBlock}>
-                                <Text style={styles.title}>Chat, What's my name?</Text>
-                                <Text style={styles.subtitle}>Drop your tag, how do we call the Alpha in you</Text>
+                                <Text style={styles.title}>Hey there! What's your name? 👋</Text>
+                                <Text style={styles.subtitle}>Let's get to know the real you - drop your name and let's start this journey! 🚀</Text>
                             </View>
 
 
@@ -140,7 +143,7 @@ export default function NameScreen() {
                                         styles.validationText,
                                         isNameValid ? styles.validationTextSuccess : styles.validationTextError
                                     ]}>
-                                        {isNameValid ? "✓ Perfect name!" : "Name must be 2-50 characters, letters only"}
+                                        {isNameValid ? "✨ Awesome name! Let's continue..." : "Please enter a valid name (2-50 characters, letters only)"}
                                     </Text>
                                 )}
                             </View>
@@ -158,23 +161,41 @@ export default function NameScreen() {
                                             return;
                                         }
                                         
-                                        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                                        setIsSaving(true);
+                                        setSaveError(null);
                                         
                                         try {
+                                            await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                                            
                                             const existing = await AsyncStorage.getItem('onboarding');
                                             const obj = existing ? JSON.parse(existing) : {};
                                             obj.name = name.trim();
                                             await AsyncStorage.setItem('onboarding', JSON.stringify(obj));
-                                        } catch (e) {}
-                                        router.push('/onboarding/gender' as any);
+                                            router.push('/onboarding/age' as any);
+                                        } catch (error) {
+                                            console.error('Failed to save name:', error);
+                                            setSaveError('Failed to save your name. Please try again.');
+                                            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                                        } finally {
+                                            setIsSaving(false);
+                                        }
                                     }}
                                     accessibilityRole="button"
                                     accessibilityLabel="Next"
+                                    disabled={isSaving}
                                 >
-                                    <Text style={styles.nextButtonText}>Next</Text>
+                                    {isSaving ? (
+                                        <ActivityIndicator color="#000000" size="small" />
+                                    ) : (
+                                        <Text style={styles.nextButtonText}>Next</Text>
+                                    )}
                                 </Pressable>
                             </View>
                         </IOSBordersWrapper>
+                        
+                        {saveError && (
+                            <Text style={styles.errorText}>{saveError}</Text>
+                        )}
                     </View>
                 </Animated.View>
             </KeyboardAvoidingView>
@@ -330,5 +351,12 @@ const styles = StyleSheet.create({
         fontSize: 22,
         fontFamily: 'Outfit_600SemiBold',
         fontWeight: '600',
+    },
+    errorText: {
+        color: '#ff6b6b',
+        fontSize: 14,
+        fontFamily: 'Outfit_400Regular',
+        textAlign: 'center',
+        marginTop: 8,
     },
 });
