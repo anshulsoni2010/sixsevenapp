@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, View, Pressable, Dimensions, Platform, Text } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const OUTER_WIDTH = Math.round(SCREEN_WIDTH * 0.9);
@@ -33,9 +35,25 @@ export default function OnboardingHeader({ progress, step, totalSteps, onBack, t
     effectiveProgress = Math.round((step / totalSteps) * 100);
   }
 
+  // Animated progress value
+  const animatedProgress = useSharedValue(effectiveProgress);
+
+  // Animate progress when it changes
+  useEffect(() => {
+    animatedProgress.value = withTiming(effectiveProgress, { duration: 600 });
+  }, [effectiveProgress]);
+
   const maskWidthPx = Math.round((OUTER_WIDTH * Math.max(0, Math.min(100, effectiveProgress))) / 100);
   const tightOverlayWidth = Math.max(Math.round(maskWidthPx * 0.6), 60);
   const wideOverlayWidth = Math.max(Math.round(maskWidthPx * 1.6), 140);
+
+  // Animated style for the progress bar
+  const animatedProgressStyle = useAnimatedStyle(() => {
+    const progressPercent = animatedProgress.value;
+    return {
+      width: `${progressPercent}%`,
+    };
+  });
 
   return (
     <>
@@ -46,7 +64,7 @@ export default function OnboardingHeader({ progress, step, totalSteps, onBack, t
 
         <View style={styles.progressContainer}>
           <View style={styles.progressTrack}>
-            <View style={[styles.progressMask, { width: `${effectiveProgress}%` }]}>
+            <Animated.View style={[styles.progressMask, animatedProgressStyle]}>
               <View style={{ width: '100%', height: '100%' }}>
                 <LinearGradient colors={["#592D00", "#FFE1C2"]} start={[0, 0]} end={[1, 0]} style={{ flex: 1 }} />
               </View>
@@ -62,7 +80,7 @@ export default function OnboardingHeader({ progress, step, totalSteps, onBack, t
                 end={[1, 0.5]}
                 style={[styles.innerShadowOverlay, { left: -35, width: wideOverlayWidth, opacity: 0.38 }]}
               />
-            </View>
+            </Animated.View>
           </View>
         </View>
       </View>
