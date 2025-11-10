@@ -18,12 +18,11 @@ import { StatusBar as RNStatusBar } from 'react-native';
 import Reanimated, { useSharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import OnboardingHeader from '../OnboardingHeader';
-import * as WebBrowser from 'expo-web-browser';
-import * as Linking from 'expo-linking';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { Alert } from 'react-native';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const OUTER_WIDTH = Math.round(SCREEN_WIDTH * 0.9);
@@ -43,6 +42,15 @@ export default function AlphaConfirmScreen() {
     const [selectedAlpha, setSelectedAlpha] = useState<string | null>(null);
     const [sheetVisible, setSheetVisible] = useState(false);
     const [isAuthInProgress, setIsAuthInProgress] = useState(false);
+
+    // Configure Google Sign-In
+    useEffect(() => {
+        GoogleSignin.configure({
+            webClientId: Constants.expoConfig?.extra?.GOOGLE_WEB_CLIENT_ID,
+            iosClientId: Constants.expoConfig?.extra?.GOOGLE_IOS_CLIENT_ID,
+            offlineAccess: true,
+        });
+    }, []);
 
     const sheetHeightRef = useRef<number>(460);
     const sheetTranslateY = useRef(new RNAnimated.Value(sheetHeightRef.current)).current;
@@ -220,34 +228,56 @@ export default function AlphaConfirmScreen() {
 
         try {
             setIsAuthInProgress(true);
+
+            // Check if Google Play Services are available (Android only)
+            await GoogleSignin.hasPlayServices();
+
+            // Sign in with Google
+            const userInfo = await GoogleSignin.signIn();
+            console.log('Google Sign-In success:', userInfo);
+
+            // Get the ID token
+            const tokens = await GoogleSignin.getTokens();
+            console.log('Google tokens:', tokens);
+
+            // Send the ID token to your backend
             const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
-            const authUrl = `${BACKEND}/api/auth/google/initiate`;
+            const response = await fetch(`${BACKEND}/api/auth/google/callback`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    idToken: tokens.idToken,
+                    accessToken: tokens.accessToken,
+                }),
+            });
 
-            console.log('Opening OAuth flow:', authUrl);
-
-            // Open the backend OAuth initiate endpoint in system browser
-            const result = await WebBrowser.openAuthSessionAsync(
-                authUrl,
-                Linking.createURL('/')
-            );
-
-            console.log('WebBrowser result:', result);
-
-            if (result.type === 'success' && result.url) {
-                // Parse the URL from WebBrowser result
-                const parsed = Linking.parse(result.url);
-                const token = parsed.queryParams?.token as string;
-                const onboarded = parsed.queryParams?.onboarded === 'true';
-                
-                if (token) {
-                    await handleAuthSuccess(token, onboarded);
-                }
-            } else if (result.type === 'cancel') {
-                Alert.alert('Sign-in cancelled', 'You cancelled the sign-in flow.');
+            if (!response.ok) {
+                throw new Error(`Backend auth failed: ${response.status}`);
             }
-        } catch (e) {
-            console.error('handleGooglePress error', e);
-            Alert.alert('Sign-in error', 'Unable to start Google sign-in. See console for details.');
+
+            const data = await response.json();
+            console.log('Backend auth response:', data);
+
+            if (data.token) {
+                await handleAuthSuccess(data.token, data.onboarded);
+            } else {
+                throw new Error('No token received from backend');
+            }
+
+        } catch (error: any) {
+            console.error('Google Sign-In error:', error);
+
+            if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+                Alert.alert('Sign-in cancelled', 'You cancelled the sign-in flow.');
+            } else if (error.code === statusCodes.IN_PROGRESS) {
+                Alert.alert('Sign-in in progress', 'Please wait for the current sign-in to complete.');
+            } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+                Alert.alert('Google Play Services', 'Google Play Services are not available on this device.');
+            } else {
+                Alert.alert('Sign-in error', 'Unable to sign in with Google. Please try again.');
+            }
         } finally {
             setIsAuthInProgress(false);
         }

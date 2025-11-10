@@ -95,3 +95,66 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Authentication failed' }, { status: 500 });
   }
 }
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const { idToken, accessToken } = body;
+
+    if (!idToken) {
+      return NextResponse.json({ error: 'Missing ID token' }, { status: 400 });
+    }
+
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      return NextResponse.json({ error: 'Google OAuth not configured' }, { status: 500 });
+    }
+
+    // Verify the ID token from native Google Sign-In
+    const verifyClient = new OAuth2Client(clientId);
+    const ticket = await verifyClient.verifyIdToken({ idToken, audience: clientId });
+    const payload = ticket.getPayload();
+
+    if (!payload || !payload.email) {
+      return NextResponse.json({ error: 'Invalid token payload' }, { status: 401 });
+    }
+
+    const email = payload.email;
+    const googleId = payload.sub;
+    const name = payload.name ?? null;
+    const picture = payload.picture ?? null;
+
+    // Upsert user in database
+    let user = await prisma.user.findUnique({ where: { googleId } });
+
+    if (!user) {
+      user = await prisma.user.findUnique({ where: { email } });
+      if (user) {
+        if (!user.googleId) {
+          user = await prisma.user.update({ where: { email }, data: { googleId, name, picture, provider: 'google' } as any });
+        }
+      } else {
+        user = await prisma.user.create({ data: { email, googleId, name, picture, provider: 'google' } as any });
+      }
+    }
+
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+
+    const token = jwt.sign({ userId: user.id, email: user.email }, jwtSecret, { expiresIn: '30d' });
+
+    return NextResponse.json({
+      token,
+      onboarded: user.onboarded,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        picture: user.picture,
+      }
+    });
+  } catch (err) {
+    console.error('Native Google Sign-In error', err);
+    return NextResponse.json({ error: 'Authentication failed' }, { status: 500 });
+  }
+}
