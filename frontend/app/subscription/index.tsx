@@ -165,6 +165,32 @@ export default function SubscriptionScreen() {
     router.push('/topup' as any);
   };
 
+  const handleLogout = async () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await SecureStore.deleteItemAsync('session_token');
+              router.replace('/onboarding' as any);
+            } catch (error) {
+              console.error('Error signing out:', error);
+              Alert.alert('Error', 'Failed to sign out. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
@@ -220,7 +246,16 @@ export default function SubscriptionScreen() {
                 <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
               </TouchableOpacity>
               <Text style={styles.headerTitle}>Subscription</Text>
-              <View style={{ width: 40 }} />
+              {subscription?.subscribed && (
+                <TouchableOpacity 
+                  style={styles.logoutButton}
+                  onPress={handleLogout}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="log-out-outline" size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+              )}
+              {!subscription?.subscribed && <View style={{ width: 40 }} />}
             </View>
 
             <View style={styles.content}>
@@ -401,6 +436,14 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoutButton: {
     width: 40,
     height: 40,
     borderRadius: 20,

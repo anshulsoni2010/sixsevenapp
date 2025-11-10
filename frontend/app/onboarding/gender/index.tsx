@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -14,6 +14,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StatusBar as RNStatusBar } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Haptics from 'expo-haptics';
 import OnboardingHeader from '../OnboardingHeader';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -126,6 +127,17 @@ export default function GenderScreen() {
     otherAnim.value = withTiming(key === 'Other' ? 1 : 0, { duration: 260 });
   };
 
+  // Auto-advance to next screen after gender selection
+  useEffect(() => {
+    if (selected) {
+      const timer = setTimeout(async () => {
+        await AsyncStorage.setItem('onboarding_gender', selected);
+        router.push('/onboarding/alphaConfirm');
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [selected]);
+
   function OptionItem({ label, iconXml, anim, onPress }: { label: string; iconXml: string; anim: any; onPress: () => void }) {
     const animatedStyle = useAnimatedStyle(() => ({
       backgroundColor: interpolateColor(anim.value, [0, 1], ['#141414', '#1E1E1E']),
@@ -172,6 +184,7 @@ export default function GenderScreen() {
                   onPress={() => {
                     setSelected(o);
                     animateTo(o);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   }}
                 />
               );
@@ -186,13 +199,14 @@ export default function GenderScreen() {
                 style={[styles.nextButtonInner]}
                 onPress={async () => {
                   if (selected) {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                     try {
                       const existing = await AsyncStorage.getItem('onboarding');
                       const obj = existing ? JSON.parse(existing) : {};
                       obj.gender = selected;
                       await AsyncStorage.setItem('onboarding', JSON.stringify(obj));
                     } catch (e) {}
-                    router.push('/onboarding/age' as any);
+                    router.push('/onboarding/alphaConfirm' as any);
                   }
                 }}
                 accessibilityRole="button"

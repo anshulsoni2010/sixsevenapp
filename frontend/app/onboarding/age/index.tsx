@@ -21,6 +21,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Haptics from 'expo-haptics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const OUTER_WIDTH = Math.round(SCREEN_WIDTH * 0.9);
@@ -120,7 +121,10 @@ export default function AgeScreen() {
         const offsetY = e.nativeEvent.contentOffset.y || 0;
         const index = Math.round(offsetY / ITEM_HEIGHT);
         const age = ages[index];
-        if (age) setSelectedAge(age);
+        if (age && age !== selectedAge) {
+            setSelectedAge(age);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
     };
 
     useEffect(() => {
@@ -132,6 +136,17 @@ export default function AgeScreen() {
             scrollY.value = idx * ITEM_HEIGHT;
         }
     }, []);
+
+    // Auto-advance to next screen after age selection
+    useEffect(() => {
+        if (selectedAge) {
+            const timer = setTimeout(async () => {
+                await AsyncStorage.setItem('onboarding_age', selectedAge.toString());
+                router.push('/onboarding/gender');
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [selectedAge]);
 
     return (
         <SafeAreaView edges={["top"]} style={styles.safeArea}>
@@ -180,13 +195,14 @@ export default function AgeScreen() {
                             <Pressable
                                 style={styles.nextButtonInner}
                                 onPress={async () => {
+                                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                                     try {
                                         const existing = await AsyncStorage.getItem('onboarding');
                                         const obj = existing ? JSON.parse(existing) : {};
                                         obj.age = Number(selectedAge);
                                         await AsyncStorage.setItem('onboarding', JSON.stringify(obj));
                                     } catch (e) {}
-                                    router.push('/onboarding/alphaConfirm' as any);
+                                    router.push('/onboarding/gender' as any);
                                 }}
                                 accessibilityRole="button"
                                 accessibilityLabel="Next"

@@ -21,6 +21,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Haptics from 'expo-haptics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const OUTER_WIDTH = Math.round(SCREEN_WIDTH * 0.9);
@@ -75,6 +76,20 @@ export default function NameScreen() {
 
     const [name, setName] = React.useState('');
 
+    // Validation state
+    const [isNameValid, setIsNameValid] = useState(false);
+    const [showValidation, setShowValidation] = useState(false);
+
+    // Validate name in real-time
+    useEffect(() => {
+        const trimmed = name.trim();
+        const valid = trimmed.length >= 2 && trimmed.length <= 50 && /^[a-zA-Z\s'-]+$/.test(trimmed);
+        setIsNameValid(valid);
+        if (name.length > 0) {
+            setShowValidation(true);
+        }
+    }, [name]);
+
     return (
         <SafeAreaView edges={["top"]} style={styles.safeArea}>
             {Platform.OS === 'android' ? <RNStatusBar backgroundColor="#111111" barStyle="light-content" /> : null}
@@ -97,14 +112,37 @@ export default function NameScreen() {
 
                             <View style={styles.inputWrapper}>
                                 <TextInput
-                                    placeholder="Enter Your Name"
-                                    placeholderTextColor="#727272"
-                                    style={styles.input}
+                                    placeholder={showValidation && !isNameValid && name.length > 0 
+                                        ? "Please enter a valid name (2-50 characters)" 
+                                        : "Enter Your Name"
+                                    }
+                                    placeholderTextColor={showValidation && !isNameValid && name.length > 0 ? "#ff6b6b" : "#727272"}
+                                    style={[
+                                        styles.input,
+                                        showValidation && !isNameValid && name.length > 0 && styles.inputError,
+                                        showValidation && isNameValid && styles.inputSuccess
+                                    ]}
                                     returnKeyType="done"
                                     accessibilityLabel="Name input"
                                     value={name}
-                                    onChangeText={setName}
+                                    onChangeText={(text) => {
+                                        setName(text);
+                                        if (text.length > 0 && !showValidation) {
+                                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                        }
+                                    }}
+                                    maxLength={50}
+                                    autoCapitalize="words"
+                                    autoCorrect={false}
                                 />
+                                {showValidation && name.length > 0 && (
+                                    <Text style={[
+                                        styles.validationText,
+                                        isNameValid ? styles.validationTextSuccess : styles.validationTextError
+                                    ]}>
+                                        {isNameValid ? "✓ Perfect name!" : "Name must be 2-50 characters, letters only"}
+                                    </Text>
+                                )}
                             </View>
                         </View>
                     </View>
@@ -115,10 +153,17 @@ export default function NameScreen() {
                                 <Pressable
                                     style={styles.nextButtonInner}
                                     onPress={async () => {
+                                        if (!isNameValid) {
+                                            await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                                            return;
+                                        }
+                                        
+                                        await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                                        
                                         try {
                                             const existing = await AsyncStorage.getItem('onboarding');
                                             const obj = existing ? JSON.parse(existing) : {};
-                                            obj.name = name;
+                                            obj.name = name.trim();
                                             await AsyncStorage.setItem('onboarding', JSON.stringify(obj));
                                         } catch (e) {}
                                         router.push('/onboarding/gender' as any);
@@ -234,6 +279,26 @@ const styles = StyleSheet.create({
         color: '#ffffff',
         fontSize: 20,
         fontFamily: 'SpaceGrotesk_400Regular',
+    },
+    inputError: {
+        borderColor: '#ff6b6b',
+        backgroundColor: '#1a1414',
+    },
+    inputSuccess: {
+        borderColor: '#4ade80',
+        backgroundColor: '#141a14',
+    },
+    validationText: {
+        fontSize: 14,
+        fontFamily: 'SpaceGrotesk_400Regular',
+        marginTop: 8,
+        marginLeft: 4,
+    },
+    validationTextError: {
+        color: '#ff6b6b',
+    },
+    validationTextSuccess: {
+        color: '#4ade80',
     },
     bottomContainer: {
         width: '100.5%',
