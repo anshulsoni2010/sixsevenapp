@@ -11,13 +11,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.anshulsonidev.frontend",
-      "urlSchemes": [
-        "com.googleusercontent.apps.835051220341-ue1ognnm5sa7u3npi2gokm0fstf21ard"
-      ]
-      ,
       "infoPlist": {
         "CFBundleURLTypes": [
           {
+            "CFBundleTypeRole": "Editor",
+            "CFBundleURLName": "Google",
             "CFBundleURLSchemes": [
               "com.googleusercontent.apps.835051220341-ue1ognnm5sa7u3npi2gokm0fstf21ard"
             ]

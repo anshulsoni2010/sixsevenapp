@@ -256,7 +256,7 @@ export default function AlphaConfirmScreen() {
             console.log('Google Sign-In success:', userInfo);
 
             // Save user data to AsyncStorage
-            await AsyncStorage.setItem('user', JSON.stringify(userInfo.user));
+            await AsyncStorage.setItem('user', JSON.stringify(userInfo));
 
             // Get the ID token
             const tokens = await GoogleSignin.getTokens();
