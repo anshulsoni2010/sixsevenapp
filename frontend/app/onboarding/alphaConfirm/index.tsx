@@ -204,6 +204,8 @@ export default function AlphaConfirmScreen() {
                 
                 if (response.ok) {
                     const data = await response.json();
+                    // Save user data to AsyncStorage
+                    await AsyncStorage.setItem('user', JSON.stringify(data));
                     if (data.subscribed) {
                         console.log('handleAuthSuccess: user subscribed, going to chat');
                         router.replace('/chat');
@@ -252,6 +254,9 @@ export default function AlphaConfirmScreen() {
             // Sign in with Google
             const userInfo = await GoogleSignin.signIn();
             console.log('Google Sign-In success:', userInfo);
+
+            // Save user data to AsyncStorage
+            await AsyncStorage.setItem('user', JSON.stringify(userInfo.user));
 
             // Get the ID token
             const tokens = await GoogleSignin.getTokens();
