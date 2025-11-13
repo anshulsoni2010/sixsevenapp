@@ -182,14 +182,14 @@ export default function ChatScreen() {
 
 function ActionButton() {
   return (
-    <TouchableOpacity style={styles.addButton} activeOpacity={0.85} accessibilityLabel="Add">
+    <TouchableOpacity activeOpacity={0.85} accessibilityLabel="Add" style={{ height: 50, aspectRatio: 1, borderRadius: 25, overflow: 'hidden' }}>
       <LinearGradient
-        colors={['#2E2E2E', '#2A2A2A']}
+        colors={['#FFE0C2', '#FFFFFF', '#FFE0C2']}
         start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-        style={styles.addButtonGradient}
+        end={{ x: 1, y: 1 }}
+        style={{ flex: 1, padding: 2 }}
       >
-        <View style={styles.addButtonInner}>
+        <View style={{ flex: 1, backgroundColor: '#2A2A2A', borderRadius: 23, justifyContent: 'center', alignItems: 'center' }}>
           <Ionicons name="add" size={28} color="#FFE0C2" />
         </View>
       </LinearGradient>
@@ -199,17 +199,22 @@ function ActionButton() {
 
 function CreditButton() {
   return (
-    <TouchableOpacity style={styles.creditButton} activeOpacity={0.85} accessibilityLabel="Credits">
+    <TouchableOpacity activeOpacity={0.85} accessibilityLabel="Credits" style={{ height: 50, borderRadius: 25, overflow: 'hidden' }}>
       <LinearGradient
-        colors={['#FFFFFF', '#FFE0C2']}
+        colors={['#FFE0C2', '#FFFFFF', '#FFE0C2']}
         start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-        style={styles.creditButtonGradient}
+        end={{ x: 1, y: 1 }}
+        style={{ flex: 1, padding: 2 }}
       >
-        <View style={styles.creditButtonInner}>
+        <LinearGradient
+          colors={['#FFFFFF', '#FFE0C2']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={{ flex: 1, borderRadius: 23, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 6 }}
+        >
           <Text style={styles.coinIcon}>🪙</Text>
           <Text style={styles.creditText}>24</Text>
-        </View>
+        </LinearGradient>
       </LinearGradient>
     </TouchableOpacity>
   );
