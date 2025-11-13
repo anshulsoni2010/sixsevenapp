@@ -124,7 +124,7 @@ export default function ChatScreen() {
 
               <View style={styles.rightSection}>
                 <TouchableOpacity style={styles.searchButton} accessibilityLabel="Search">
-                  <Image source={require('../../assets/icon/search-icon.png')} style={{ height: '80%', aspectRatio: 1 }} />
+                  <Image source={require('../../assets/icon/search-icon.png')} style={{ height: '100%', aspectRatio: 1 }} />
                 </TouchableOpacity>
 
                 <TouchableOpacity
