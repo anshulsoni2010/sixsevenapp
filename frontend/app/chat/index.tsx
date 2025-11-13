@@ -184,12 +184,12 @@ function ActionButton() {
   return (
     <TouchableOpacity activeOpacity={0.85} accessibilityLabel="Add" style={{ height: 50, aspectRatio: 1, borderRadius: 25, overflow: 'hidden' }}>
       <LinearGradient
-        colors={['#FFE0C2', '#FFFFFF', '#FFE0C2']}
+        colors={['#2E2E2E', '#2A2A2A']}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ flex: 1, padding: 2 }}
+        end={{ x: 0, y: 1 }}
+        style={{ flex: 1, padding: 1 }}
       >
-        <View style={{ flex: 1, backgroundColor: '#2A2A2A', borderRadius: 23, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={{ flex: 1, backgroundColor: '#2A2A2A', borderRadius: 24, justifyContent: 'center', alignItems: 'center' }}>
           <Ionicons name="add" size={28} color="#FFE0C2" />
         </View>
       </LinearGradient>
@@ -201,20 +201,17 @@ function CreditButton() {
   return (
     <TouchableOpacity activeOpacity={0.85} accessibilityLabel="Credits" style={{ height: 50, borderRadius: 25, overflow: 'hidden' }}>
       <LinearGradient
-        colors={['#FFE0C2', '#FFFFFF', '#FFE0C2']}
+        colors={['#FFFFFF', '#FFE0C2']}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ flex: 1, padding: 2 }}
+        end={{ x: 0, y: 1 }}
+        style={{ flex: 1, padding: 1 }}
       >
-        <LinearGradient
-          colors={['#FFFFFF', '#FFE0C2']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={{ flex: 1, borderRadius: 23, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 6 }}
+        <View
+          style={{ flex: 1, backgroundColor: '#FFE0C2', borderRadius: 24, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 6, gap: 12 }}
         >
           <Text style={styles.coinIcon}>🪙</Text>
           <Text style={styles.creditText}>24</Text>
-        </LinearGradient>
+        </View>
       </LinearGradient>
     </TouchableOpacity>
   );
@@ -318,42 +315,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  addButton: {
-    height: 50,
-    aspectRatio: 1,
-    borderRadius: 25,
-    overflow: 'hidden',
-  },
-  addButtonGradient: {
-    flex: 1,
-  },
-  addButtonInner: {
-    flex: 1,
-    backgroundColor: '#2A2A2A',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-  },
-
-  creditButton: {
-    height: 50,
-    borderRadius: 25,
-    overflow: 'hidden',
-  },
-  creditButtonGradient: {
-    height: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  creditButtonInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFE0C2',
-    borderRadius: 25,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    gap: 8,
-  },
   coinIcon: {
     fontSize: 20,
   },
@@ -489,10 +450,5 @@ const styles = StyleSheet.create({
   sendInner: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-
-  /* utility */
-  hidden: {
-    opacity: 0,
   },
 });
