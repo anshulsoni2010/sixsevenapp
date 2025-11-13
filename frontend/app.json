@@ -14,6 +14,16 @@
       "urlSchemes": [
         "com.googleusercontent.apps.835051220341-ue1ognnm5sa7u3npi2gokm0fstf21ard"
       ]
+      ,
+      "infoPlist": {
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.835051220341-ue1ognnm5sa7u3npi2gokm0fstf21ard"
+            ]
+          }
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
