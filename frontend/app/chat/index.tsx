@@ -182,7 +182,7 @@ export default function ChatScreen() {
 
 function ActionButton() {
   return (
-    <TouchableOpacity activeOpacity={0.85} accessibilityLabel="Add" style={{ height: 50, aspectRatio: 1, borderRadius: 25, overflow: 'hidden' }}>
+    <TouchableOpacity activeOpacity={0.85} accessibilityLabel="Add" style={{ height: 50, width: 60, borderRadius: 25, overflow: 'hidden' }}>
       <LinearGradient
         colors={['#2E2E2E', '#2A2A2A']}
         start={{ x: 0, y: 0 }}
@@ -209,7 +209,7 @@ function CreditButton() {
         <View
           style={{ flex: 1, backgroundColor: '#FFE0C2', borderRadius: 24, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 6, gap: 12 }}
         >
-          <Text style={styles.coinIcon}>🪙</Text>
+          <Image source={require('../../assets/images/crediticon.png')} style={styles.coinIcon} />
           <Text style={styles.creditText}>24</Text>
         </View>
       </LinearGradient>
@@ -311,12 +311,13 @@ const styles = StyleSheet.create({
 
   leftSection: {
     flexDirection: 'row',
-    gap: 24,
+    gap: 12,
     alignItems: 'center',
   },
 
   coinIcon: {
-    fontSize: 20,
+    width: 30,
+    height: 30,
   },
   creditText: {
     fontSize: 16,
@@ -327,7 +328,7 @@ const styles = StyleSheet.create({
 
   rightSection: {
     flexDirection: 'row',
-    gap: 24,
+    gap: 12,
     alignItems: 'center',
   },
 
