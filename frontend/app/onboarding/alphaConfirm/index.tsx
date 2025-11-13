@@ -39,7 +39,7 @@ const SP = {
     xl: 48,
 };
 
-export default function AlphaConfirmScreen() {
+function AlphaConfirmScreen() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
 
@@ -533,6 +533,8 @@ export default function AlphaConfirmScreen() {
         </SafeAreaView>
     );
 }
+
+export default AlphaConfirmScreen;
 
 const styles = StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: '#111111' },
