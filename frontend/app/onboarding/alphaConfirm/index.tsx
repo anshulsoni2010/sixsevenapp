@@ -24,7 +24,9 @@ import * as SecureStore from 'expo-secure-store';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { Alert } from 'react-native';
-import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+// import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+
+const GoogleSignin = Platform.OS === 'web' ? null : require('@react-native-google-signin/google-signin').GoogleSignin;
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const OUTER_WIDTH = Math.round(SCREEN_WIDTH * 0.9);
@@ -47,11 +49,13 @@ export default function AlphaConfirmScreen() {
 
     // Configure Google Sign-In
     useEffect(() => {
-        GoogleSignin.configure({
-            webClientId: Constants.expoConfig?.extra?.GOOGLE_WEB_CLIENT_ID,
-            iosClientId: Constants.expoConfig?.extra?.GOOGLE_IOS_CLIENT_ID,
-            offlineAccess: true,
-        });
+        if (GoogleSignin) {
+            GoogleSignin.configure({
+                webClientId: Constants.expoConfig?.extra?.GOOGLE_WEB_CLIENT_ID,
+                iosClientId: Constants.expoConfig?.extra?.GOOGLE_IOS_CLIENT_ID,
+                offlineAccess: true,
+            });
+        }
     }, []);
 
     const sheetHeightRef = useRef<number>(460);
@@ -230,6 +234,15 @@ export default function AlphaConfirmScreen() {
 
         try {
             setIsAuthInProgress(true);
+
+            if (!GoogleSignin) {
+                Alert.alert(
+                    'Google Sign-In',
+                    'Native Google Sign-In is not available on this platform. Please use Apple Sign-In.',
+                    [{ text: 'OK' }]
+                );
+                return;
+            }
 
             // Check if Google Play Services are available (Android only)
             if (Platform.OS === 'android') {
@@ -545,7 +558,7 @@ const styles = StyleSheet.create({
     bottomContainer: {
         width: '100.5%',
         paddingTop: SP.lg,
-        paddingHorizontal: SP.sm,
+        paddingHorizontal: SP.md,
         borderColor: '#1B1B1B',
         borderWidth: 1,
         borderTopRightRadius: 18,

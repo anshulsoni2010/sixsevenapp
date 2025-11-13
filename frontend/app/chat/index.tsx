@@ -139,7 +139,7 @@ export default function ChatScreen() {
             {/* Logo */}
             <View style={styles.logoContainer}>
               <Image
-                source={require('../../assets/images/icon.png')}
+                source={require('../../assets/images/chat-sixsevenlogo.png')}
                 style={styles.logo}
                 resizeMode="cover"
               />
@@ -153,6 +153,7 @@ export default function ChatScreen() {
               style={styles.suggestedPromptsSection}
               contentContainerStyle={{ paddingBottom: 8 }}
               showsVerticalScrollIndicator={false}
+              scrollEnabled={false}
             >
               {suggestions.map((s, i) => (
                 <SuggestionBox key={`${i}-${s}`} text={s} onPress={() => onSuggestionPress(s)} />
@@ -326,6 +327,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2A2A2A',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 8,
   },
 
   creditButton: {
@@ -402,6 +404,7 @@ const styles = StyleSheet.create({
   },
 
   suggestionBox: {
+    textDecorationColor: 'FFE0C2',
     backgroundColor: '#141414',
     paddingVertical: 12,
     paddingHorizontal: 16,
@@ -439,7 +442,7 @@ const styles = StyleSheet.create({
   },
   suggestionText: {
     fontSize: 16,
-    color: '#FFFFFF',
+    color: '#FFE0C2',
     flex: 1,
     // fontFamily: 'SpaceGrotesk_400Regular',
   },
