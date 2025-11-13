@@ -1,5 +1,6 @@
 // app/screens/ChatScreen.tsx
 import React, { useEffect, useMemo, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   StyleSheet,
   Text,
@@ -65,12 +66,31 @@ export default function ChatScreen() {
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const [suggestions] = useState(suggestionsDefault);
+  const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const suggestionKey = useMemo(() => Math.random().toString(36).slice(2, 8), []);
 
   // suggestion show animation
   useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, [suggestionKey]);
+
+  // load user avatar
+  useEffect(() => {
+    const loadUserAvatar = async () => {
+      try {
+        const userData = await AsyncStorage.getItem('user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          if (user.photo) {
+            setUserAvatar(user.photo);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user avatar:', error);
+      }
+    };
+    loadUserAvatar();
+  }, []);
 
   const handleSend = async () => {
     if (!inputText.trim() || loading) return;
@@ -131,7 +151,11 @@ export default function ChatScreen() {
                   style={styles.avatarButton}
                   onPress={() => router.push('/subscription' as any)}
                 >
-                  <Ionicons name="person-circle" size={50} color="#FFE0C2" />
+                  {userAvatar ? (
+                    <Image source={{ uri: userAvatar }} style={{ width: 50, height: 50, borderRadius: 25 }} />
+                  ) : (
+                    <Ionicons name="person-circle" size={50} color="#FFE0C2" />
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
