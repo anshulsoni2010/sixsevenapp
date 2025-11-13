@@ -124,7 +124,7 @@ export default function ChatScreen() {
 
               <View style={styles.rightSection}>
                 <TouchableOpacity style={styles.searchButton} accessibilityLabel="Search">
-                  <Ionicons name="search" size={24} color="#FFE0C2" />
+                  <Image source={require('../../assets/icon/search-icon.png')} style={{ height: '80%', aspectRatio: 1 }} />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -335,8 +335,6 @@ const styles = StyleSheet.create({
   searchButton: {
     height: 50,
     aspectRatio: 1,
-    backgroundColor: '#2A2A2A',
-    borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
   },
