@@ -247,7 +247,7 @@ export default function ChatScreen() {
                   onPress={() => router.push('/subscription' as any)}
                 >
                   {userAvatar ? (
-                    <Image source={{ uri: userAvatar }} style={{ width: 50, height: 50, borderRadius: 25 }} />
+                    <Image source={{ uri: userAvatar }} style={styles.avatarImage} />
                   ) : (
                     <Ionicons name="person-circle" size={50} color="#FFE0C2" />
                   )}
@@ -535,10 +535,16 @@ const styles = StyleSheet.create({
 
   avatarButton: {
     height: 50,
-    width: 50,
+    aspectRatio: 1,
     borderRadius: 25,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 25,
   },
 
   logoContainer: {
