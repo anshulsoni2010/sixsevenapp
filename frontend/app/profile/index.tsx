@@ -15,7 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
-import * as AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
 import { Platform } from 'react-native';
@@ -88,8 +88,7 @@ export default function ProfileScreen() {
           onPress: async () => {
             try {
               await SecureStore.deleteItemAsync('session_token');
-              await AsyncStorage.removeItem('user');
-              await AsyncStorage.removeItem('onboarding');
+              await AsyncStorage.multiRemove(['user', 'onboarding']);
               router.replace('/' as any);
             } catch (error) {
               console.error('Error during logout:', error);
@@ -303,6 +302,23 @@ export default function ProfileScreen() {
                   <Ionicons name="document-text" size={24} color="#FFE0C2" />
                   <Text style={styles.actionButtonText}>Terms of Service</Text>
                   <Ionicons name="chevron-forward" size={20} color="#FFE0C2" />
+                </LinearGradient>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={handleDeleteAccount}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={['#FF6B6B', '#FF4757']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.actionButtonGradient}
+                >
+                  <Ionicons name="trash" size={24} color="#FFFFFF" />
+                  <Text style={[styles.actionButtonText, { color: '#FFFFFF' }]}>Delete Account</Text>
+                  <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
                 </LinearGradient>
               </TouchableOpacity>
             </View>
