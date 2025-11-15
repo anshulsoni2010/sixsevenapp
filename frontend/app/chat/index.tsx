@@ -27,7 +27,7 @@ import { useRouter } from 'expo-router';
 import { SvgXml } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
-import { UnfoldMoreIcon } from '@hugeicons/core-free-icons';
+import { UnfoldMoreIcon, ArrowUp02Icon } from '@hugeicons/core-free-icons';
 import * as Haptics from 'expo-haptics';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -356,6 +356,8 @@ function ChatInput({
           maxLength={500}
           returnKeyType="send"
           onSubmitEditing={onSubmitEditing}
+          selectionColor="#ffe1c249"
+          cursorColor='#FFE0C2'
         />
       </View>
       <View style={styles.bottomContainer}>
@@ -364,10 +366,9 @@ function ChatInput({
             <Image source={modelImages[selectedModel as keyof typeof modelImages]} style={styles.modelImage} />
             <HugeiconsIcon
               icon={UnfoldMoreIcon}
-              size={16}
+              size={18}
               color="#B4B4B4"
               strokeWidth={1.5}
-              style={{ marginLeft: 4 }}
             />
           </TouchableOpacity>
         </View>
@@ -382,7 +383,12 @@ function ChatInput({
               <ActivityIndicator size="small" color="#000" />
             ) : (
               <View style={styles.sendInner}>
-                <Ionicons name="send" size={18} color="#000" />
+                <HugeiconsIcon
+                  icon={ArrowUp02Icon}
+                  size={26}
+                  color="#000"
+                  strokeWidth={2.0}
+                />
               </View>
             )}
           </TouchableOpacity>
@@ -568,7 +574,7 @@ const styles = StyleSheet.create({
   inputInner: {
     width: '100%',
     backgroundColor: '#222222',
-    borderRadius: 16,
+    borderRadius: 28,
     borderWidth: 1,
     borderColor: '#21201C',
     padding: 16,
@@ -612,6 +618,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -703,10 +710,9 @@ const styles = StyleSheet.create({
   sendButton: {
     marginLeft: 8,
     backgroundColor: '#FFE0C2',
-    borderRadius: 12,
+    borderRadius: 22,
     height: 44,
-    minWidth: 44,
-    paddingHorizontal: 12,
+    width: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
