@@ -83,6 +83,7 @@ export default function ChatScreen() {
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState<string>('1x');
   const [showModelDropdown, setShowModelDropdown] = useState(false);
+  const [hasChatStarted, setHasChatStarted] = useState(false);
   const suggestionKey = useMemo(() => Math.random().toString(36).slice(2, 8), []);
 
   // suggestion show animation
@@ -155,6 +156,9 @@ export default function ChatScreen() {
 
   const handleSend = async () => {
     if (!inputText.trim() || loading) return;
+    if (!hasChatStarted) {
+      setHasChatStarted(true);
+    }
     const userMessage: Message = {
       id: Date.now().toString(),
       text: inputText.trim(),
@@ -256,28 +260,50 @@ export default function ChatScreen() {
             </View>
 
             {/* Logo */}
-            <View style={styles.logoContainer}>
-              <Image
-                source={require('../../assets/images/chat-sixsevenlogo.png')}
-                style={styles.logo}
-                resizeMode="cover"
-              />
-            </View>
+            {!hasChatStarted && (
+              <View style={styles.logoContainer}>
+                <Image
+                  source={require('../../assets/images/chat-sixsevenlogo.png')}
+                  style={styles.logo}
+                  resizeMode="cover"
+                />
+              </View>
+            )}
           </View>
+
+          {/* Spacer for unstarted state */}
+          {!hasChatStarted && <View style={{ flex: 1 }} />}
+
+          {/* MESSAGES CONTAINER */}
+          {hasChatStarted && (
+            <View style={styles.messagesContainer}>
+              <ScrollView
+                style={styles.messagesScrollView}
+                contentContainerStyle={styles.messagesContent}
+                showsVerticalScrollIndicator={false}
+              >
+                {messages.map((message) => (
+                  <MessageBubble key={message.id} message={message} />
+                ))}
+              </ScrollView>
+            </View>
+          )}
 
           {/* SECOND CONTAINER */}
           <View style={styles.secondContainer}>
             {/* Suggested prompts */}
-            <ScrollView
-              style={styles.suggestedPromptsSection}
-              contentContainerStyle={{ paddingBottom: 8 }}
-              showsVerticalScrollIndicator={false}
-              scrollEnabled={false}
-            >
-              {suggestions.map((s, i) => (
-                <SuggestionBox key={`${i}-${s}`} text={s} onPress={() => onSuggestionPress(s)} />
-              ))}
-            </ScrollView>
+            {!hasChatStarted && (
+              <ScrollView
+                style={styles.suggestedPromptsSection}
+                contentContainerStyle={{ paddingBottom: 8 }}
+                showsVerticalScrollIndicator={false}
+                scrollEnabled={false}
+              >
+                {suggestions.map((s, i) => (
+                  <SuggestionBox key={`${i}-${s}`} text={s} onPress={() => onSuggestionPress(s)} />
+                ))}
+              </ScrollView>
+            )}
 
             {/* Input Section */}
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -299,6 +325,18 @@ export default function ChatScreen() {
         </View>
       </SafeAreaView>
     </ImageBackground>
+  );
+}
+
+/* ---------- Internal components (in-file) ---------- */
+
+function MessageBubble({ message }: { message: Message }) {
+  return (
+    <View style={[styles.messageBubble, message.isUser ? styles.userMessage : styles.aiMessage]}>
+      <Text style={[styles.messageText, message.isUser ? styles.userText : styles.aiText]}>
+        {message.text}
+      </Text>
+    </View>
   );
 }
 
@@ -488,7 +526,7 @@ const styles = StyleSheet.create({
   mainContainer: {
     width: OUTER_WIDTH,
     height: '100%',
-    justifyContent: 'space-between',
+    flexDirection: 'column',
   },
 
   /* FIRST CONTAINER */
@@ -555,6 +593,51 @@ const styles = StyleSheet.create({
     width: 160,
     height: 160,
     borderRadius: 36,
+  },
+
+  /* MESSAGES CONTAINER */
+  messagesContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+
+  messagesScrollView: {
+    flex: 1,
+  },
+
+  messagesContent: {
+    paddingVertical: 16,
+    gap: 12,
+  },
+
+  messageBubble: {
+    maxWidth: '80%',
+    padding: 12,
+    borderRadius: 16,
+    marginVertical: 4,
+  },
+
+  userMessage: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#FFE0C2',
+  },
+
+  aiMessage: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#2A2A2A',
+  },
+
+  messageText: {
+    fontSize: 16,
+    lineHeight: 20,
+  },
+
+  userText: {
+    color: '#000000',
+  },
+
+  aiText: {
+    color: '#FFE0C2',
   },
 
   /* SECOND CONTAINER */
