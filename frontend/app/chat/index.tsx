@@ -18,6 +18,7 @@ import {
   NativeSyntheticEvent,
   TextInputSubmitEditingEventData,
   ActivityIndicator,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -25,6 +26,8 @@ import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import { SvgXml } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
+import { HugeiconsIcon } from '@hugeicons/react-native';
+import { UnfoldMoreIcon } from '@hugeicons/core-free-icons';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   // enable LayoutAnimation on Android
@@ -53,6 +56,14 @@ const suggestionsDefault = [
   "How do I sound more Alpha?",
 ];
 
+// Model images loaded once for performance
+const modelImages = {
+  '1x': require('../../assets/images/models/1x.png'),
+  '2x': require('../../assets/images/models/2x.png'),
+  '3x': require('../../assets/images/models/3x.png'),
+  '4x': require('../../assets/images/models/4x.png'),
+};
+
 export default function ChatScreen() {
   const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([
@@ -67,6 +78,8 @@ export default function ChatScreen() {
   const [loading, setLoading] = useState(false);
   const [suggestions] = useState(suggestionsDefault);
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState<string>('1x');
+  const [showModelDropdown, setShowModelDropdown] = useState(false);
   const suggestionKey = useMemo(() => Math.random().toString(36).slice(2, 8), []);
 
   // suggestion show animation
@@ -74,9 +87,9 @@ export default function ChatScreen() {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, [suggestionKey]);
 
-  // load user avatar
+  // load user avatar and model
   useEffect(() => {
-    const loadUserAvatar = async () => {
+    const loadUserData = async () => {
       try {
         const userData = await AsyncStorage.getItem('user');
         if (userData) {
@@ -85,11 +98,19 @@ export default function ChatScreen() {
             setUserAvatar(user.photo);
           }
         }
+
+        const onboardingData = await AsyncStorage.getItem('onboarding');
+        if (onboardingData) {
+          const onboarding = JSON.parse(onboardingData);
+          if (onboarding.alphaLevel) {
+            setSelectedModel(onboarding.alphaLevel);
+          }
+        }
       } catch (error) {
-        console.error('Error loading user avatar:', error);
+        console.error('Error loading user data:', error);
       }
     };
-    loadUserAvatar();
+    loadUserData();
   }, []);
 
   const handleSend = async () => {
@@ -119,6 +140,15 @@ export default function ChatScreen() {
   const onSuggestionPress = (value: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setInputText(value);
+  };
+
+  const toggleModelDropdown = () => {
+    setShowModelDropdown(!showModelDropdown);
+  };
+
+  const selectModel = (model: string) => {
+    setSelectedModel(model);
+    setShowModelDropdown(false);
   };
 
   const onSubmitEditing = (_e: NativeSyntheticEvent<TextInputSubmitEditingEventData>) => {
@@ -192,6 +222,11 @@ export default function ChatScreen() {
                   onChangeText={setInputText}
                   onSubmitEditing={onSubmitEditing}
                   loading={loading}
+                  selectedModel={selectedModel}
+                  onToggleModelDropdown={toggleModelDropdown}
+                  showModelDropdown={showModelDropdown}
+                  onSelectModel={selectModel}
+                  onCloseDropdown={() => setShowModelDropdown(false)}
                 />
               </View>
             </KeyboardAvoidingView>
@@ -266,39 +301,92 @@ function ChatInput({
   onChangeText,
   onSubmitEditing,
   loading,
+  selectedModel,
+  onToggleModelDropdown,
+  showModelDropdown,
+  onSelectModel,
+  onCloseDropdown,
 }: {
   value: string;
   onChangeText: (v: string) => void;
   onSubmitEditing: (e: NativeSyntheticEvent<TextInputSubmitEditingEventData>) => void;
   loading: boolean;
+  selectedModel: string;
+  onToggleModelDropdown: () => void;
+  showModelDropdown: boolean;
+  onSelectModel: (model: string) => void;
+  onCloseDropdown: () => void;
 }) {
   return (
     <View style={styles.inputInner}>
-      <TextInput
-        style={styles.inputField}
-        placeholder="Type your message..."
-        placeholderTextColor="#727272"
-        value={value}
-        onChangeText={onChangeText}
-        multiline
-        maxLength={500}
-        returnKeyType="send"
-        onSubmitEditing={onSubmitEditing}
-      />
-      <TouchableOpacity
-        style={styles.sendButton}
-        onPress={onSubmitEditing as any}
-        activeOpacity={0.85}
-        accessibilityLabel="Send"
-      >
-        {loading ? (
-          <ActivityIndicator size="small" color="#000" />
-        ) : (
-          <View style={styles.sendInner}>
-            <Ionicons name="send" size={18} color="#000" />
+      <View style={styles.topContainer}>
+        <TextInput
+          style={styles.inputField}
+          placeholder="Let's do 6 7"
+          placeholderTextColor="#B4B4B4"
+          value={value}
+          onChangeText={onChangeText}
+          multiline
+          maxLength={500}
+          returnKeyType="send"
+          onSubmitEditing={onSubmitEditing}
+        />
+      </View>
+      <View style={styles.bottomContainer}>
+        <View style={styles.leftContainer}>
+          <TouchableOpacity style={styles.modelSelector} activeOpacity={0.8} onPress={onToggleModelDropdown}>
+            <Image source={modelImages[selectedModel as keyof typeof modelImages]} style={styles.modelImage} />
+            <HugeiconsIcon
+              icon={UnfoldMoreIcon}
+              size={16}
+              color="#B4B4B4"
+              strokeWidth={1.5}
+              style={{ marginLeft: 4 }}
+            />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.rightContainer}>
+          <TouchableOpacity
+            style={styles.sendButton}
+            onPress={onSubmitEditing as any}
+            activeOpacity={0.85}
+            accessibilityLabel="Send"
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="#000" />
+            ) : (
+              <View style={styles.sendInner}>
+                <Ionicons name="send" size={18} color="#000" />
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+      {showModelDropdown && (
+        <>
+          <TouchableWithoutFeedback onPress={onCloseDropdown}>
+            <View style={styles.dropdownBackdrop} />
+          </TouchableWithoutFeedback>
+          <View style={styles.modelDropdown}>
+            {['1x', '2x', '3x', '4x'].map((model) => (
+              <TouchableOpacity
+                key={model}
+                style={[
+                  styles.modelOption,
+                  selectedModel === model && styles.modelOptionSelected,
+                ]}
+                onPress={() => onSelectModel(model)}
+              >
+                <Image source={modelImages[model as keyof typeof modelImages]} style={styles.modelOptionImage} />
+                <Text style={[
+                  styles.modelOptionText,
+                  selectedModel === model && styles.modelOptionTextSelected
+                ]}>Alpha {model}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
-        )}
-      </TouchableOpacity>
+        </>
+      )}
     </View>
   );
 }
@@ -442,22 +530,119 @@ const styles = StyleSheet.create({
 
   inputInner: {
     width: '100%',
-    flexDirection: 'row',
-    backgroundColor: '#141414',
+    backgroundColor: '#222222',
     borderRadius: 16,
-    borderWidth: 2,
-    borderColor: '#191919',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#21201C',
+    padding: 16,
+    gap: 38,
   },
 
   inputField: {
     flex: 1,
     fontSize: 18,
-    color: '#FFFFFF',
+    color: '#B4B4B4',
     minHeight: 50,
-    // fontFamily: 'SpaceGrotesk_400Regular',
+    fontFamily: 'SpaceGrotesk_400Regular',
+  },
+
+  topContainer: {
+    width: '100%',
+  },
+
+  bottomContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  leftContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+
+  rightContainer: {
+    marginLeft: 12,
+  },
+
+  modelSelector: {
+    backgroundColor: '#313130',
+    borderRadius: 822,
+    borderWidth: 1,
+    borderColor: '#4C4C4B',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  modelSelectorText: {
+    color: '#B4B4B4',
+    fontSize: 14,
+  },
+
+  modelImage: {
+    width: 24,
+    height: 24,
+  },
+
+  modelDropdown: {
+    position: 'absolute',
+    bottom: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: '#2A2A2A',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#404040',
+    marginBottom: 8,
+    paddingVertical: 4,
+    zIndex: 1000,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+
+  modelOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    gap: 6,
+    borderRadius: 8,
+  },
+
+  modelOptionSelected: {
+    backgroundColor: '#FFE0C2',
+  },
+
+  modelOptionImage: {
+    width: 16,
+    height: 16,
+  },
+
+  modelOptionText: {
+    color: '#B4B4B4',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+
+  modelOptionTextSelected: {
+    color: '#000000',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+
+  dropdownBackdrop: {
+    position: 'absolute',
+    top: -1000, // Cover the entire screen
+    left: -1000,
+    right: -1000,
+    bottom: -1000,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
 
   sendButton: {
