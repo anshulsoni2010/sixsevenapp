@@ -27,6 +27,8 @@ export async function GET(req: Request) {
       select: {
         id: true,
         email: true,
+        name: true,
+        picture: true,
         subscribed: true,
         subscriptionPlan: true,
         subscriptionStatus: true,
@@ -49,6 +51,10 @@ export async function GET(req: Request) {
     });
 
     return NextResponse.json({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      picture: user.picture,
       subscribed: user.subscribed,
       plan: user.subscriptionPlan,
       status: user.subscriptionStatus,

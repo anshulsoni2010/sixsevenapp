@@ -92,11 +92,49 @@ export default function ChatScreen() {
   useEffect(() => {
     const loadUserData = async () => {
       try {
-        const userData = await AsyncStorage.getItem('user');
-        if (userData) {
-          const user = JSON.parse(userData);
-          if (user.photo) {
-            setUserAvatar(user.photo);
+        // Get user data from API
+        const token = await AsyncStorage.getItem('token');
+        if (token) {
+          try {
+            const response = await fetch(`${process.env.BACKEND_URL}/api/user/me`, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+            });
+            
+            if (response.ok) {
+              const userData = await response.json();
+              if (userData.picture) {
+                setUserAvatar(userData.picture);
+                // Update AsyncStorage with fresh data
+                const existingUserData = await AsyncStorage.getItem('user');
+                const userObj = existingUserData ? JSON.parse(existingUserData) : {};
+                userObj.photo = userData.picture;
+                userObj.name = userData.name;
+                await AsyncStorage.setItem('user', JSON.stringify(userObj));
+              }
+            }
+          } catch (apiError) {
+            console.error('Error fetching user data from API:', apiError);
+            // Fall back to AsyncStorage
+            const userData = await AsyncStorage.getItem('user');
+            if (userData) {
+              const user = JSON.parse(userData);
+              if (user.photo) {
+                setUserAvatar(user.photo);
+              }
+            }
+          }
+        } else {
+          // No token, fall back to AsyncStorage
+          const userData = await AsyncStorage.getItem('user');
+          if (userData) {
+            const user = JSON.parse(userData);
+            if (user.photo) {
+              setUserAvatar(user.photo);
+            }
           }
         }
 
