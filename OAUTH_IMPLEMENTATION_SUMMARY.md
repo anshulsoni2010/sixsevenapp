@@ -27,18 +27,18 @@ Created three new API routes for OAuth:
   - Upserts user in database (creates new or finds existing)
   - Creates JWT session token (30-day expiry)
   - Sets httpOnly cookie for web clients
-  - Redirects to app via deep link: `frontend://?token=...&onboarded=...`
+  - Redirects to app via deep link: `sixseven-frontend://?token=...&onboarded=...`
 - **File:** `/backend/app/api/auth/google/callback/route.ts`
 
 #### 3. Environment Variables (Backend)
 Added to `/backend/.env`:
 - `GOOGLE_CLIENT_SECRET`: OAuth client secret from Google Cloud Console
 - `GOOGLE_REDIRECT_URI`: Callback URL (http://localhost:3000/api/auth/google/callback)
-- `APP_SCHEME`: Deep link scheme for app redirection (frontend://)
+- `APP_SCHEME`: Deep link scheme for app redirection (sixseven-frontend://)
 
-### Frontend (React Native/Expo)
+### sixseven-frontend (React Native/Expo)
 
-Refactored `/frontend/app/onboarding/alphaConfirm/index.tsx`:
+Refactored `/sixseven-frontend/app/onboarding/alphaConfirm/index.tsx`:
 
 #### Removed
 - `expo-auth-session/providers/google` import
@@ -56,7 +56,7 @@ Refactored `/frontend/app/onboarding/alphaConfirm/index.tsx`:
 #### OAuth Flow in Frontend
 1. User clicks "Let's be Alpha" → `handleGooglePress()` triggered
 2. Opens `${BACKEND_URL}/api/auth/google/initiate` in system browser via WebBrowser
-3. After OAuth completes, backend redirects to `frontend://?token=...&onboarded=...`
+3. After OAuth completes, backend redirects to `sixseven-frontend://?token=...&onboarded=...`
 4. Deep link listener catches the URL
 5. Extracts `token` and `onboarded` from query params
 6. Stores token in `SecureStore` for API authentication
@@ -101,7 +101,7 @@ User model includes:
 ### Backend
 - `googleapis@^144.0.0`: Google APIs client library for OAuth2
 
-### Frontend (Already Installed)
+### sixseven-frontend (Already Installed)
 - `expo-auth-session`: For WebBrowser API
 - `expo-secure-store`: For token storage
 - `expo-linking`: For deep link handling
@@ -114,7 +114,7 @@ User model includes:
    - `http://192.168.43.192:3000/api/auth/google/callback` (for physical devices on local network)
    - `http://localhost:3000/api/auth/google/callback` (optional, for emulators)
 
-### Frontend Setup
+### sixseven-frontend Setup
 - Already configured with deep link scheme `"frontend"` in `app.json`
 - Backend URL configured as `http://192.168.43.192:3000` (local network IP)
 

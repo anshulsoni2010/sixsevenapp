@@ -7,13 +7,19 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  ImageBackground,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import Constants from 'expo-constants';
 import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const OUTER_WIDTH = Math.round(SCREEN_WIDTH * 0.9);
 
 interface SubscriptionData {
   subscribed: boolean;
@@ -218,48 +224,53 @@ export default function SubscriptionScreen() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#FFE0C2" />
+      <ImageBackground
+        source={require('../../assets/images/chatscreenbg.png')}
+        style={styles.container}
+        resizeMode="cover"
+      >
+        <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
+          <View style={styles.mainContainer}>
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#FFE0C2" />
+              <Text style={styles.loadingText}>Loading...</Text>
+            </View>
           </View>
         </SafeAreaView>
-      </View>
+      </ImageBackground>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <SafeAreaView edges={['top']} style={styles.safeArea}>
-          <ScrollView 
+    <ImageBackground
+      source={require('../../assets/images/chatscreenbg.png')}
+      style={styles.container}
+      resizeMode="cover"
+    >
+      <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
+        <View style={styles.mainContainer}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => router.back()}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="chevron-back" size={24} color="#FFE0C2" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Subscription</Text>
+            <View style={{ width: 40 }} />
+          </View>
+
+          {/* Subscription Content */}
+          <ScrollView
             style={styles.scrollView}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            {/* Header */}
-            <View style={styles.header}>
-              <TouchableOpacity 
-                style={styles.backButton}
-                onPress={() => router.back()}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-              </TouchableOpacity>
-              <Text style={styles.headerTitle}>Subscription</Text>
-              {subscription?.subscribed && (
-                <TouchableOpacity 
-                  style={styles.logoutButton}
-                  onPress={handleLogout}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="log-out-outline" size={24} color="#FFFFFF" />
-                </TouchableOpacity>
-              )}
-              {!subscription?.subscribed && <View style={{ width: 40 }} />}
-            </View>
-
-            <View style={styles.content}>
-              {/* Subscription Status Card */}
+            {/* Current Plan */}
+            <View style={styles.sectionContainer}>
+              <Text style={styles.sectionTitle}>Current Plan</Text>
               <View style={styles.statusCard}>
                 <View style={styles.statusHeader}>
                   <Ionicons name="card" size={32} color="#FFE0C2" />
@@ -271,7 +282,7 @@ export default function SubscriptionScreen() {
                 </View>
 
                 <View style={styles.statusDetails}>
-                  <Text style={styles.statusLabel}>Current Plan</Text>
+                  <Text style={styles.statusLabel}>Plan</Text>
                   <Text style={styles.statusValue}>
                     {subscription?.subscribed 
                       ? getPlanName(subscription?.plan) 
@@ -334,49 +345,79 @@ export default function SubscriptionScreen() {
                   </>
                 )}
               </View>
+            </View>
 
-              {/* Actions */}
-              {subscription?.subscribed ? (
-                <>
-                  <TouchableOpacity
-                    style={styles.primaryButton}
-                    onPress={handleManageSubscription}
-                    disabled={managingSubscription}
-                    activeOpacity={0.8}
-                  >
-                    {managingSubscription ? (
-                      <ActivityIndicator color="#111111" size="small" />
-                    ) : (
-                      <>
-                        <Ionicons name="card" size={20} color="#111111" />
-                        <Text style={styles.primaryButtonText}>Billing & Cancellation</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
+            {/* Actions */}
+            <View style={styles.sectionContainer}>
+              <Text style={styles.sectionTitle}>Actions</Text>
+              <View style={styles.actionsContainer}>
+                {subscription?.subscribed ? (
+                  <>
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={handleManageSubscription}
+                      disabled={managingSubscription}
+                      activeOpacity={0.8}
+                    >
+                      <LinearGradient
+                        colors={['#FFE0C2', '#FFD700']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={styles.actionButtonGradient}
+                      >
+                        {managingSubscription ? (
+                          <ActivityIndicator color="#111111" size="small" />
+                        ) : (
+                          <>
+                            <Ionicons name="card" size={20} color="#111111" />
+                            <Text style={styles.actionButtonText}>Billing & Cancellation</Text>
+                          </>
+                        )}
+                      </LinearGradient>
+                    </TouchableOpacity>
 
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={handleUpgrade}
+                      activeOpacity={0.8}
+                    >
+                      <LinearGradient
+                        colors={['#FFE0C2', '#FFD700']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={styles.actionButtonGradient}
+                      >
+                        <Ionicons name="trending-up" size={20} color="#111111" />
+                        <Text style={styles.actionButtonText}>Change Plan</Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  </>
+                ) : (
                   <TouchableOpacity
-                    style={styles.secondaryButton}
+                    style={styles.actionButton}
                     onPress={handleUpgrade}
                     activeOpacity={0.8}
                   >
-                    <Ionicons name="trending-up" size={20} color="#FFE0C2" />
-                    <Text style={styles.secondaryButtonText}>Change Plan</Text>
+                    <LinearGradient
+                      colors={['#FFE0C2', '#FFD700']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={styles.actionButtonGradient}
+                    >
+                      <Ionicons name="rocket" size={20} color="#111111" />
+                      <Text style={styles.actionButtonText}>Subscribe Now</Text>
+                    </LinearGradient>
                   </TouchableOpacity>
-                </>
-              ) : (
-                <TouchableOpacity
-                  style={styles.primaryButton}
-                  onPress={handleUpgrade}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="rocket" size={20} color="#111111" />
-                  <Text style={styles.primaryButtonText}>Subscribe Now</Text>
-                </TouchableOpacity>
-              )}
+                )}
+              </View>
+              </View>
+            </View>
 
-              {/* Info Cards */}
-              <View style={styles.infoSection}>
-                <View style={styles.infoCard}>
+            {/* Information */}
+            <View style={styles.sectionContainer}>
+              <Text style={styles.sectionTitle}>Information</Text>
+              <View style={styles.infoGrid}>
+                <View style={styles.infoItem}>
                   <Ionicons name="shield-checkmark" size={24} color="#4CAF50" />
                   <Text style={styles.infoTitle}>Secure Payments</Text>
                   <Text style={styles.infoText}>
@@ -384,7 +425,7 @@ export default function SubscriptionScreen() {
                   </Text>
                 </View>
 
-                <View style={styles.infoCard}>
+                <View style={styles.infoItem}>
                   <Ionicons name="refresh" size={24} color="#2196F3" />
                   <Text style={styles.infoTitle}>Easy Cancellation</Text>
                   <Text style={styles.infoText}>
@@ -392,7 +433,7 @@ export default function SubscriptionScreen() {
                   </Text>
                 </View>
 
-                <View style={styles.infoCard}>
+                <View style={styles.infoItem}>
                   <Ionicons name="mail" size={24} color="#FF9800" />
                   <Text style={styles.infoTitle}>Need Help?</Text>
                   <Text style={styles.infoText}>
@@ -402,18 +443,24 @@ export default function SubscriptionScreen() {
               </View>
             </View>
           </ScrollView>
-        </SafeAreaView>
-    </View>
+        </View>
+      </SafeAreaView>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#111111',
   },
   safeArea: {
     flex: 1,
+    alignItems: 'center',
+  },
+  mainContainer: {
+    width: OUTER_WIDTH,
+    height: '100%',
+    flexDirection: 'column',
   },
   scrollView: {
     flex: 1,
@@ -427,23 +474,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  loadingText: {
+    fontSize: 16,
+    color: '#FFE0C2',
+    fontFamily: 'SpaceGrotesk_400Regular',
+    marginTop: 16,
+  },
   header: {
+    height: 50,
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 20,
+    alignItems: 'center',
+    marginBottom: 20,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoutButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -454,17 +498,47 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#FFE0C2',
     fontFamily: 'SpaceGrotesk_700Bold',
   },
-  content: {
-    paddingHorizontal: 24,
+
+  // New sections
+  sectionContainer: {
+    marginBottom: 32,
   },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFE0C2',
+    fontFamily: 'SpaceGrotesk_700Bold',
+    marginBottom: 16,
+  },
+  actionsContainer: {
+    gap: 12,
+    marginBottom: 32,
+  },
+  actionButton: {
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  actionButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
+  },
+  actionButtonText: {
+    flex: 1,
+    fontSize: 16,
+    color: '#FFE0C2',
+    fontFamily: 'SpaceGrotesk_400Regular',
+  },
+
+  // Status card
   statusCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 16,
     padding: 24,
-    marginBottom: 20,
     borderWidth: 1,
     borderColor: 'rgba(255, 224, 194, 0.2)',
   },
@@ -490,7 +564,7 @@ const styles = StyleSheet.create({
   },
   statusLabel: {
     fontSize: 13,
-    color: '#B8B8B8',
+    color: '#B4B4B4',
     fontFamily: 'Outfit_400Regular',
     marginBottom: 6,
   },
@@ -521,64 +595,35 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     marginVertical: 16,
   },
-  primaryButton: {
-    backgroundColor: '#FFE0C2',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-    flexDirection: 'row',
-    gap: 8,
-  },
-  primaryButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111111',
-    fontFamily: 'SpaceGrotesk_700Bold',
-  },
-  secondaryButton: {
-    backgroundColor: 'rgba(255, 224, 194, 0.1)',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-    flexDirection: 'row',
-    gap: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 224, 194, 0.3)',
-  },
-  secondaryButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFE0C2',
-    fontFamily: 'SpaceGrotesk_700Bold',
-  },
-  infoSection: {
+
+  // Information grid
+  infoGrid: {
     gap: 16,
   },
-  infoCard: {
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     backgroundColor: 'rgba(255, 255, 255, 0.03)',
     borderRadius: 12,
     padding: 20,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
-    alignItems: 'center',
+  },
+  infoTextContainer: {
+    flex: 1,
+    marginLeft: 16,
   },
   infoTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
     fontFamily: 'SpaceGrotesk_700Bold',
-    marginTop: 12,
     marginBottom: 8,
   },
   infoText: {
     fontSize: 14,
     color: '#B8B8B8',
     fontFamily: 'Outfit_400Regular',
-    textAlign: 'center',
     lineHeight: 20,
   },
 });
