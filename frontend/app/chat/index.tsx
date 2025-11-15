@@ -348,7 +348,7 @@ function ChatInput({
       <View style={styles.topContainer}>
         <TextInput
           style={styles.inputField}
-          placeholder="Let's do 6 7"
+          placeholder="Let's do 67"
           placeholderTextColor="#B4B4B4"
           value={value}
           onChangeText={onChangeText}
