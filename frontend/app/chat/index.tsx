@@ -29,6 +29,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { UnfoldMoreIcon, ArrowUp02Icon } from '@hugeicons/core-free-icons';
 import * as Haptics from 'expo-haptics';
+import * as SecureStore from 'expo-secure-store';
+import Constants from 'expo-constants';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   // enable LayoutAnimation on Android
@@ -93,10 +95,11 @@ export default function ChatScreen() {
     const loadUserData = async () => {
       try {
         // Get user data from API
-        const token = await AsyncStorage.getItem('token');
+        const token = await SecureStore.getItemAsync('session_token');
         if (token) {
           try {
-            const response = await fetch(`${process.env.BACKEND_URL}/api/user/me`, {
+            const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
+            const response = await fetch(`${BACKEND}/api/user/me`, {
               method: 'GET',
               headers: {
                 'Authorization': `Bearer ${token}`,
@@ -136,9 +139,7 @@ export default function ChatScreen() {
               setUserAvatar(user.photo);
             }
           }
-        }
-
-        const onboardingData = await AsyncStorage.getItem('onboarding');
+        }        const onboardingData = await AsyncStorage.getItem('onboarding');
         if (onboardingData) {
           const onboarding = JSON.parse(onboardingData);
           if (onboarding.alphaLevel) {
