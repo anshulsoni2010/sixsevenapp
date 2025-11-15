@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
+import Stripe from 'stripe';
 
 const prisma = new PrismaClient();
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2025-10-29.clover',
+});
 
 export async function GET(req: Request) {
   try {
@@ -65,5 +70,62 @@ export async function GET(req: Request) {
   } catch (error) {
     console.error('Get user error:', error);
     return NextResponse.json({ error: 'Failed to get user' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    // Get user from JWT token
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const token = authHeader.substring(7);
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+    }
+
+    const decoded: any = jwt.verify(token, jwtSecret);
+    const userId = decoded.userId;
+
+    // Get user data including Stripe subscription ID
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        stripeSubscriptionId: true,
+        subscribed: true,
+      },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Cancel Stripe subscription if it exists
+    if (user.stripeSubscriptionId && user.subscribed) {
+      try {
+        await stripe.subscriptions.cancel(user.stripeSubscriptionId);
+        console.log('Stripe subscription cancelled:', user.stripeSubscriptionId);
+      } catch (stripeError) {
+        console.error('Error cancelling Stripe subscription:', stripeError);
+        // Continue with user deletion even if Stripe cancellation fails
+      }
+    }
+
+    // Delete the user from database
+    await prisma.user.delete({
+      where: { id: userId },
+    });
+
+    console.log('User account deleted:', userId);
+
+    return NextResponse.json({ success: true, message: 'Account deleted successfully' });
+
+  } catch (error) {
+    console.error('Delete user error:', error);
+    return NextResponse.json({ error: 'Failed to delete account' }, { status: 500 });
   }
 }

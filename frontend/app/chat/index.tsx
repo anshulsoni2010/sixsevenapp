@@ -248,7 +248,7 @@ export default function ChatScreen() {
 
                 <TouchableOpacity
                   style={styles.avatarButton}
-                  onPress={() => router.push('/subscription' as any)}
+                  onPress={() => router.push('/profile' as any)}
                 >
                   {userAvatar ? (
                     <Image source={{ uri: userAvatar }} style={styles.avatarImage} />
