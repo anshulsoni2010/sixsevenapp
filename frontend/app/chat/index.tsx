@@ -28,6 +28,7 @@ import { SvgXml } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { UnfoldMoreIcon } from '@hugeicons/core-free-icons';
+import * as Haptics from 'expo-haptics';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   // enable LayoutAnimation on Android
@@ -143,10 +144,35 @@ export default function ChatScreen() {
   };
 
   const toggleModelDropdown = () => {
+    if (Platform.OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      LayoutAnimation.configureNext({
+        duration: 300,
+        create: {
+          type: LayoutAnimation.Types.spring,
+          property: LayoutAnimation.Properties.scaleXY,
+          springDamping: 0.7,
+        },
+        update: {
+          type: LayoutAnimation.Types.spring,
+          springDamping: 0.7,
+        },
+        delete: {
+          type: LayoutAnimation.Types.spring,
+          property: LayoutAnimation.Properties.scaleXY,
+          springDamping: 0.7,
+        },
+      });
+    } else {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    }
     setShowModelDropdown(!showModelDropdown);
   };
 
   const selectModel = (model: string) => {
+    if (Platform.OS === 'ios') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
     setSelectedModel(model);
     setShowModelDropdown(false);
   };
@@ -365,7 +391,11 @@ function ChatInput({
       {showModelDropdown && (
         <>
           <TouchableWithoutFeedback onPress={onCloseDropdown}>
-            <View style={styles.dropdownBackdrop} />
+            <BlurView
+              intensity={Platform.OS === 'ios' ? 20 : 50}
+              tint={Platform.OS === 'ios' ? 'dark' : 'default'}
+              style={styles.dropdownBackdrop}
+            />
           </TouchableWithoutFeedback>
           <View style={styles.modelDropdown}>
             {['1x', '2x', '3x', '4x'].map((model) => (
@@ -376,8 +406,15 @@ function ChatInput({
                   selectedModel === model && styles.modelOptionSelected,
                 ]}
                 onPress={() => onSelectModel(model)}
+                activeOpacity={Platform.OS === 'ios' ? 0.7 : 0.8}
               >
-                <Image source={modelImages[model as keyof typeof modelImages]} style={styles.modelOptionImage} />
+                <Image 
+                  source={modelImages[model as keyof typeof modelImages]} 
+                  style={[
+                    styles.modelOptionImage,
+                    selectedModel === model && styles.modelOptionImageSelected
+                  ]} 
+                />
                 <Text style={[
                   styles.modelOptionText,
                   selectedModel === model && styles.modelOptionTextSelected
@@ -592,18 +629,18 @@ const styles = StyleSheet.create({
     bottom: '100%',
     left: 0,
     right: 0,
-    backgroundColor: '#2A2A2A',
-    borderRadius: 12,
-    borderWidth: 1,
+    backgroundColor: Platform.OS === 'ios' ? 'rgba(42, 42, 42, 0.95)' : '#2A2A2A',
+    borderRadius: Platform.OS === 'ios' ? 16 : 12,
+    borderWidth: Platform.OS === 'ios' ? 0 : 1,
     borderColor: '#404040',
     marginBottom: 8,
     paddingVertical: 4,
     zIndex: 1000,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOffset: Platform.OS === 'ios' ? { width: 0, height: 8 } : { width: 0, height: -2 },
+    shadowOpacity: Platform.OS === 'ios' ? 0.15 : 0.25,
+    shadowRadius: Platform.OS === 'ios' ? 24 : 8,
+    elevation: Platform.OS === 'ios' ? 0 : 8,
   },
 
   modelOption: {
@@ -613,6 +650,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     gap: 6,
     borderRadius: 8,
+    minHeight: Platform.OS === 'ios' ? 36 : 32, // iOS minimum touch target
   },
 
   modelOptionSelected: {
@@ -622,6 +660,10 @@ const styles = StyleSheet.create({
   modelOptionImage: {
     width: 16,
     height: 16,
+  },
+
+  modelOptionImageSelected: {
+    tintColor: '#000000',
   },
 
   modelOptionText: {
@@ -638,11 +680,10 @@ const styles = StyleSheet.create({
 
   dropdownBackdrop: {
     position: 'absolute',
-    top: -1000, // Cover the entire screen
+    top: -1000,
     left: -1000,
     right: -1000,
     bottom: -1000,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
 
   sendButton: {
