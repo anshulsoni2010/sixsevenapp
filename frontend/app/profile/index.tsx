@@ -252,6 +252,178 @@ export default function ProfileScreen() {
               </View>
             )}
 
+            {/* Account Information */}
+            <View style={styles.sectionContainer}>
+              <Text style={styles.sectionTitle}>Account Information</Text>
+              <View style={styles.infoGrid}>
+                {userData?.age && (
+                  <View style={styles.infoItem}>
+                    <Ionicons name="calendar" size={20} color="#FFE0C2" />
+                    <Text style={styles.infoLabel}>Age</Text>
+                    <Text style={styles.infoValue}>{userData.age} years old</Text>
+                  </View>
+                )}
+                {userData?.gender && (
+                  <View style={styles.infoItem}>
+                    <Ionicons name="person" size={20} color="#FFE0C2" />
+                    <Text style={styles.infoLabel}>Gender</Text>
+                    <Text style={styles.infoValue}>{userData.gender}</Text>
+                  </View>
+                )}
+                {userData?.alphaLevel && (
+                  <View style={styles.infoItem}>
+                    <Ionicons name="star" size={20} color="#FFE0C2" />
+                    <Text style={styles.infoLabel}>Alpha Level</Text>
+                    <Text style={styles.infoValue}>{userData.alphaLevel}</Text>
+                  </View>
+                )}
+                {userData?.createdAt && (
+                  <View style={styles.infoItem}>
+                    <Ionicons name="time" size={20} color="#FFE0C2" />
+                    <Text style={styles.infoLabel}>Member Since</Text>
+                    <Text style={styles.infoValue}>{formatDate(userData.createdAt)}</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+
+            {/* Usage Stats */}
+            <View style={styles.sectionContainer}>
+              <Text style={styles.sectionTitle}>Your Stats</Text>
+              <View style={styles.statsGrid}>
+                <View style={styles.statItem}>
+                  <Text style={styles.statNumber}>42</Text>
+                  <Text style={styles.statLabel}>Messages Translated</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statNumber}>7</Text>
+                  <Text style={styles.statLabel}>Days Active</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statNumber}>4.8</Text>
+                  <Text style={styles.statLabel}>Avg. Rating</Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statNumber}>12</Text>
+                  <Text style={styles.statLabel}>Alpha Points</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Preferences */}
+            <View style={styles.sectionContainer}>
+              <Text style={styles.sectionTitle}>Preferences</Text>
+              <TouchableOpacity
+                style={styles.preferenceItem}
+                onPress={async () => {
+                  try {
+                    const token = await SecureStore.getItemAsync('session_token');
+                    if (!token) {
+                      Alert.alert('Error', 'Authentication required');
+                      return;
+                    }
+
+                    const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
+                    const response = await fetch(`${BACKEND}/api/user/me`, {
+                      method: 'PATCH',
+                      headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        notifications: !userData?.notifications,
+                      }),
+                    });
+
+                    if (response.ok) {
+                      const updatedUser = await response.json();
+                      setUserData(updatedUser);
+                      Alert.alert('Success', 'Notification preferences updated!');
+                    } else {
+                      Alert.alert('Error', 'Failed to update preferences');
+                    }
+                  } catch (error) {
+                    console.error('Error updating preferences:', error);
+                    Alert.alert('Error', 'Failed to update preferences');
+                  }
+                }}
+                activeOpacity={0.8}
+              >
+                <View style={styles.preferenceLeft}>
+                  <Ionicons name="notifications" size={24} color="#FFE0C2" />
+                  <View style={styles.preferenceText}>
+                    <Text style={styles.preferenceTitle}>Push Notifications</Text>
+                    <Text style={styles.preferenceSubtitle}>
+                      Receive updates about new features and tips
+                    </Text>
+                  </View>
+                </View>
+                <View style={[styles.toggle, userData?.notifications && styles.toggleActive]}>
+                  <View style={[styles.toggleKnob, userData?.notifications && styles.toggleKnobActive]} />
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            {/* Support */}
+            <View style={styles.sectionContainer}>
+              <Text style={styles.sectionTitle}>Support</Text>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => {
+                  // Open email client or show contact options
+                  Alert.alert(
+                    'Contact Support',
+                    'support@sixseven.app',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Copy Email',
+                        onPress: () => {
+                          // In a real app, you'd use Clipboard.setString()
+                          Alert.alert('Copied!', 'Email address copied to clipboard');
+                        }
+                      }
+                    ]
+                  );
+                }}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={['#2E2E2E', '#2A2A2A']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0, y: 1 }}
+                  style={styles.actionButtonGradient}
+                >
+                  <Ionicons name="help-circle" size={24} color="#FFE0C2" />
+                  <Text style={styles.actionButtonText}>Help & Support</Text>
+                  <Ionicons name="chevron-forward" size={20} color="#FFE0C2" />
+                </LinearGradient>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => {
+                  Alert.alert(
+                    'About 6 7',
+                    `Version 1.0.0\n\nTalk the Alpha, Walk the Alpha\n\nTransform your messages into Gen Alpha slang! 🔥\n\n© 2025 Six Seven`,
+                    [{ text: 'OK' }]
+                  );
+                }}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={['#2E2E2E', '#2A2A2A']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0, y: 1 }}
+                  style={styles.actionButtonGradient}
+                >
+                  <Ionicons name="information-circle" size={24} color="#FFE0C2" />
+                  <Text style={styles.actionButtonText}>About</Text>
+                  <Ionicons name="chevron-forward" size={20} color="#FFE0C2" />
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+
             {/* Action Buttons */}
             <View style={styles.actionsContainer}>
               <TouchableOpacity
@@ -482,5 +654,117 @@ const styles = StyleSheet.create({
     color: '#FF6B6B',
     fontWeight: '600',
     fontFamily: 'SpaceGrotesk_400Regular',
+  },
+
+  // New sections
+  sectionContainer: {
+    marginBottom: 32,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFE0C2',
+    fontFamily: 'SpaceGrotesk_700Bold',
+    marginBottom: 16,
+  },
+  infoGrid: {
+    gap: 16,
+  },
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
+    padding: 16,
+    gap: 12,
+  },
+  infoLabel: {
+    fontSize: 12,
+    color: '#B4B4B4',
+    fontFamily: 'SpaceGrotesk_400Regular',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  infoValue: {
+    fontSize: 16,
+    color: '#FFE0C2',
+    fontFamily: 'SpaceGrotesk_400Regular',
+    flex: 1,
+    textAlign: 'right',
+  },
+  preferenceItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
+    padding: 16,
+  },
+  preferenceLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 12,
+  },
+  preferenceText: {
+    flex: 1,
+  },
+  preferenceTitle: {
+    fontSize: 16,
+    color: '#FFE0C2',
+    fontFamily: 'SpaceGrotesk_400Regular',
+    marginBottom: 2,
+  },
+  preferenceSubtitle: {
+    fontSize: 14,
+    color: '#B4B4B4',
+    fontFamily: 'SpaceGrotesk_400Regular',
+  },
+  toggle: {
+    width: 50,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#666666',
+    justifyContent: 'center',
+    paddingHorizontal: 2,
+  },
+  toggleActive: {
+    backgroundColor: '#FFE0C2',
+  },
+  toggleKnob: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    transform: [{ translateX: 0 }],
+  },
+  toggleKnobActive: {
+    transform: [{ translateX: 22 }],
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  statItem: {
+    flex: 1,
+    minWidth: (OUTER_WIDTH - 24) / 2 - 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FFE0C2',
+    fontFamily: 'SpaceGrotesk_700Bold',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#B4B4B4',
+    fontFamily: 'SpaceGrotesk_400Regular',
+    textAlign: 'center',
   },
 });

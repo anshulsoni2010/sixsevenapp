@@ -40,6 +40,12 @@ export async function GET(req: Request) {
         subscriptionEndsAt: true,
         stripeSubscriptionId: true,
         onboarded: true,
+        age: true,
+        gender: true,
+        alphaLevel: true,
+        notifications: true,
+        createdAt: true,
+        provider: true,
       },
     });
 
@@ -127,5 +133,58 @@ export async function DELETE(req: Request) {
   } catch (error) {
     console.error('Delete user error:', error);
     return NextResponse.json({ error: 'Failed to delete account' }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    // Get user from JWT token
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const token = authHeader.substring(7);
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+    }
+
+    const decoded: any = jwt.verify(token, jwtSecret);
+    const userId = decoded.userId;
+
+    const body = await req.json();
+    const { notifications } = body;
+
+    // Update user preferences
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        notifications: notifications,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        picture: true,
+        subscribed: true,
+        subscriptionPlan: true,
+        subscriptionStatus: true,
+        subscriptionEndsAt: true,
+        onboarded: true,
+        age: true,
+        gender: true,
+        alphaLevel: true,
+        notifications: true,
+        createdAt: true,
+        provider: true,
+      },
+    });
+
+    return NextResponse.json(updatedUser);
+
+  } catch (error) {
+    console.error('Update user error:', error);
+    return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
   }
 }
