@@ -430,7 +430,8 @@ function ChatInput({
           value={value}
           onChangeText={onChangeText}
           multiline
-          maxLength={500}
+          maxLength={2000}
+          scrollEnabled={true}
           returnKeyType="send"
           onSubmitEditing={onSubmitEditing}
           selectionColor="#ffe1c249"
@@ -714,6 +715,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#B4B4B4',
     minHeight: 50,
+    maxHeight: 120,
     fontFamily: 'SpaceGrotesk_400Regular',
   },
 
