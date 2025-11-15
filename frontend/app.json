@@ -1,16 +1,16 @@
 {
   "expo": {
-    "name": "frontend",
-    "slug": "frontend",
+    "name": "6 7",
+    "slug": "sixsevenapp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "frontend",
+    "scheme": "sixsevenapp",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anshulsonidev.frontend",
+      "bundleIdentifier": "com.anshulsonidev.sixsevenapp",
       "infoPlist": {
         "CFBundleURLTypes": [
           {
@@ -31,7 +31,8 @@
         "monochromeImage": "./assets/images/icon.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anshulsonidev.sixsevenapp"
     },
     "web": {
       "output": "static",
