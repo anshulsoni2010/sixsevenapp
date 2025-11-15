@@ -604,7 +604,7 @@ const styles = StyleSheet.create({
 
   modelSelector: {
     backgroundColor: '#313130',
-    borderRadius: 822,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: '#4C4C4B',
     paddingHorizontal: 12,
@@ -612,6 +612,11 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
 
   modelSelectorText: {
@@ -628,13 +633,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: '100%',
     left: 0,
-    right: 0,
+    width: 140,
     backgroundColor: Platform.OS === 'ios' ? 'rgba(42, 42, 42, 0.95)' : '#2A2A2A',
     borderRadius: Platform.OS === 'ios' ? 16 : 12,
     borderWidth: Platform.OS === 'ios' ? 0 : 1,
     borderColor: '#404040',
     marginBottom: 8,
-    paddingVertical: 4,
+    paddingVertical: 8,
     zIndex: 1000,
     shadowColor: '#000',
     shadowOffset: Platform.OS === 'ios' ? { width: 0, height: 8 } : { width: 0, height: -2 },
@@ -646,20 +651,27 @@ const styles = StyleSheet.create({
   modelOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    gap: 6,
-    borderRadius: 8,
-    minHeight: Platform.OS === 'ios' ? 36 : 32, // iOS minimum touch target
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 8,
+    borderRadius: 10,
+    minHeight: Platform.OS === 'ios' ? 40 : 36,
+    marginHorizontal: 4,
+    marginVertical: 1,
   },
 
   modelOptionSelected: {
     backgroundColor: '#FFE0C2',
+    shadowColor: '#FFE0C2',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
 
   modelOptionImage: {
-    width: 16,
-    height: 16,
+    width: 18,
+    height: 18,
   },
 
   modelOptionImageSelected: {
@@ -668,14 +680,16 @@ const styles = StyleSheet.create({
 
   modelOptionText: {
     color: '#B4B4B4',
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '500',
+    letterSpacing: 0.2,
   },
 
   modelOptionTextSelected: {
     color: '#000000',
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
+    letterSpacing: 0.2,
   },
 
   dropdownBackdrop: {
