@@ -272,43 +272,7 @@ export default function ProfileScreen() {
               </View>
             )}
 
-            {/* Account Information */}
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Account Information</Text>
-              <View style={styles.infoGrid}>
-                {userData?.age && (
-                  <View style={styles.infoItem}>
-                    <Ionicons name="calendar" size={20} color="#FFE0C2" />
-                    <Text style={styles.infoLabel}>Age</Text>
-                    <Text style={styles.infoValue}>{userData.age} years old</Text>
-                  </View>
-                )}
-                {userData?.gender && (
-                  <View style={styles.infoItem}>
-                    <Ionicons name="person" size={20} color="#FFE0C2" />
-                    <Text style={styles.infoLabel}>Gender</Text>
-                    <Text style={styles.infoValue}>{userData.gender}</Text>
-                  </View>
-                )}
-                {userData?.alphaLevel && (
-                  <View style={styles.infoItem}>
-                    <Ionicons name="star" size={20} color="#FFE0C2" />
-                    <Text style={styles.infoLabel}>Alpha Level</Text>
-                    <Text style={styles.infoValue}>{userData.alphaLevel}</Text>
-                  </View>
-                )}
-                {userData?.createdAt && (
-                  <View style={styles.infoItem}>
-                    <Ionicons name="time" size={20} color="#FFE0C2" />
-                    <Text style={styles.infoLabel}>Member Since</Text>
-                    <Text style={styles.infoValue}>{formatDate(userData.createdAt)}</Text>
-                  </View>
-                )}
-              </View>
-            </View>
-
-            <View style={styles.sectionDivider} />
-
+        
             {/* Usage Stats */}
             <View style={styles.sectionContainer}>
               <Text style={styles.sectionTitle}>Your Activity</Text>
