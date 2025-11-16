@@ -208,7 +208,13 @@ export default function ProfileScreen() {
               <Ionicons name="chevron-back" size={24} color="#FFE0C2" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Profile</Text>
-            <View style={{ width: 40 }} />
+            <TouchableOpacity
+              style={styles.editButton}
+              onPress={() => router.push('/profile/profile-edit' as any)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="create-outline" size={20} color="#FFE0C2" />
+            </TouchableOpacity>
           </View>
 
           {/* Profile Content */}
@@ -217,72 +223,87 @@ export default function ProfileScreen() {
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            {/* Profile Picture */}
-            <View style={styles.avatarContainer}>
-              <View style={styles.avatarWrapper}>
-                <Image
-                  source={userData?.picture ? { uri: userData.picture } : require('../../assets/images/icon.png')}
-                  style={styles.avatar}
-                  resizeMode="cover"
-                  onError={(e) => {
-                    console.log('Avatar load error:', e.nativeEvent.error);
-                  }}
-                />
-                <TouchableOpacity
-                  style={styles.editAvatarButton}
-                  onPress={() => {
-                    // TODO: Implement avatar editing
-                    Alert.alert('Coming Soon', 'Profile picture editing will be available soon!');
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="camera" size={16} color="#FFE0C2" />
-                </TouchableOpacity>
+            {/* Profile Header - Avatar and User Info Side by Side */}
+            <View style={styles.profileHeader}>
+              {/* Profile Picture */}
+              <View style={styles.avatarContainer}>
+                <View style={styles.avatarWrapper}>
+                  <Image
+                    source={userData?.picture ? { uri: userData.picture } : require('../../assets/images/icon.png')}
+                    style={styles.avatar}
+                    resizeMode="cover"
+                    onError={(e) => {
+                      console.log('Avatar load error:', e.nativeEvent.error);
+                    }}
+                  />
+                </View>
               </View>
-            </View>
 
-            {/* User Info */}
-            <View style={styles.infoContainer}>
-              <Text style={styles.name}>{userData?.name || 'User'}</Text>
-              <Text style={styles.email}>{userData?.email}</Text>
-            </View>
-
-            {/* Subscription Info */}
-            {userData?.subscribed && (
-              <View style={styles.subscriptionContainer}>
-                <LinearGradient
-                  colors={['#FFE0C2', '#FFD700', '#FFA500']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.subscriptionBadge}
-                >
-                  <View style={styles.subscriptionBadgeContent}>
-                    <Ionicons name="star" size={16} color="#000000" />
-                    <Text style={styles.subscriptionText}>
+              {/* User Info */}
+              <View style={styles.userInfoContainer}>
+                <Text style={styles.name}>{userData?.name || 'User'}</Text>
+                <Text style={styles.email}>{userData?.email}</Text>
+                {userData?.subscribed && (
+                  <View style={styles.simpleBadge}>
+                    <Text style={styles.simpleBadgeText}>
                       {userData?.plan === 'yearly' ? 'Yearly' : 'Monthly'} Pro
                     </Text>
-                    <Ionicons name="star" size={16} color="#000000" />
                   </View>
-                </LinearGradient>
-                {userData?.endsAt && (
-                  <Text style={styles.subscriptionExpiry}>
-                    Expires: {formatDate(userData.endsAt)}
-                  </Text>
                 )}
               </View>
-            )}
+            </View>
 
-        
+            {/* Account Information */}
+            <View style={styles.sectionContainer}>
+              <Text style={styles.sectionTitle}>Account Information</Text>
+              <View style={styles.infoGrid}>
+                {userData?.age && (
+                  <View style={styles.infoItem}>
+                    <Ionicons name="calendar" size={20} color="#FFE0C2" />
+                    <Text style={styles.infoLabel}>Age</Text>
+                    <Text style={styles.infoValue}>{userData.age} years old</Text>
+                  </View>
+                )}
+                {userData?.gender && (
+                  <View style={styles.infoItem}>
+                    <Ionicons name="person" size={20} color="#FFE0C2" />
+                    <Text style={styles.infoLabel}>Gender</Text>
+                    <Text style={styles.infoValue}>{userData.gender}</Text>
+                  </View>
+                )}
+                {userData?.alphaLevel && (
+                  <View style={styles.infoItem}>
+                    <Ionicons name="star" size={20} color="#FFE0C2" />
+                    <Text style={styles.infoLabel}>Alpha Level</Text>
+                    <Text style={styles.infoValue}>{userData.alphaLevel}</Text>
+                  </View>
+                )}
+                {userData?.createdAt && (
+                  <View style={styles.infoItem}>
+                    <Ionicons name="time" size={20} color="#FFE0C2" />
+                    <Text style={styles.infoLabel}>Member Since</Text>
+                    <Text style={styles.infoValue}>{formatDate(userData.createdAt)}</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+
+            <View style={styles.sectionDivider} />
+
             {/* Usage Stats */}
             <View style={styles.sectionContainer}>
               <Text style={styles.sectionTitle}>Your Activity</Text>
               <View style={styles.statsGrid}>
                 <View style={styles.statItem}>
                   <LinearGradient
-                    colors={['rgba(255, 224, 194, 0.1)', 'rgba(255, 224, 194, 0.05)']}
+                    colors={['rgba(255, 224, 194, 0.15)', 'rgba(255, 224, 194, 0.08)', 'rgba(255, 224, 194, 0.03)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
                     style={styles.statGradient}
                   >
-                    <Ionicons name="chatbubble" size={24} color="#FFE0C2" />
+                    <View style={styles.statIconContainer}>
+                      <Ionicons name="chatbubble" size={28} color="#FFE0C2" />
+                    </View>
                     <Text style={styles.statNumber}>
                       {userData?.stats?.messagesTranslated || '0'}
                     </Text>
@@ -291,10 +312,14 @@ export default function ProfileScreen() {
                 </View>
                 <View style={styles.statItem}>
                   <LinearGradient
-                    colors={['rgba(255, 224, 194, 0.1)', 'rgba(255, 224, 194, 0.05)']}
+                    colors={['rgba(255, 224, 194, 0.15)', 'rgba(255, 224, 194, 0.08)', 'rgba(255, 224, 194, 0.03)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
                     style={styles.statGradient}
                   >
-                    <Ionicons name="calendar" size={24} color="#FFE0C2" />
+                    <View style={styles.statIconContainer}>
+                      <Ionicons name="calendar" size={28} color="#FFE0C2" />
+                    </View>
                     <Text style={styles.statNumber}>
                       {userData?.stats?.daysActive || '0'}
                     </Text>
@@ -303,10 +328,14 @@ export default function ProfileScreen() {
                 </View>
                 <View style={styles.statItem}>
                   <LinearGradient
-                    colors={['rgba(255, 224, 194, 0.1)', 'rgba(255, 224, 194, 0.05)']}
+                    colors={['rgba(255, 224, 194, 0.15)', 'rgba(255, 224, 194, 0.08)', 'rgba(255, 224, 194, 0.03)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
                     style={styles.statGradient}
                   >
-                    <Ionicons name="star" size={24} color="#FFE0C2" />
+                    <View style={styles.statIconContainer}>
+                      <Ionicons name="star" size={28} color="#FFE0C2" />
+                    </View>
                     <Text style={styles.statNumber}>
                       {userData?.stats?.rating || '0.0'}
                     </Text>
@@ -315,10 +344,14 @@ export default function ProfileScreen() {
                 </View>
                 <View style={styles.statItem}>
                   <LinearGradient
-                    colors={['rgba(255, 224, 194, 0.1)', 'rgba(255, 224, 194, 0.05)']}
+                    colors={['rgba(255, 224, 194, 0.15)', 'rgba(255, 224, 194, 0.08)', 'rgba(255, 224, 194, 0.03)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
                     style={styles.statGradient}
                   >
-                    <Ionicons name="trophy" size={24} color="#FFE0C2" />
+                    <View style={styles.statIconContainer}>
+                      <Ionicons name="trophy" size={28} color="#FFE0C2" />
+                    </View>
                     <Text style={styles.statNumber}>
                       {userData?.alphaPoints || '0'}
                     </Text>
@@ -385,66 +418,6 @@ export default function ProfileScreen() {
             </View>
 
             <View style={styles.sectionDivider} />
-
-            {/* Support */}
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Support</Text>
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => {
-                  // Open email client or show contact options
-                  Alert.alert(
-                    'Contact Support',
-                    'support@sixseven.app',
-                    [
-                      { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'Copy Email',
-                        onPress: () => {
-                          // In a real app, you'd use Clipboard.setString()
-                          Alert.alert('Copied!', 'Email address copied to clipboard');
-                        }
-                      }
-                    ]
-                  );
-                }}
-                activeOpacity={0.8}
-              >
-                <LinearGradient
-                  colors={['#2E2E2E', '#2A2A2A']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 0, y: 1 }}
-                  style={styles.actionButtonGradient}
-                >
-                  <Ionicons name="help-circle" size={24} color="#FFE0C2" />
-                  <Text style={styles.actionButtonText}>Help & Support</Text>
-                  <Ionicons name="chevron-forward" size={20} color="#FFE0C2" />
-                </LinearGradient>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => {
-                  Alert.alert(
-                    'About 6 7',
-                    `Version 1.0.0\n\nTalk the Alpha, Walk the Alpha\n\nTransform your messages into Gen Alpha slang! 🔥\n\n© 2025 Six Seven`,
-                    [{ text: 'OK' }]
-                  );
-                }}
-                activeOpacity={0.8}
-              >
-                <LinearGradient
-                  colors={['#2E2E2E', '#2A2A2A']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 0, y: 1 }}
-                  style={styles.actionButtonGradient}
-                >
-                  <Ionicons name="information-circle" size={24} color="#FFE0C2" />
-                  <Text style={styles.actionButtonText}>About</Text>
-                  <Ionicons name="chevron-forward" size={20} color="#FFE0C2" />
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
 
             {/* Support */}
             <View style={styles.sectionContainer}>
@@ -632,6 +605,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  editButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
@@ -659,79 +640,59 @@ const styles = StyleSheet.create({
     fontFamily: 'SpaceGrotesk_400Regular',
   },
 
+  // Profile Header (Avatar + User Info side by side)
+  profileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 32,
+    gap: 20,
+  },
+
   // Avatar
   avatarContainer: {
     alignItems: 'center',
-    marginBottom: 24,
   },
   avatarWrapper: {
     position: 'relative',
   },
   avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     borderWidth: 3,
-    borderColor: '#FFE0C2',
-  },
-  editAvatarButton: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(46, 46, 46, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
     borderColor: '#FFE0C2',
   },
 
   // User Info
-  infoContainer: {
-    alignItems: 'center',
-    marginBottom: 24,
+  userInfoContainer: {
+    flex: 1,
+    justifyContent: 'center',
   },
   name: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
     color: '#FFE0C2',
-    marginBottom: 8,
+    marginBottom: 4,
     fontFamily: 'SpaceGrotesk_400Regular',
   },
   email: {
-    fontSize: 16,
-    color: '#B4B4B4',
-    fontFamily: 'SpaceGrotesk_400Regular',
-  },
-
-  // Subscription
-  subscriptionContainer: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  subscriptionBadge: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginBottom: 8,
-  },
-  subscriptionBadgeContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  subscriptionText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#000000',
-    fontFamily: 'SpaceGrotesk_400Regular',
-  },
-  subscriptionExpiry: {
-    fontSize: 12,
     color: '#B4B4B4',
     fontFamily: 'SpaceGrotesk_400Regular',
+  },
+  simpleBadge: {
+    backgroundColor: 'rgba(255, 224, 194, 0.1)',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginTop: 6,
+    alignSelf: 'flex-start',
+  },
+  simpleBadgeText: {
+    fontSize: 12,
+    color: '#FFE0C2',
+    fontFamily: 'SpaceGrotesk_400Regular',
+    fontWeight: '500',
   },
 
   // Actions
@@ -771,30 +732,32 @@ const styles = StyleSheet.create({
 
   // New sections
   sectionContainer: {
-    marginBottom: 32,
+    marginBottom: 28,
   },
   sectionDivider: {
     height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     marginVertical: 16,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '600',
     color: '#FFE0C2',
-    fontFamily: 'SpaceGrotesk_700Bold',
+    fontFamily: 'SpaceGrotesk_600SemiBold',
     marginBottom: 16,
   },
   infoGrid: {
-    gap: 16,
+    gap: 8,
   },
   infoItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
     borderRadius: 12,
     padding: 16,
     gap: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
   },
   infoLabel: {
     fontSize: 12,
@@ -802,6 +765,7 @@ const styles = StyleSheet.create({
     fontFamily: 'SpaceGrotesk_400Regular',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    marginBottom: 4,
   },
   infoValue: {
     fontSize: 16,
@@ -814,9 +778,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
     borderRadius: 12,
     padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
   },
   preferenceLeft: {
     flexDirection: 'row',
@@ -862,30 +828,39 @@ const styles = StyleSheet.create({
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 16,
   },
   statItem: {
     flex: 1,
-    minWidth: (OUTER_WIDTH - 24) / 2 - 6,
+    minWidth: (OUTER_WIDTH - 32) / 2 - 8,
     borderRadius: 12,
     overflow: 'hidden',
   },
   statGradient: {
-    padding: 16,
+    padding: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 100,
+    minHeight: 120,
   },
   statNumber: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '700',
     color: '#FFE0C2',
     fontFamily: 'SpaceGrotesk_700Bold',
     marginTop: 8,
     marginBottom: 4,
   },
+  statIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 224, 194, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   statLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#B4B4B4',
     fontFamily: 'SpaceGrotesk_400Regular',
     textAlign: 'center',

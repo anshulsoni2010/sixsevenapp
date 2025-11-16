@@ -154,14 +154,37 @@ export async function PATCH(req: Request) {
     const userId = decoded.userId;
 
     const body = await req.json();
-    const { notifications } = body;
+    const { name, age, gender, alphaLevel, notifications } = body;
 
-    // Update user preferences
+    // Validate input
+    if (name !== undefined && (typeof name !== 'string' || name.trim().length === 0)) {
+      return NextResponse.json({ error: 'Invalid name' }, { status: 400 });
+    }
+    if (age !== undefined && (typeof age !== 'number' || age < 13 || age > 120)) {
+      return NextResponse.json({ error: 'Invalid age' }, { status: 400 });
+    }
+    if (gender !== undefined && !['male', 'female', 'other', 'prefer-not-to-say'].includes(gender)) {
+      return NextResponse.json({ error: 'Invalid gender' }, { status: 400 });
+    }
+    if (alphaLevel !== undefined && typeof alphaLevel !== 'string') {
+      return NextResponse.json({ error: 'Invalid alpha level' }, { status: 400 });
+    }
+    if (notifications !== undefined && typeof notifications !== 'boolean') {
+      return NextResponse.json({ error: 'Invalid notifications setting' }, { status: 400 });
+    }
+
+    // Prepare update data
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name.trim();
+    if (age !== undefined) updateData.age = age;
+    if (gender !== undefined) updateData.gender = gender;
+    if (alphaLevel !== undefined) updateData.alphaLevel = alphaLevel;
+    if (notifications !== undefined) updateData.notifications = notifications;
+
+    // Update user profile
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: {
-        notifications: notifications,
-      },
+      data: updateData,
       select: {
         id: true,
         email: true,
