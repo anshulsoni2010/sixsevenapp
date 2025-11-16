@@ -12,7 +12,8 @@ import {
   TouchableWithoutFeedback,
   Pressable,
   TextInput,
-  Alert
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -22,6 +23,20 @@ import * as Linking from 'expo-linking';
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+
+// Google Sign-In imports
+let GoogleSignin: any = null;
+let statusCodes: any = null;
+
+if (Platform.OS !== 'web') {
+  try {
+    const googleSigninModule = require('@react-native-google-signin/google-signin');
+    GoogleSignin = googleSigninModule.GoogleSignin;
+    statusCodes = googleSigninModule.statusCodes;
+  } catch (error) {
+    console.warn('Google Sign-In not available:', error);
+  }
+}
 
 const { width, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const OUTER_WIDTH = Math.floor(width * 0.9);
@@ -43,6 +58,7 @@ export default function OnboardingStart() {
   const [isExistingUser, setIsExistingUser] = useState(false); // track which sheet to show
   const [existingEmail, setExistingEmail] = useState('');
   const [showExistingInput, setShowExistingInput] = useState(false);
+  const [isAuthInProgress, setIsAuthInProgress] = useState(false);
 
   const sheetHeightRef = useRef<number>(460);
   const sheetTranslateY = useRef(new RNAnimated.Value(sheetHeightRef.current)).current;
@@ -62,6 +78,17 @@ export default function OnboardingStart() {
     return () => {
       mounted = false;
     };
+  }, []);
+
+  // Configure Google Sign-In
+  useEffect(() => {
+    if (GoogleSignin) {
+      GoogleSignin.configure({
+        webClientId: Constants.expoConfig?.extra?.GOOGLE_WEB_CLIENT_ID,
+        iosClientId: Constants.expoConfig?.extra?.GOOGLE_IOS_CLIENT_ID,
+        offlineAccess: true,
+      });
+    }
   }, []);
 
   function handleGetStarted() {
@@ -103,6 +130,7 @@ export default function OnboardingStart() {
       setSheetVisible(false);
       setShowExistingInput(false);
       setExistingEmail('');
+      setIsAuthInProgress(false); // Reset auth state when closing
     });
   };
 
@@ -140,6 +168,7 @@ export default function OnboardingStart() {
 
   const handleAuthSuccess = async (token: string, onboarded: boolean) => {
     try {
+      console.log('Auth success, saving token and routing...');
       await SecureStore.setItemAsync('session_token', token);
       await AsyncStorage.setItem('isLoggedIn', 'true');
       
@@ -152,6 +181,7 @@ export default function OnboardingStart() {
         
         if (response.ok) {
           const data = await response.json();
+          console.log('User data received, routing instantly...');
           if (data.subscribed) {
             router.replace('/chat');
           } else {
@@ -159,48 +189,135 @@ export default function OnboardingStart() {
           }
         } else {
           // Error - default to paywall
+          console.log('User data fetch failed, defaulting to paywall');
           router.replace('/paywall');
         }
       } else {
         // new user: go to setup screen to save onboarding data
+        console.log('New user, going to setup');
         router.push('/onboarding/setup');
       }
     } catch (e) {
       console.error('handleAuthSuccess error', e);
+      // On error, still try to route to avoid stuck state
+      router.replace('/paywall');
     }
   };
 
   const handleGooglePress = async () => {
+    if (isAuthInProgress) {
+      console.log('Auth already in progress, ignoring click');
+      return;
+    }
+
     try {
-      const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
-      const authUrl = `${BACKEND}/api/auth/google/initiate`;
+      setIsAuthInProgress(true);
+      console.log('Starting Google Sign-In, GoogleSignin available:', !!GoogleSignin);
 
-      const result = await WebBrowser.openAuthSessionAsync(
-        authUrl,
-        Linking.createURL('/')
-      );
+      if (!GoogleSignin) {
+        // Fallback to web browser auth
+        console.log('Using web browser fallback for Google auth');
+        const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
+        const authUrl = `${BACKEND}/api/auth/google/initiate`;
 
-      if (result.type === 'success' && result.url) {
-        const parsed = Linking.parse(result.url);
-        const token = parsed.queryParams?.token as string;
-        const onboarded = parsed.queryParams?.onboarded === 'true';
-        
-        if (token) {
-          await handleAuthSuccess(token, onboarded);
+        const result = await WebBrowser.openAuthSessionAsync(
+          authUrl,
+          Linking.createURL('/')
+        );
+
+        if (result.type === 'success' && result.url) {
+          const parsed = Linking.parse(result.url);
+          const token = parsed.queryParams?.token as string;
+          const onboarded = parsed.queryParams?.onboarded === 'true';
+          
+          if (token) {
+            await handleAuthSuccess(token, onboarded);
+          }
+        } else if (result.type === 'cancel') {
+          Alert.alert('Sign-in cancelled', 'You cancelled the sign-in flow.');
         }
-      } else if (result.type === 'cancel') {
-        Alert.alert('Sign-in cancelled', 'You cancelled the sign-in flow.');
+        return;
       }
-    } catch (e) {
-      console.error('handleGooglePress error', e);
-      Alert.alert('Sign-in error', 'Unable to start Google sign-in. See console for details.');
+
+      // Use native Google Sign-In for better UX
+      if (Platform.OS === 'android') {
+        console.log('Checking Google Play Services...');
+        await GoogleSignin.hasPlayServices();
+        console.log('Google Play Services available');
+      }
+
+      console.log('Calling GoogleSignin.signIn()...');
+      const signInPromise = GoogleSignin.signIn();
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Google Sign-In timed out')), 30000);
+      });
+      
+      const userInfo = await Promise.race([signInPromise, timeoutPromise]);
+      console.log('Google Sign-In success:', userInfo);
+
+      // Save user data to AsyncStorage
+      await AsyncStorage.setItem('user', JSON.stringify(userInfo));
+
+      // Get the ID token
+      console.log('Getting tokens...');
+      const tokens = await GoogleSignin.getTokens();
+      console.log('Google tokens received');
+
+      // Send the ID token to your backend
+      const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
+      console.log('Sending to backend:', `${BACKEND}/api/auth/google/callback`);
+      
+      const fetchPromise = fetch(`${BACKEND}/api/auth/google/callback`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          idToken: tokens.idToken,
+          accessToken: tokens.accessToken,
+        }),
+      });
+      
+      const fetchTimeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Backend request timed out')), 15000);
+      });
+      
+      const response = await Promise.race([fetchPromise, fetchTimeoutPromise]) as Response;
+      
+      if (!response.ok) {
+        throw new Error(`Backend auth failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Backend auth response:', data);
+
+      if (data.token) {
+        await handleAuthSuccess(data.token, data.onboarded);
+      } else {
+        throw new Error('No token received from backend');
+      }
+
+    } catch (error: any) {
+      console.error('Google Sign-In error:', error);
+      Alert.alert('Sign-in error', `Google sign-in failed: ${error.message || 'Unknown error'}`);
+    } finally {
+      setIsAuthInProgress(false);
+      console.log('Google Sign-In process completed');
     }
   };
 
   const handleApplePress = async () => {
+    if (isAuthInProgress) {
+      console.log('Auth already in progress, ignoring click');
+      return;
+    }
+
     try {
+      setIsAuthInProgress(true);
       const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
       const authUrl = `${BACKEND}/api/auth/apple/initiate`;
+
+      console.log('Opening Apple OAuth flow:', authUrl);
 
       const result = await WebBrowser.openAuthSessionAsync(
         authUrl,
@@ -221,6 +338,8 @@ export default function OnboardingStart() {
     } catch (e) {
       console.error('handleApplePress error', e);
       Alert.alert('Sign-in error', 'Unable to start Apple sign-in. See console for details.');
+    } finally {
+      setIsAuthInProgress(false);
     }
   };
 
@@ -391,13 +510,35 @@ export default function OnboardingStart() {
                 </View>
 
                 <View style={styles.buttonContainer}>
-                  <Pressable style={styles.authButton} onPress={handleGooglePress}>
-                    <Image
-                      source={require('../../assets/icon/google.png')}
-                      style={styles.iconImage}
-                    />
-                    <Text style={styles.authButtonText}>Continue with Google</Text>
+                  <Pressable 
+                    style={[styles.authButton, isAuthInProgress && styles.authButtonDisabled]} 
+                    onPress={handleGooglePress}
+                    disabled={isAuthInProgress}
+                  >
+                    {isAuthInProgress ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Image
+                        source={require('../../assets/icon/google.png')}
+                        style={styles.iconImage}
+                      />
+                    )}
+                    <Text style={styles.authButtonText}>
+                      {isAuthInProgress ? 'Signing in...' : 'Continue with Google'}
+                    </Text>
                   </Pressable>
+
+                  {isAuthInProgress && (
+                    <Pressable 
+                      style={[styles.authButton, styles.cancelButton]} 
+                      onPress={() => {
+                        setIsAuthInProgress(false);
+                        console.log('User cancelled Google Sign-In');
+                      }}
+                    >
+                      <Text style={styles.cancelButtonText}>Cancel</Text>
+                    </Pressable>
+                  )}
 
                   <Pressable style={[styles.authButton, { marginTop: 14 }]} onPress={handleApplePress}>
                     <Image
@@ -591,6 +732,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
     paddingHorizontal: 18,
+  },
+  authButtonDisabled: {
+    opacity: 0.6,
+  },
+  cancelButton: {
+    backgroundColor: '#333333',
+    marginTop: 8,
+  },
+  cancelButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
   iconImage: { width: 24, height: 24, marginRight: 12 },
   authButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
