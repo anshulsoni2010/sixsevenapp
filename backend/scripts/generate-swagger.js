@@ -2,6 +2,34 @@ const swaggerJsdoc = require('swagger-jsdoc');
 const fs = require('fs');
 const path = require('path');
 
+// Determine server URL dynamically
+function getServerUrl() {
+  // Check if running on Vercel
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+
+  // Check for custom production URL
+  if (process.env.NODE_ENV === 'production' && process.env.PRODUCTION_URL) {
+    return process.env.PRODUCTION_URL;
+  }
+
+  // Default to localhost for development
+  return 'http://localhost:3000';
+}
+
+function getServerDescription() {
+  if (process.env.VERCEL_URL) {
+    return 'Vercel Production Server';
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    return 'Production Server';
+  }
+
+  return 'Development Server';
+}
+
 const options = {
   definition: {
     openapi: '3.0.0',
@@ -16,10 +44,8 @@ const options = {
     },
     servers: [
       {
-        url: process.env.NODE_ENV === 'production'
-          ? 'https://your-production-url.com'
-          : 'http://localhost:3000',
-        description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
+        url: getServerUrl(),
+        description: getServerDescription(),
       },
     ],
     components: {
