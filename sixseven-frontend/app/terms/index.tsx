@@ -106,7 +106,7 @@ export default function TermsOfServiceScreen() {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>9. Disclaimer of Warranties</Text>
               <Text style={styles.paragraph}>
-                The service is provided "as is" without warranties of any kind, either express or implied. 
+                The service is provided &quot;as is&quot; without warranties of any kind, either express or implied. 
                 We do not warrant that the service will be uninterrupted or error-free.
               </Text>
             </View>

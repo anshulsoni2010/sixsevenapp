@@ -108,8 +108,8 @@ export default function NameScreen() {
 
 
                             <View style={styles.titleBlock}>
-                                <Text style={styles.title}>Hey there! What's your name? 👋</Text>
-                                <Text style={styles.subtitle}>Let's get to know the real you - drop your name and let's start this journey! 🚀</Text>
+                                <Text style={styles.title}>Hey there! What&apos;s your name? 👋</Text>
+                                <Text style={styles.subtitle}>Let&apos;s get to know the real you - drop your name and let&apos;s start this journey! 🚀</Text>
                             </View>
 
 

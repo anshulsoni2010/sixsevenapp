@@ -158,7 +158,7 @@ export default function GenderScreen() {
 
           <View style={styles.titleBlock}>
             <Text style={styles.title}>How do you identify? 🌈</Text>
-            <Text style={styles.subtitle}>Choose what feels right for you - we're all about being authentic! 💫</Text>
+            <Text style={styles.subtitle}>Choose what feels right for you - we&apos;re all about being authentic! 💫</Text>
           </View>
 
           <View style={styles.optionsContainer}>

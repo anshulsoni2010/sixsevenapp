@@ -1,3 +1,5 @@
+// SubscriptionScreen.tsx
+
 import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
@@ -23,8 +25,8 @@ const OUTER_WIDTH = Math.round(SCREEN_WIDTH * 0.9);
 
 interface SubscriptionData {
   subscribed: boolean;
-  plan?: string;
-  status?: string;
+  plan?: 'weekly' | 'yearly' | string;
+  status?: 'active' | 'past_due' | 'canceled' | string;
   endsAt?: string;
   onboarded?: boolean;
 }
@@ -49,14 +51,14 @@ export default function SubscriptionScreen() {
 
       const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
       console.log('Fetching subscription from:', `${BACKEND}/api/user/me`);
-      
+
       // First, sync subscription data from Stripe to get latest billing date
       try {
         const syncResponse = await fetch(`${BACKEND}/api/stripe/sync-subscription`, {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${token}` },
         });
-        
+
         if (syncResponse.ok) {
           const syncData = await syncResponse.json();
           console.log('Synced subscription from Stripe:', syncData);
@@ -68,13 +70,13 @@ export default function SubscriptionScreen() {
       } catch (syncError) {
         console.log('Could not sync subscription:', syncError);
       }
-      
+
       // Small delay to ensure database is updated
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       // Then fetch the updated subscription data
       const response = await fetch(`${BACKEND}/api/user/me`, {
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.ok) {
@@ -96,75 +98,71 @@ export default function SubscriptionScreen() {
   };
 
   const handleManageSubscription = async () => {
-    Alert.alert(
-      'Manage Subscription',
-      'Choose how you want to manage your subscription:',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'View Billing Details',
-          onPress: async () => {
-            try {
-              setManagingSubscription(true);
-              
-              const token = await SecureStore.getItemAsync('session_token');
-              if (!token) {
-                Alert.alert('Error', 'Please sign in again');
-                return;
-              }
+    Alert.alert('Manage Subscription', 'Choose how you want to manage your subscription:', [
+      {
+        text: 'Cancel',
+        style: 'cancel',
+      },
+      {
+        text: 'View Billing Details',
+        onPress: async () => {
+          try {
+            setManagingSubscription(true);
 
-              const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
-              
-              // Create Stripe customer portal session
-              const response = await fetch(`${BACKEND}/api/stripe/create-portal-session`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`,
-                },
-              });
+            const token = await SecureStore.getItemAsync('session_token');
+            if (!token) {
+              Alert.alert('Error', 'Please sign in again');
+              return;
+            }
 
-              const data = await response.json();
+            const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
 
-              if (response.ok && data.url) {
-                // Open Stripe customer portal
-                await WebBrowser.openBrowserAsync(data.url);
-                
-                // Reload subscription after portal closes
-                await loadSubscription();
-              } else {
-                Alert.alert(
-                  'Portal Not Available',
-                  'The billing portal is being set up. In the meantime, you can:\n\n• View your plan details here\n• Change plans from the "Change Plan" button\n• Contact support@sixseven.app for billing questions'
-                );
-              }
-            } catch (error) {
-              console.error('Portal error:', error);
+            // Create Stripe customer portal session
+            const response = await fetch(`${BACKEND}/api/stripe/create-portal-session`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.url) {
+              // Open Stripe customer portal
+              await WebBrowser.openBrowserAsync(data.url);
+
+              // Reload subscription after portal closes
+              await loadSubscription();
+            } else {
               Alert.alert(
                 'Portal Not Available',
-                'The billing portal is being set up. You can contact support@sixseven.app for billing assistance.'
+                'The billing portal is being set up. In the meantime, you can:\n\n• View your plan details here\n• Change plans from the "Change Plan" button\n• Contact support@sixseven.app for billing questions'
               );
-            } finally {
-              setManagingSubscription(false);
             }
-          },
-        },
-        {
-          text: 'Cancel Subscription',
-          style: 'destructive',
-          onPress: () => {
+          } catch (error) {
+            console.error('Portal error:', error);
             Alert.alert(
-              'Cancel Subscription',
-              'To cancel your subscription, please contact us at support@sixseven.app and we\'ll process your cancellation immediately.',
-              [{ text: 'OK' }]
+              'Portal Not Available',
+              'The billing portal is being set up. You can contact support@sixseven.app for billing assistance.'
             );
-          },
+          } finally {
+            setManagingSubscription(false);
+          }
         },
-      ]
-    );
+      },
+      {
+        text: 'Cancel Subscription',
+        style: 'destructive',
+        onPress: () => {
+          Alert.alert(
+            'Cancel Subscription',
+            "To cancel your subscription, please contact us at support@sixseven.app and we'll process your cancellation immediately.",
+            [{ text: 'OK' }]
+          );
+        },
+      },
+    ]);
   };
 
   const handleUpgrade = () => {
@@ -172,47 +170,48 @@ export default function SubscriptionScreen() {
   };
 
   const handleLogout = async () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
+    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+      {
+        text: 'Cancel',
+        style: 'cancel',
+      },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await SecureStore.deleteItemAsync('session_token');
+            router.replace('/onboarding' as any);
+          } catch (error) {
+            console.error('Error signing out:', error);
+            Alert.alert('Error', 'Failed to sign out. Please try again.');
+          }
         },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await SecureStore.deleteItemAsync('session_token');
-              router.replace('/onboarding' as any);
-            } catch (error) {
-              console.error('Error signing out:', error);
-              Alert.alert('Error', 'Failed to sign out. Please try again.');
-            }
-          },
-        },
-      ]
-    );
+      },
+    ]);
   };
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    const d = new Date(dateString);
+    if (Number.isNaN(d.getTime())) return 'N/A';
+    return d.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
     });
   };
 
   const getStatusColor = (status?: string) => {
     switch (status) {
-      case 'active': return '#4CAF50';
-      case 'past_due': return '#FF9800';
-      case 'canceled': return '#F44336';
-      default: return '#999999';
+      case 'active':
+        return '#4CAF50';
+      case 'past_due':
+        return '#FF9800';
+      case 'canceled':
+        return '#F44336';
+      default:
+        return '#999999';
     }
   };
 
@@ -251,11 +250,7 @@ export default function SubscriptionScreen() {
         <View style={styles.mainContainer}>
           {/* Header */}
           <View style={styles.header}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => router.back()}
-              activeOpacity={0.8}
-            >
+            <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.8}>
               <Ionicons name="chevron-back" size={24} color="#FFE0C2" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Subscription</Text>
@@ -275,23 +270,17 @@ export default function SubscriptionScreen() {
                 <View style={styles.statusHeader}>
                   <Ionicons name="card" size={32} color="#FFE0C2" />
                   <View style={[styles.statusBadge, { backgroundColor: getStatusColor(subscription?.status) }]}>
-                    <Text style={styles.statusBadgeText}>
-                      {subscription?.status?.toUpperCase() || 'INACTIVE'}
-                    </Text>
+                    <Text style={styles.statusBadgeText}>{subscription?.status?.toUpperCase() || 'INACTIVE'}</Text>
                   </View>
                 </View>
 
                 <View style={styles.statusDetails}>
                   <Text style={styles.statusLabel}>Plan</Text>
                   <Text style={styles.statusValue}>
-                    {subscription?.subscribed 
-                      ? getPlanName(subscription?.plan) 
-                      : 'No Active Subscription'}
+                    {subscription?.subscribed ? getPlanName(subscription?.plan) : 'No Active Subscription'}
                   </Text>
                   {!subscription?.subscribed && (
-                    <Text style={styles.planTypeLabel}>
-                      Subscribe to unlock all features
-                    </Text>
+                    <Text style={styles.planTypeLabel}>Subscribe to unlock all features</Text>
                   )}
                   {subscription?.plan && (
                     <Text style={styles.planTypeLabel}>
@@ -303,7 +292,7 @@ export default function SubscriptionScreen() {
                 {subscription?.subscribed && (
                   <>
                     <View style={styles.divider} />
-                    
+
                     <View style={styles.statusDetails}>
                       <Text style={styles.statusLabel}>Plan Details</Text>
                       <Text style={styles.statusValue}>
@@ -313,23 +302,13 @@ export default function SubscriptionScreen() {
 
                     <View style={styles.statusDetails}>
                       <Text style={styles.statusLabel}>Next Billing Date</Text>
-                      <Text style={styles.statusValue}>
-                        {subscription.endsAt 
-                          ? new Date(subscription.endsAt).toLocaleDateString('en-US', { 
-                              year: 'numeric', 
-                              month: 'long', 
-                              day: 'numeric' 
-                            })
-                          : 'Loading...'}
-                      </Text>
+                      <Text style={styles.statusValue}>{formatDate(subscription?.endsAt) || 'Loading...'}</Text>
                     </View>
 
                     <View style={styles.statusDetails}>
                       <Text style={styles.statusLabel}>Subscription Status</Text>
                       <Text style={[styles.statusValue, { color: getStatusColor(subscription?.status) }]}>
-                        {subscription?.status === 'active' 
-                          ? '✓ Active & Renewing' 
-                          : subscription?.status || 'Unknown'}
+                        {subscription?.status === 'active' ? '✓ Active & Renewing' : subscription?.status || 'Unknown'}
                       </Text>
                     </View>
 
@@ -360,56 +339,50 @@ export default function SubscriptionScreen() {
                       activeOpacity={0.8}
                     >
                       <LinearGradient
-                        colors={['#FFE0C2', '#FFD700']}
+                        colors={['#2E2E2E', '#2A2A2A']}
                         start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
+                        end={{ x: 0, y: 1 }}
                         style={styles.actionButtonGradient}
                       >
                         {managingSubscription ? (
-                          <ActivityIndicator color="#111111" size="small" />
+                          <ActivityIndicator color="#FFE0C2" size="small" />
                         ) : (
                           <>
-                            <Ionicons name="card" size={20} color="#111111" />
+                            <Ionicons name="card" size={24} color="#FFE0C2" />
                             <Text style={styles.actionButtonText}>Billing & Cancellation</Text>
+                            <Ionicons name="chevron-forward" size={20} color="#FFE0C2" />
                           </>
                         )}
                       </LinearGradient>
                     </TouchableOpacity>
 
-                    <TouchableOpacity
-                      style={styles.actionButton}
-                      onPress={handleUpgrade}
-                      activeOpacity={0.8}
-                    >
+                    <TouchableOpacity style={styles.actionButton} onPress={handleUpgrade} activeOpacity={0.8}>
                       <LinearGradient
-                        colors={['#FFE0C2', '#FFD700']}
+                        colors={['#2E2E2E', '#2A2A2A']}
                         start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
+                        end={{ x: 0, y: 1 }}
                         style={styles.actionButtonGradient}
                       >
-                        <Ionicons name="trending-up" size={20} color="#111111" />
+                        <Ionicons name="trending-up" size={24} color="#FFE0C2" />
                         <Text style={styles.actionButtonText}>Change Plan</Text>
+                        <Ionicons name="chevron-forward" size={20} color="#FFE0C2" />
                       </LinearGradient>
                     </TouchableOpacity>
                   </>
                 ) : (
-                  <TouchableOpacity
-                    style={styles.actionButton}
-                    onPress={handleUpgrade}
-                    activeOpacity={0.8}
-                  >
+                  <TouchableOpacity style={styles.actionButton} onPress={handleUpgrade} activeOpacity={0.8}>
                     <LinearGradient
                       colors={['#FFE0C2', '#FFD700']}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 0 }}
                       style={styles.actionButtonGradient}
                     >
-                      <Ionicons name="rocket" size={20} color="#111111" />
-                      <Text style={styles.actionButtonText}>Subscribe Now</Text>
+                      <Ionicons name="rocket" size={24} color="#111111" />
+                      <Text style={[styles.actionButtonText, { color: '#111111' }]}>Subscribe Now</Text>
+                      <Ionicons name="chevron-forward" size={20} color="#111111" />
                     </LinearGradient>
                   </TouchableOpacity>
                 )}
-              </View>
               </View>
             </View>
 
@@ -419,26 +392,26 @@ export default function SubscriptionScreen() {
               <View style={styles.infoGrid}>
                 <View style={styles.infoItem}>
                   <Ionicons name="shield-checkmark" size={24} color="#4CAF50" />
-                  <Text style={styles.infoTitle}>Secure Payments</Text>
-                  <Text style={styles.infoText}>
-                    All payments are processed securely through Stripe
-                  </Text>
+                  <View style={styles.infoTextContainer}>
+                    <Text style={styles.infoTitle}>Secure Payments</Text>
+                    <Text style={styles.infoText}>All payments are processed securely through Stripe</Text>
+                  </View>
                 </View>
 
                 <View style={styles.infoItem}>
                   <Ionicons name="refresh" size={24} color="#2196F3" />
-                  <Text style={styles.infoTitle}>Easy Cancellation</Text>
-                  <Text style={styles.infoText}>
-                    Cancel anytime from the subscription portal
-                  </Text>
+                  <View style={styles.infoTextContainer}>
+                    <Text style={styles.infoTitle}>Easy Cancellation</Text>
+                    <Text style={styles.infoText}>Cancel anytime from the subscription portal</Text>
+                  </View>
                 </View>
 
                 <View style={styles.infoItem}>
                   <Ionicons name="mail" size={24} color="#FF9800" />
-                  <Text style={styles.infoTitle}>Need Help?</Text>
-                  <Text style={styles.infoText}>
-                    Contact us at support@sixseven.app
-                  </Text>
+                  <View style={styles.infoTextContainer}>
+                    <Text style={styles.infoTitle}>Need Help?</Text>
+                    <Text style={styles.infoText}>Contact us at support@sixseven.app</Text>
+                  </View>
                 </View>
               </View>
             </View>
@@ -496,10 +469,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '600',
     color: '#FFE0C2',
-    fontFamily: 'SpaceGrotesk_700Bold',
+    fontFamily: 'SpaceGrotesk_400Regular',
   },
 
   // New sections
@@ -563,9 +536,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   statusLabel: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#B4B4B4',
-    fontFamily: 'Outfit_400Regular',
+    fontFamily: 'SpaceGrotesk_400Regular',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
     marginBottom: 6,
   },
   statusValue: {
@@ -603,7 +578,7 @@ const styles = StyleSheet.create({
   infoItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 12,
     padding: 20,
     borderWidth: 1,

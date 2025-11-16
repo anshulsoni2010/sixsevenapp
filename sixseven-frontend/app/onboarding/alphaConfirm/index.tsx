@@ -10,6 +10,7 @@ import {
     PanResponder,
     TextInput,
     TouchableWithoutFeedback,
+    ActivityIndicator,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -24,9 +25,18 @@ import * as SecureStore from 'expo-secure-store';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { Alert } from 'react-native';
-// import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+let GoogleSignin: any = null;
+let statusCodes: any = null;
 
-const GoogleSignin = Platform.OS === 'web' ? null : require('@react-native-google-signin/google-signin').GoogleSignin;
+if (Platform.OS !== 'web') {
+  try {
+    const googleSigninModule = require('@react-native-google-signin/google-signin');
+    GoogleSignin = googleSigninModule.GoogleSignin;
+    statusCodes = googleSigninModule.statusCodes;
+  } catch (error) {
+    console.warn('Google Sign-In not available:', error);
+  }
+}
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const OUTER_WIDTH = Math.round(SCREEN_WIDTH * 0.9);
@@ -49,12 +59,19 @@ function AlphaConfirmScreen() {
 
     // Configure Google Sign-In
     useEffect(() => {
+        console.log('Configuring Google Sign-In, GoogleSignin available:', !!GoogleSignin);
         if (GoogleSignin) {
             GoogleSignin.configure({
                 webClientId: Constants.expoConfig?.extra?.GOOGLE_WEB_CLIENT_ID,
                 iosClientId: Constants.expoConfig?.extra?.GOOGLE_IOS_CLIENT_ID,
                 offlineAccess: true,
             });
+            console.log('Google Sign-In configured with:', {
+                webClientId: Constants.expoConfig?.extra?.GOOGLE_WEB_CLIENT_ID,
+                iosClientId: Constants.expoConfig?.extra?.GOOGLE_IOS_CLIENT_ID,
+            });
+        } else {
+            console.log('Google Sign-In not available on this platform');
         }
     }, []);
 
@@ -236,6 +253,7 @@ function AlphaConfirmScreen() {
 
         try {
             setIsAuthInProgress(true);
+            console.log('Starting Google Sign-In, GoogleSignin available:', !!GoogleSignin);
 
             if (!GoogleSignin) {
                 Alert.alert(
@@ -248,23 +266,34 @@ function AlphaConfirmScreen() {
 
             // Check if Google Play Services are available (Android only)
             if (Platform.OS === 'android') {
+                console.log('Checking Google Play Services...');
                 await GoogleSignin.hasPlayServices();
+                console.log('Google Play Services available');
             }
 
-            // Sign in with Google
-            const userInfo = await GoogleSignin.signIn();
+            // Sign in with Google with timeout
+            console.log('Calling GoogleSignin.signIn()...');
+            const signInPromise = GoogleSignin.signIn();
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Google Sign-In timed out')), 30000); // 30 second timeout
+            });
+            
+            const userInfo = await Promise.race([signInPromise, timeoutPromise]);
             console.log('Google Sign-In success:', userInfo);
 
             // Save user data to AsyncStorage
             await AsyncStorage.setItem('user', JSON.stringify(userInfo));
 
             // Get the ID token
+            console.log('Getting tokens...');
             const tokens = await GoogleSignin.getTokens();
-            console.log('Google tokens:', tokens);
+            console.log('Google tokens received');
 
-            // Send the ID token to your backend
+            // Send the ID token to your backend with timeout
             const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
-            const response = await fetch(`${BACKEND}/api/auth/google/callback`, {
+            console.log('Sending to backend:', `${BACKEND}/api/auth/google/callback`);
+            
+            const fetchPromise = fetch(`${BACKEND}/api/auth/google/callback`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -274,7 +303,13 @@ function AlphaConfirmScreen() {
                     accessToken: tokens.accessToken,
                 }),
             });
-
+            
+            const fetchTimeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Backend request timed out')), 15000); // 15 second timeout
+            });
+            
+            const response = await Promise.race([fetchPromise, fetchTimeoutPromise]) as Response;
+            
             if (!response.ok) {
                 throw new Error(`Backend auth failed: ${response.status}`);
             }
@@ -290,9 +325,10 @@ function AlphaConfirmScreen() {
 
         } catch (error: any) {
             console.error('Google Sign-In error:', error);
-            Alert.alert('Sign-in error', 'Google sign-in was cancelled or failed.');
+            Alert.alert('Sign-in error', `Google sign-in failed: ${error.message || 'Unknown error'}`);
         } finally {
             setIsAuthInProgress(false);
+            console.log('Google Sign-In process completed');
         }
     };
 
@@ -495,15 +531,35 @@ function AlphaConfirmScreen() {
                             </View>
 
                             <View style={styles.buttonContainer}>
-                                <Pressable style={styles.authButton} onPress={handleGooglePress}>
-                                    <Image
-                                        source={require('../../../assets/icon/google.png')}
-                                        style={styles.iconImage}
-                                    />
+                                <Pressable 
+                                    style={[styles.authButton, isAuthInProgress && styles.authButtonDisabled]} 
+                                    onPress={handleGooglePress}
+                                    disabled={isAuthInProgress}
+                                >
+                                    {isAuthInProgress ? (
+                                        <ActivityIndicator size="small" color="#FFFFFF" />
+                                    ) : (
+                                        <Image
+                                            source={require('../../../assets/icon/google.png')}
+                                            style={styles.iconImage}
+                                        />
+                                    )}
                                     <Text style={styles.authButtonText}>
-                                        Continue with Google
+                                        {isAuthInProgress ? 'Signing in...' : 'Continue with Google'}
                                     </Text>
                                 </Pressable>
+
+                                {isAuthInProgress && (
+                                    <Pressable 
+                                        style={[styles.authButton, styles.cancelButton]} 
+                                        onPress={() => {
+                                            setIsAuthInProgress(false);
+                                            console.log('User cancelled Google Sign-In');
+                                        }}
+                                    >
+                                        <Text style={styles.cancelButtonText}>Cancel</Text>
+                                    </Pressable>
+                                )}
 
                                 <Pressable style={[styles.authButton, { marginTop: 14 }]} onPress={handleApplePress}>
                                     <Image
@@ -622,6 +678,18 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         flexDirection: 'row',
         paddingHorizontal: 18,
+    },
+    authButtonDisabled: {
+        opacity: 0.6,
+    },
+    cancelButton: {
+        backgroundColor: '#333333',
+        marginTop: 8,
+    },
+    cancelButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '600',
     },
     iconImage: { width: 24, height: 24, marginRight: 12, resizeMode: 'contain' },
     authButtonText: {

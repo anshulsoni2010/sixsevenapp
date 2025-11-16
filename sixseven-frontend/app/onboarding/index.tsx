@@ -299,7 +299,7 @@ export default function OnboardingStart() {
               <View style={styles.textBlock}>
                 <Text style={styles.headline}>{`Talk the Alpha,\nWalk the Alpha`}</Text>
                 <Text style={styles.subtext}>
-                  Just write me your own way or send your chat ss, I'll convert you in Gen Alpha way.
+                  Just write me your own way or send your chat ss, I&apos;ll convert you in Gen Alpha way.
                 </Text>
               </View>
             </View>

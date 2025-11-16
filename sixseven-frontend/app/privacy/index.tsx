@@ -94,7 +94,7 @@ export default function PrivacyPolicyScreen() {
             </View>
 
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>8. Children's Privacy</Text>
+              <Text style={styles.sectionTitle}>8. Children&apos;s Privacy</Text>
               <Text style={styles.paragraph}>
                 The service is not intended for users under 13 years of age. We do not knowingly collect 
                 information from children under 13.

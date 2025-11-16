@@ -81,6 +81,7 @@ export default function NameScreen() {
     useEffect(() => {
         (async () => {
             try {
+                // eslint-disable-next-line import/no-unresolved
                 // @ts-ignore - dynamic import of expo-notifications
                 const Notifications: any = await import('expo-notifications');
                 await Notifications.requestPermissionsAsync();
