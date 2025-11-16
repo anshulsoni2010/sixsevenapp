@@ -644,13 +644,21 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
   },
 
-  // Header
+    // Header
   header: {
     height: 50,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
+  },
+  headerCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerSpinner: {
+    marginTop: 2,
   },
   backButton: {
     width: 40,

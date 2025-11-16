@@ -52,36 +52,13 @@ export default function SubscriptionScreen() {
       const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
       console.log('Fetching subscription from:', `${BACKEND}/api/user/me`);
 
-      // First, sync subscription data from Stripe to get latest billing date
-      try {
-        const syncResponse = await fetch(`${BACKEND}/api/stripe/sync-subscription`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (syncResponse.ok) {
-          const syncData = await syncResponse.json();
-          console.log('Synced subscription from Stripe:', syncData);
-          console.log('Sync returned subscriptionEndsAt:', syncData.subscriptionEndsAt);
-        } else {
-          const errorText = await syncResponse.text();
-          console.log('Sync failed with status:', syncResponse.status, errorText);
-        }
-      } catch (syncError) {
-        console.log('Could not sync subscription:', syncError);
-      }
-
-      // Small delay to ensure database is updated
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Then fetch the updated subscription data
       const response = await fetch(`${BACKEND}/api/user/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Subscription data after sync:', data);
+        console.log('Subscription data:', data);
         console.log('endsAt value:', data.endsAt);
         console.log('endsAt type:', typeof data.endsAt);
         setSubscription(data);
