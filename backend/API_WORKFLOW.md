@@ -26,6 +26,17 @@ npm run check-swagger  # Verifies docs are up to date
 npm run generate-swagger
 ```
 
+### 4. **Verify Server URL**
+The swagger documentation automatically detects the correct server URL:
+- **Development**: `http://localhost:3000` (when running locally)
+- **Vercel**: `https://{VERCEL_URL}` (when deployed to Vercel)
+- **Production**: Uses `PRODUCTION_URL` env var if set
+
+### 5. **Test in Swagger UI**
+- Visit: `http://localhost:3000/api/docs` (or production URL)
+- Test endpoints with the correct server URL
+- Verify request/response schemas
+
 ### 3. **Test in Swagger UI**
 - Visit: `http://localhost:3000/api/docs`
 - Test the new/updated endpoint
@@ -56,6 +67,7 @@ npm run generate-swagger
 - [ ] Error responses documented
 - [ ] `npm run check-swagger` executed (verify no outdated files)
 - [ ] `npm run generate-swagger` executed
+- [ ] Server URL verified (localhost for dev, correct domain for prod)
 - [ ] Tested in Swagger UI
 - [ ] API_README.md updated (if needed)
 
