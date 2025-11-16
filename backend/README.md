@@ -1,22 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Six Seven Backend API
+
+This is the backend API for Six Seven - a mobile app that transforms messages into Gen Alpha slang.
 
 ## Getting Started
 
-First, run the development server:
+First, install dependencies and run the development server:
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the API landing page.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## API Documentation
+
+The complete API documentation is available via Swagger UI:
+
+- **Swagger UI**: [http://localhost:3000/api/docs](http://localhost:3000/api/docs)
+- **API README**: See [API_README.md](./API_README.md) for detailed documentation
+
+### Generate Documentation
+
+To regenerate the swagger specification after making changes:
+
+```bash
+npm run generate-swagger
+```
+
+## Tech Stack
+
+- **Framework**: Next.js 16 with App Router
+- **Database**: PostgreSQL with Prisma ORM
+- **Authentication**: JWT with Google OAuth
+- **Payments**: Stripe
+- **Documentation**: Swagger/OpenAPI 3.0
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 

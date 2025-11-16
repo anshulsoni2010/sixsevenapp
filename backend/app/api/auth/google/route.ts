@@ -1,3 +1,14 @@
+/**
+ * Six Seven API - Authentication Endpoints
+ *
+ * IMPORTANT: When modifying this file, remember to:
+ * 1. Update the JSDoc swagger comments above each endpoint
+ * 2. Run `npm run generate-swagger` to update documentation
+ * 3. Test changes in Swagger UI at /api/docs
+ *
+ * See API_WORKFLOW.md for complete development guidelines.
+ */
+
 import { NextResponse } from 'next/server';
 import { OAuth2Client } from 'google-auth-library';
 import { prisma } from '../../../../lib/prisma';
@@ -6,6 +17,60 @@ import { serialize } from 'cookie';
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+/**
+ * @swagger
+ * /api/auth/google:
+ *   post:
+ *     summary: Google OAuth authentication
+ *     description: Authenticate user with Google OAuth and return JWT token
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - idToken
+ *             properties:
+ *               idToken:
+ *                 type: string
+ *                 description: Google OAuth ID token
+ *     responses:
+ *       200:
+ *         description: Authentication successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     name:
+ *                       type: string
+ *                     picture:
+ *                       type: string
+ *                     onboarded:
+ *                       type: boolean
+ *                 token:
+ *                   type: string
+ *                   description: JWT authentication token
+ *         headers:
+ *           Set-Cookie:
+ *             schema:
+ *               type: string
+ *               example: session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; Path=/; HttpOnly; Max-Age=2592000
+ *       400:
+ *         description: Missing or invalid idToken
+ *       401:
+ *         description: Invalid token payload
+ *       500:
+ *         description: Server error
+ */
 export async function POST(req: Request) {
   try {
     const body = await req.json();

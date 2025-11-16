@@ -1,3 +1,14 @@
+/**
+ * Six Seven API - Stripe Webhook Endpoints
+ *
+ * IMPORTANT: When modifying this file, remember to:
+ * 1. Update the JSDoc swagger comments above each endpoint
+ * 2. Run `npm run generate-swagger` to update documentation
+ * 3. Test changes in Swagger UI at /api/docs
+ *
+ * See API_WORKFLOW.md for complete development guidelines.
+ */
+
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { PrismaClient } from '@prisma/client';
@@ -10,6 +21,36 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
+/**
+ * @swagger
+ * /api/stripe/webhook:
+ *   post:
+ *     summary: Stripe webhook handler
+ *     description: Handle Stripe webhook events for subscription management
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             description: Raw Stripe webhook payload
+ *     responses:
+ *       200:
+ *         description: Webhook processed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 received:
+ *                   type: boolean
+ *                   example: true
+ *       400:
+ *         description: Invalid webhook signature or payload
+ *       500:
+ *         description: Server error processing webhook
+ *     security: []  # No authentication required for webhooks
+ */
 export async function POST(req: Request) {
   try {
     const body = await req.text();

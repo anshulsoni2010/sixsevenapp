@@ -7,7 +7,10 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "generate-swagger": "node scripts/generate-swagger.js",
+    "check-swagger": "node scripts/check-swagger.js",
+    "dev:docs": "npm run generate-swagger && npm run dev"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -18,7 +21,9 @@
     "next": "16.0.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "stripe": "^19.2.0"
+    "stripe": "^19.2.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-react": "^5.30.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

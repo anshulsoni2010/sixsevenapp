@@ -9,6 +9,48 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-10-29.clover',
 });
 
+/**
+ * @swagger
+ * /api/stripe/create-checkout:
+ *   post:
+ *     summary: Create Stripe checkout session
+ *     description: Create a Stripe checkout session for subscription purchase
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - plan
+ *             properties:
+ *               plan:
+ *                 type: string
+ *                 enum: [monthly, yearly]
+ *                 description: Subscription plan type
+ *     responses:
+ *       200:
+ *         description: Checkout session created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 sessionId:
+ *                   type: string
+ *                   description: Stripe checkout session ID
+ *                 url:
+ *                   type: string
+ *                   description: Stripe checkout URL
+ *       400:
+ *         description: Invalid plan or missing required fields
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
 export async function POST(req: Request) {
   try {
     // Get user from JWT token

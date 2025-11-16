@@ -9,6 +9,32 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-10-29.clover',
 });
 
+/**
+ * @swagger
+ * /api/stripe/create-portal-session:
+ *   post:
+ *     summary: Create Stripe customer portal session
+ *     description: Create a Stripe customer portal session for subscription management
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Portal session created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 url:
+ *                   type: string
+ *                   description: Stripe customer portal URL
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: User not found or no active subscription
+ *       500:
+ *         description: Server error
+ */
 export async function POST(req: Request) {
   try {
     // Get user from JWT token
