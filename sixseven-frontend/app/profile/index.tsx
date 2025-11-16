@@ -9,6 +9,7 @@ import {
   Dimensions,
   ImageBackground,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -181,7 +182,7 @@ export default function ProfileScreen() {
         <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
           <View style={styles.mainContainer}>
             <View style={styles.loadingContainer}>
-              <Text style={styles.loadingText}>Loading...</Text>
+              <ActivityIndicator size="large" color="#ffffff" />
             </View>
           </View>
         </SafeAreaView>
@@ -218,11 +219,26 @@ export default function ProfileScreen() {
           >
             {/* Profile Picture */}
             <View style={styles.avatarContainer}>
-              <Image
-                source={{ uri: userData?.picture }}
-                style={styles.avatar}
-                resizeMode="cover"
-              />
+              <View style={styles.avatarWrapper}>
+                <Image
+                  source={userData?.picture ? { uri: userData.picture } : require('../../assets/images/icon.png')}
+                  style={styles.avatar}
+                  resizeMode="cover"
+                  onError={(e) => {
+                    console.log('Avatar load error:', e.nativeEvent.error);
+                  }}
+                />
+                <TouchableOpacity
+                  style={styles.editAvatarButton}
+                  onPress={() => {
+                    // TODO: Implement avatar editing
+                    Alert.alert('Coming Soon', 'Profile picture editing will be available soon!');
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="camera" size={16} color="#FFE0C2" />
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* User Info */}
@@ -235,14 +251,18 @@ export default function ProfileScreen() {
             {userData?.subscribed && (
               <View style={styles.subscriptionContainer}>
                 <LinearGradient
-                  colors={['#FFE0C2', '#FFD700']}
+                  colors={['#FFE0C2', '#FFD700', '#FFA500']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.subscriptionBadge}
                 >
-                  <Text style={styles.subscriptionText}>
-                    {userData?.plan === 'yearly' ? 'Yearly' : 'Monthly'} Pro
-                  </Text>
+                  <View style={styles.subscriptionBadgeContent}>
+                    <Ionicons name="star" size={16} color="#000000" />
+                    <Text style={styles.subscriptionText}>
+                      {userData?.plan === 'yearly' ? 'Yearly' : 'Monthly'} Pro
+                    </Text>
+                    <Ionicons name="star" size={16} color="#000000" />
+                  </View>
                 </LinearGradient>
                 {userData?.endsAt && (
                   <Text style={styles.subscriptionExpiry}>
@@ -287,28 +307,64 @@ export default function ProfileScreen() {
               </View>
             </View>
 
+            <View style={styles.sectionDivider} />
+
             {/* Usage Stats */}
             <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Your Stats</Text>
+              <Text style={styles.sectionTitle}>Your Activity</Text>
               <View style={styles.statsGrid}>
                 <View style={styles.statItem}>
-                  <Text style={styles.statNumber}>42</Text>
-                  <Text style={styles.statLabel}>Messages Translated</Text>
+                  <LinearGradient
+                    colors={['rgba(255, 224, 194, 0.1)', 'rgba(255, 224, 194, 0.05)']}
+                    style={styles.statGradient}
+                  >
+                    <Ionicons name="chatbubble" size={24} color="#FFE0C2" />
+                    <Text style={styles.statNumber}>
+                      {userData?.stats?.messagesTranslated || '0'}
+                    </Text>
+                    <Text style={styles.statLabel}>Messages Translated</Text>
+                  </LinearGradient>
                 </View>
                 <View style={styles.statItem}>
-                  <Text style={styles.statNumber}>7</Text>
-                  <Text style={styles.statLabel}>Days Active</Text>
+                  <LinearGradient
+                    colors={['rgba(255, 224, 194, 0.1)', 'rgba(255, 224, 194, 0.05)']}
+                    style={styles.statGradient}
+                  >
+                    <Ionicons name="calendar" size={24} color="#FFE0C2" />
+                    <Text style={styles.statNumber}>
+                      {userData?.stats?.daysActive || '0'}
+                    </Text>
+                    <Text style={styles.statLabel}>Days Active</Text>
+                  </LinearGradient>
                 </View>
                 <View style={styles.statItem}>
-                  <Text style={styles.statNumber}>4.8</Text>
-                  <Text style={styles.statLabel}>Avg. Rating</Text>
+                  <LinearGradient
+                    colors={['rgba(255, 224, 194, 0.1)', 'rgba(255, 224, 194, 0.05)']}
+                    style={styles.statGradient}
+                  >
+                    <Ionicons name="star" size={24} color="#FFE0C2" />
+                    <Text style={styles.statNumber}>
+                      {userData?.stats?.rating || '0.0'}
+                    </Text>
+                    <Text style={styles.statLabel}>Avg. Rating</Text>
+                  </LinearGradient>
                 </View>
                 <View style={styles.statItem}>
-                  <Text style={styles.statNumber}>12</Text>
-                  <Text style={styles.statLabel}>Alpha Points</Text>
+                  <LinearGradient
+                    colors={['rgba(255, 224, 194, 0.1)', 'rgba(255, 224, 194, 0.05)']}
+                    style={styles.statGradient}
+                  >
+                    <Ionicons name="trophy" size={24} color="#FFE0C2" />
+                    <Text style={styles.statNumber}>
+                      {userData?.alphaPoints || '0'}
+                    </Text>
+                    <Text style={styles.statLabel}>Alpha Points</Text>
+                  </LinearGradient>
                 </View>
               </View>
             </View>
+
+            <View style={styles.sectionDivider} />
 
             {/* Preferences */}
             <View style={styles.sectionContainer}>
@@ -361,6 +417,68 @@ export default function ProfileScreen() {
                 <View style={[styles.toggle, userData?.notifications && styles.toggleActive]}>
                   <View style={[styles.toggleKnob, userData?.notifications && styles.toggleKnobActive]} />
                 </View>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.sectionDivider} />
+
+            {/* Support */}
+            <View style={styles.sectionContainer}>
+              <Text style={styles.sectionTitle}>Support</Text>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => {
+                  // Open email client or show contact options
+                  Alert.alert(
+                    'Contact Support',
+                    'support@sixseven.app',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Copy Email',
+                        onPress: () => {
+                          // In a real app, you'd use Clipboard.setString()
+                          Alert.alert('Copied!', 'Email address copied to clipboard');
+                        }
+                      }
+                    ]
+                  );
+                }}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={['#2E2E2E', '#2A2A2A']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0, y: 1 }}
+                  style={styles.actionButtonGradient}
+                >
+                  <Ionicons name="help-circle" size={24} color="#FFE0C2" />
+                  <Text style={styles.actionButtonText}>Help & Support</Text>
+                  <Ionicons name="chevron-forward" size={20} color="#FFE0C2" />
+                </LinearGradient>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => {
+                  Alert.alert(
+                    'About 6 7',
+                    `Version 1.0.0\n\nTalk the Alpha, Walk the Alpha\n\nTransform your messages into Gen Alpha slang! 🔥\n\n© 2025 Six Seven`,
+                    [{ text: 'OK' }]
+                  );
+                }}
+                activeOpacity={0.8}
+              >
+                <LinearGradient
+                  colors={['#2E2E2E', '#2A2A2A']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0, y: 1 }}
+                  style={styles.actionButtonGradient}
+                >
+                  <Ionicons name="information-circle" size={24} color="#FFE0C2" />
+                  <Text style={styles.actionButtonText}>About</Text>
+                  <Ionicons name="chevron-forward" size={20} color="#FFE0C2" />
+                </LinearGradient>
               </TouchableOpacity>
             </View>
 
@@ -423,6 +541,8 @@ export default function ProfileScreen() {
                 </LinearGradient>
               </TouchableOpacity>
             </View>
+
+            <View style={styles.sectionDivider} />
 
             {/* Action Buttons */}
             <View style={styles.actionsContainer}>
@@ -572,11 +692,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
   },
+  avatarWrapper: {
+    position: 'relative',
+  },
   avatar: {
     width: 120,
     height: 120,
     borderRadius: 60,
     borderWidth: 3,
+    borderColor: '#FFE0C2',
+  },
+  editAvatarButton: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(46, 46, 46, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
     borderColor: '#FFE0C2',
   },
 
@@ -608,6 +744,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     marginBottom: 8,
+  },
+  subscriptionBadgeContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   subscriptionText: {
     fontSize: 14,
@@ -659,6 +800,11 @@ const styles = StyleSheet.create({
   // New sections
   sectionContainer: {
     marginBottom: 32,
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    marginVertical: 16,
   },
   sectionTitle: {
     fontSize: 20,
@@ -749,16 +895,21 @@ const styles = StyleSheet.create({
   statItem: {
     flex: 1,
     minWidth: (OUTER_WIDTH - 24) / 2 - 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 12,
+    overflow: 'hidden',
+  },
+  statGradient: {
     padding: 16,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 100,
   },
   statNumber: {
     fontSize: 24,
     fontWeight: '700',
     color: '#FFE0C2',
     fontFamily: 'SpaceGrotesk_700Bold',
+    marginTop: 8,
     marginBottom: 4,
   },
   statLabel: {
