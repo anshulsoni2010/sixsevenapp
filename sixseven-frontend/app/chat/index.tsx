@@ -1,5 +1,5 @@
 // app/screens/ChatScreen.tsx
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   StyleSheet,
@@ -19,6 +19,8 @@ import {
   TextInputSubmitEditingEventData,
   ActivityIndicator,
   TouchableWithoutFeedback,
+  Animated,
+  Easing,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -84,7 +86,13 @@ export default function ChatScreen() {
   const [selectedModel, setSelectedModel] = useState<string>('1x');
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [hasChatStarted, setHasChatStarted] = useState(false);
+  const [isDropdownAnimating, setIsDropdownAnimating] = useState(false);
   const suggestionKey = useMemo(() => Math.random().toString(36).slice(2, 8), []);
+
+  // Dropdown animation values
+  const dropdownScale = useRef(new Animated.Value(0.8)).current;
+  const dropdownOpacity = useRef(new Animated.Value(0)).current;
+  const dropdownTranslateY = useRef(new Animated.Value(-10)).current;
 
   // suggestion show animation
   useEffect(() => {
@@ -189,27 +197,70 @@ export default function ChatScreen() {
   const toggleModelDropdown = () => {
     if (Platform.OS === 'ios') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      LayoutAnimation.configureNext({
-        duration: 300,
-        create: {
-          type: LayoutAnimation.Types.spring,
-          property: LayoutAnimation.Properties.scaleXY,
-          springDamping: 0.7,
-        },
-        update: {
-          type: LayoutAnimation.Types.spring,
-          springDamping: 0.7,
-        },
-        delete: {
-          type: LayoutAnimation.Types.spring,
-          property: LayoutAnimation.Properties.scaleXY,
-          springDamping: 0.7,
-        },
+    }
+
+    // Prevent multiple animations
+    if (isDropdownAnimating) return;
+
+    setIsDropdownAnimating(true);
+
+    if (showModelDropdown) {
+      // Closing animation - smooth fade out and scale down
+      Animated.parallel([
+        Animated.timing(dropdownScale, {
+          toValue: 0.8,
+          duration: 150,
+          useNativeDriver: true,
+          easing: Easing.out(Easing.ease),
+        }),
+        Animated.timing(dropdownOpacity, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: true,
+          easing: Easing.out(Easing.ease),
+        }),
+        Animated.timing(dropdownTranslateY, {
+          toValue: -10,
+          duration: 150,
+          useNativeDriver: true,
+          easing: Easing.out(Easing.ease),
+        }),
+      ]).start(() => {
+        setShowModelDropdown(false);
+        setIsDropdownAnimating(false);
+        // Reset animation values after animation cleanup
+        requestAnimationFrame(() => {
+          dropdownScale.setValue(0.8);
+          dropdownOpacity.setValue(0);
+          dropdownTranslateY.setValue(-10);
+        });
       });
     } else {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      // Opening animation - smooth slide in and scale up
+      setShowModelDropdown(true);
+      Animated.parallel([
+        Animated.timing(dropdownScale, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+          easing: Easing.out(Easing.back(1.5)), // Bouncy easing
+        }),
+        Animated.timing(dropdownOpacity, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: true,
+          easing: Easing.out(Easing.ease),
+        }),
+        Animated.timing(dropdownTranslateY, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+          easing: Easing.out(Easing.back(1.2)), // Bouncy easing
+        }),
+      ]).start(() => {
+        setIsDropdownAnimating(false);
+      });
     }
-    setShowModelDropdown(!showModelDropdown);
   };
 
   const selectModel = (model: string) => {
@@ -318,6 +369,9 @@ export default function ChatScreen() {
                   showModelDropdown={showModelDropdown}
                   onSelectModel={selectModel}
                   onCloseDropdown={() => setShowModelDropdown(false)}
+                  dropdownOpacity={dropdownOpacity}
+                  dropdownScale={dropdownScale}
+                  dropdownTranslateY={dropdownTranslateY}
                 />
               </View>
             </KeyboardAvoidingView>
@@ -409,6 +463,9 @@ function ChatInput({
   showModelDropdown,
   onSelectModel,
   onCloseDropdown,
+  dropdownOpacity,
+  dropdownScale,
+  dropdownTranslateY,
 }: {
   value: string;
   onChangeText: (v: string) => void;
@@ -419,6 +476,9 @@ function ChatInput({
   showModelDropdown: boolean;
   onSelectModel: (model: string) => void;
   onCloseDropdown: () => void;
+  dropdownOpacity: Animated.Value;
+  dropdownScale: Animated.Value;
+  dropdownTranslateY: Animated.Value;
 }) {
   return (
     <View style={styles.inputInner}>
@@ -474,13 +534,15 @@ function ChatInput({
       {showModelDropdown && (
         <>
           <TouchableWithoutFeedback onPress={onCloseDropdown}>
-            <BlurView
-              intensity={Platform.OS === 'ios' ? 20 : 50}
-              tint={Platform.OS === 'ios' ? 'dark' : 'default'}
-              style={styles.dropdownBackdrop}
-            />
+            <View style={styles.dropdownBackdrop} />
           </TouchableWithoutFeedback>
-          <View style={styles.modelDropdown}>
+          <Animated.View style={[styles.modelDropdown, {
+            opacity: dropdownOpacity,
+            transform: [
+              { scale: dropdownScale },
+              { translateY: dropdownTranslateY },
+            ],
+          }]}>
             {['1x', '2x', '3x', '4x'].map((model) => (
               <TouchableOpacity
                 key={model}
@@ -491,12 +553,12 @@ function ChatInput({
                 onPress={() => onSelectModel(model)}
                 activeOpacity={Platform.OS === 'ios' ? 0.7 : 0.8}
               >
-                <Image 
-                  source={modelImages[model as keyof typeof modelImages]} 
+                <Image
+                  source={modelImages[model as keyof typeof modelImages]}
                   style={[
                     styles.modelOptionImage,
                     selectedModel === model && styles.modelOptionImageSelected
-                  ]} 
+                  ]}
                 />
                 <Text style={[
                   styles.modelOptionText,
@@ -504,7 +566,7 @@ function ChatInput({
                 ]}>Alpha {model}</Text>
               </TouchableOpacity>
             ))}
-          </View>
+          </Animated.View>
         </>
       )}
     </View>
@@ -777,9 +839,9 @@ const styles = StyleSheet.create({
     zIndex: 1000,
     shadowColor: '#000',
     shadowOffset: Platform.OS === 'ios' ? { width: 0, height: 8 } : { width: 0, height: -2 },
-    shadowOpacity: Platform.OS === 'ios' ? 0.15 : 0.25,
-    shadowRadius: Platform.OS === 'ios' ? 24 : 8,
-    elevation: Platform.OS === 'ios' ? 0 : 8,
+    shadowOpacity: Platform.OS === 'ios' ? 0.3 : 0.1,
+    shadowRadius: Platform.OS === 'ios' ? 16 : 4,
+    elevation: Platform.OS === 'ios' ? 0 : 4,
   },
 
   modelOption: {
@@ -832,6 +894,7 @@ const styles = StyleSheet.create({
     left: -1000,
     right: -1000,
     bottom: -1000,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
 
   sendButton: {
