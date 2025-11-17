@@ -236,7 +236,11 @@ export default function ChatScreen() {
         });
       });
     } else {
-      // Opening animation - smooth slide in and scale up
+      // Opening animation - ensure starting values are correct
+      dropdownScale.setValue(0.8);
+      dropdownOpacity.setValue(0);
+      dropdownTranslateY.setValue(-10);
+      
       setShowModelDropdown(true);
       Animated.parallel([
         Animated.timing(dropdownScale, {
@@ -247,13 +251,13 @@ export default function ChatScreen() {
         }),
         Animated.timing(dropdownOpacity, {
           toValue: 1,
-          duration: 250,
+          duration: 300, // Match scale duration for consistency
           useNativeDriver: true,
           easing: Easing.out(Easing.ease),
         }),
         Animated.timing(dropdownTranslateY, {
           toValue: 0,
-          duration: 300,
+          duration: 300, // Match scale duration for consistency
           useNativeDriver: true,
           easing: Easing.out(Easing.back(1.2)), // Bouncy easing
         }),
