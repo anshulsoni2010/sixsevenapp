@@ -536,37 +536,64 @@ export default function ChatScreen() {
                 },
               ]}
             >
+              {/* Header with New Chat */}
               <View style={styles.sidebarHeader}>
-                <Text style={styles.sidebarTitle}>Conversations</Text>
-                <TouchableOpacity onPress={toggleSidebar}>
-                  <Ionicons name="close" size={24} color="#FFE0C2" />
+                <TouchableOpacity
+                  style={styles.newChatButton}
+                  onPress={() => {
+                    setConversationId(null);
+                    setMessages([{
+                      id: '1',
+                      text: 'Hey fam! Ready to translate your texts to Gen Alpha? Just send me your message or a screenshot! 🔥',
+                      isUser: false,
+                      timestamp: new Date(),
+                    }]);
+                    setHasChatStarted(false);
+                    toggleSidebar();
+                  }}
+                >
+                  <Ionicons name="add" size={20} color="#FFE0C2" />
+                  <Text style={styles.newChatText}>New Chat</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={toggleSidebar} style={styles.closeButton}>
+                  <Ionicons name="close" size={24} color="#888" />
                 </TouchableOpacity>
               </View>
 
-              <ScrollView style={styles.conversationList}>
+              {/* Conversations List */}
+              <ScrollView style={styles.conversationList} showsVerticalScrollIndicator={false}>
                 {conversations.length === 0 ? (
-                  <Text style={styles.noConversations}>No conversations yet</Text>
+                  <View style={styles.emptyState}>
+                    <Ionicons name="chatbubbles-outline" size={48} color="#333" />
+                    <Text style={styles.emptyStateText}>No conversations yet</Text>
+                    <Text style={styles.emptyStateSubtext}>Start a new chat to begin</Text>
+                  </View>
                 ) : (
-                  conversations.map((conv) => (
-                    <TouchableOpacity
-                      key={conv.id}
-                      style={styles.conversationItem}
-                      onPress={() => {
-                        // TODO: Load conversation
-                        toggleSidebar();
-                      }}
-                    >
-                      <Text style={styles.conversationTitle} numberOfLines={1}>
-                        {conv.title || 'Untitled'}
-                      </Text>
-                      <Text style={styles.conversationPreview} numberOfLines={2}>
-                        {conv.lastMessage}
-                      </Text>
-                      <Text style={styles.conversationMeta}>
-                        {conv.messageCount} messages
-                      </Text>
-                    </TouchableOpacity>
-                  ))
+                  <>
+                    <Text style={styles.sectionTitle}>Recent</Text>
+                    {conversations.map((conv) => (
+                      <TouchableOpacity
+                        key={conv.id}
+                        style={[
+                          styles.conversationItem,
+                          conversationId === conv.id && styles.conversationItemActive
+                        ]}
+                        onPress={() => {
+                          // TODO: Load conversation
+                          setConversationId(conv.id);
+                          toggleSidebar();
+                        }}
+                      >
+                        <View style={styles.conversationContent}>
+                          <Ionicons name="chatbubble-outline" size={16} color="#666" />
+                          <Text style={styles.conversationTitle} numberOfLines={1}>
+                            {conv.title || 'Untitled Chat'}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                  </>
                 )}
               </ScrollView>
             </Animated.View>
@@ -1112,52 +1139,96 @@ const styles = StyleSheet.create({
     left: 0,
     top: 0,
     bottom: 0,
-    width: 300,
-    backgroundColor: '#1A1A1A',
-    borderRightWidth: 1,
-    borderRightColor: '#333',
+    width: 280,
+    backgroundColor: '#0A0A0A',
+    paddingTop: 60,
   },
   sidebarHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    paddingHorizontal: 12,
+    paddingBottom: 16,
   },
-  sidebarTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+  newChatButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#1A1A1A',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
+  },
+  newChatText: {
+    fontSize: 14,
+    fontWeight: '500',
     color: '#FFE0C2',
+    fontFamily: 'Outfit_500Medium',
+  },
+  closeButton: {
+    marginLeft: 8,
+    padding: 4,
+  },
+  sectionTitle: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#666',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     fontFamily: 'Outfit_600SemiBold',
   },
   conversationList: {
     flex: 1,
+    paddingHorizontal: 8,
   },
-  noConversations: {
-    color: '#888',
-    textAlign: 'center',
-    marginTop: 40,
-    fontSize: 14,
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 80,
+    paddingHorizontal: 24,
+  },
+  emptyStateText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: '500',
+    marginTop: 16,
+    fontFamily: 'Outfit_500Medium',
+  },
+  emptyStateSubtext: {
+    color: '#444',
+    fontSize: 13,
+    marginTop: 4,
     fontFamily: 'Outfit_400Regular',
   },
   conversationItem: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#2A2A2A',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginBottom: 2,
+  },
+  conversationItemActive: {
+    backgroundColor: '#1A1A1A',
+  },
+  conversationContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   conversationTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFE0C2',
-    marginBottom: 4,
-    fontFamily: 'Outfit_600SemiBold',
+    fontSize: 14,
+    color: '#E5E5E5',
+    flex: 1,
+    fontFamily: 'Outfit_400Regular',
   },
   conversationPreview: {
     fontSize: 14,
     color: '#888',
     marginBottom: 4,
-    fontFamily: 'Outfit_400Regular',
   },
   conversationMeta: {
     fontSize: 12,
