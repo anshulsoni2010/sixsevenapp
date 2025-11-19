@@ -1,0 +1,3 @@
+# .easignore
+# Include google-services.json
+!google-services.json

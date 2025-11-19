@@ -15,7 +15,19 @@ export async function GET(req: Request) {
     if (error) {
       // User denied consent or error occurred
       console.error('OAuth error:', error);
-      const appRedirectUrl = process.env.APP_REDIRECT_URL || 'exp://localhost:8081';
+      let appRedirectUrl = process.env.APP_REDIRECT_URL || 'exp://localhost:8081';
+
+      if (state) {
+        try {
+          const stateJson = JSON.parse(Buffer.from(state, 'base64').toString());
+          if (stateJson.redirectUri) {
+            appRedirectUrl = stateJson.redirectUri;
+          }
+        } catch (e) {
+          // Ignore
+        }
+      }
+
       return NextResponse.redirect(`${appRedirectUrl}?error=${error}`);
     }
 
@@ -84,7 +96,21 @@ export async function GET(req: Request) {
 
     // Redirect to app with token in URL for native clients to extract
     // For web, the cookie is already set
-    const appRedirectUrl = process.env.APP_REDIRECT_URL || 'exp://localhost:8081';
+    let appRedirectUrl = process.env.APP_REDIRECT_URL || 'exp://localhost:8081';
+
+    // Try to parse state to get client redirect URI
+    if (state) {
+      try {
+        const stateJson = JSON.parse(Buffer.from(state, 'base64').toString());
+        if (stateJson.redirectUri) {
+          appRedirectUrl = stateJson.redirectUri;
+        }
+      } catch (e) {
+        // Ignore parse error, use default
+        console.log('Could not parse state, using default redirect');
+      }
+    }
+
     const redirectUrl = `${appRedirectUrl}?token=${encodeURIComponent(token)}&onboarded=${user.onboarded}`;
 
     const res = NextResponse.redirect(redirectUrl);

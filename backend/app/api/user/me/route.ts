@@ -110,6 +110,7 @@ export async function GET(req: Request) {
         notifications: true,
         createdAt: true,
         provider: true,
+        dailyTokenCount: true,
       },
     });
 
@@ -135,6 +136,7 @@ export async function GET(req: Request) {
       status: user.subscriptionStatus,
       endsAt: user.subscriptionEndsAt,
       onboarded: user.onboarded,
+      dailyTokenCount: user.dailyTokenCount,
     });
 
   } catch (error) {

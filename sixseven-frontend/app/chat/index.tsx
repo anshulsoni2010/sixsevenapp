@@ -87,6 +87,7 @@ export default function ChatScreen() {
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [hasChatStarted, setHasChatStarted] = useState(false);
   const [isDropdownAnimating, setIsDropdownAnimating] = useState(false);
+  const [credits, setCredits] = useState(50);
   const suggestionKey = useMemo(() => Math.random().toString(36).slice(2, 8), []);
 
   // Dropdown animation values
@@ -115,7 +116,7 @@ export default function ChatScreen() {
                 'Content-Type': 'application/json',
               },
             });
-            
+
             if (response.ok) {
               const userData = await response.json();
               if (userData.picture) {
@@ -126,6 +127,9 @@ export default function ChatScreen() {
                 userObj.photo = userData.picture;
                 userObj.name = userData.name;
                 await AsyncStorage.setItem('user', JSON.stringify(userObj));
+              }
+              if (userData.dailyTokenCount !== undefined) {
+                setCredits(50 - userData.dailyTokenCount);
               }
             }
           } catch (apiError) {
@@ -148,7 +152,7 @@ export default function ChatScreen() {
               setUserAvatar(user.photo);
             }
           }
-        }        const onboardingData = await AsyncStorage.getItem('onboarding');
+        } const onboardingData = await AsyncStorage.getItem('onboarding');
         if (onboardingData) {
           const onboarding = JSON.parse(onboardingData);
           if (onboarding.alphaLevel) {
@@ -164,6 +168,12 @@ export default function ChatScreen() {
 
   const handleSend = async () => {
     if (!inputText.trim() || loading) return;
+
+    if (credits <= 0) {
+      alert("You're out of credits for today! Come back tomorrow.");
+      return;
+    }
+
     if (!hasChatStarted) {
       setHasChatStarted(true);
     }
@@ -177,16 +187,51 @@ export default function ChatScreen() {
     setInputText('');
     setLoading(true);
 
-    setTimeout(() => {
+    try {
+      const token = await SecureStore.getItemAsync('session_token');
+      const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
+
+      const response = await fetch(`${BACKEND}/api/chat`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: userMessage.text,
+          model: selectedModel,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to get response');
+      }
+
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: `Yo bestie! Here's your text in Gen Alpha speak: "${userMessage.text}" but make it ✨ sigma rizz fr fr no cap 🔥💯`,
+        text: data.text,
         isUser: false,
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, aiMessage]);
+
+      if (data.credits !== undefined) {
+        setCredits(data.credits);
+      }
+    } catch (error) {
+      console.error('Chat Error:', error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: "Yo, my bad. Something glitched. Try again?",
+        isUser: false,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setLoading(false);
-    }, 1200);
+    }
   };
 
   const onSuggestionPress = (value: string) => {
@@ -240,7 +285,7 @@ export default function ChatScreen() {
       dropdownScale.setValue(0.8);
       dropdownOpacity.setValue(0);
       dropdownTranslateY.setValue(-10);
-      
+
       setShowModelDropdown(true);
       Animated.parallel([
         Animated.timing(dropdownScale, {
@@ -293,7 +338,7 @@ export default function ChatScreen() {
             <View style={styles.topBar}>
               <View style={styles.leftSection}>
                 <ActionButton />
-                <CreditButton />
+                <CreditButton credits={credits} />
               </View>
 
               <View style={styles.rightSection}>
@@ -417,7 +462,7 @@ function ActionButton() {
   );
 }
 
-function CreditButton() {
+function CreditButton({ credits = 0 }: { credits?: number }) {
   return (
     <TouchableOpacity activeOpacity={0.85} accessibilityLabel="Credits" style={{ height: 50, borderRadius: 25, overflow: 'hidden' }}>
       <LinearGradient
@@ -430,7 +475,7 @@ function CreditButton() {
           style={{ flex: 1, backgroundColor: '#FFE0C2', borderRadius: 24, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 6, gap: 12 }}
         >
           <Image source={require('../../assets/images/crediticon.png')} style={styles.coinIcon} />
-          <Text style={styles.creditText}>24</Text>
+          <Text style={styles.creditText}>{credits}</Text>
         </View>
       </LinearGradient>
     </TouchableOpacity>

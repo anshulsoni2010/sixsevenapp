@@ -13,8 +13,15 @@ export async function GET(req: Request) {
 
     const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
 
-    // Generate state parameter (random string to prevent CSRF)
-    const state = Math.random().toString(36).substring(2, 15);
+    const url = new URL(req.url);
+    const clientRedirectUri = url.searchParams.get('redirect_uri');
+
+    // Generate state parameter with redirect URI
+    const stateData = {
+      random: Math.random().toString(36).substring(2, 15),
+      redirectUri: clientRedirectUri
+    };
+    const state = Buffer.from(JSON.stringify(stateData)).toString('base64');
 
     const authUrl = oauth2Client.generateAuthUrl({
       access_type: 'offline',

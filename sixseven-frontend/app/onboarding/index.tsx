@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  Image, 
-  TouchableOpacity, 
-  Dimensions, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  Dimensions,
   Platform,
   Animated as RNAnimated,
   PanResponder,
@@ -73,7 +73,7 @@ export default function OnboardingStart() {
         const mod: any = await import('expo-blur');
         const Blur = mod?.BlurView || mod?.default || null;
         if (mounted && Blur) setBlurViewComponent(() => Blur);
-      } catch {}
+      } catch { }
     })();
     return () => {
       mounted = false;
@@ -86,9 +86,58 @@ export default function OnboardingStart() {
       GoogleSignin.configure({
         webClientId: Constants.expoConfig?.extra?.GOOGLE_WEB_CLIENT_ID,
         iosClientId: Constants.expoConfig?.extra?.GOOGLE_IOS_CLIENT_ID,
+        androidClientId: Constants.expoConfig?.extra?.GOOGLE_WEB_CLIENT_ID, // Use web client for Android
         offlineAccess: true,
       });
     }
+
+    // Listen for OAuth redirects
+    const handleUrl = async (url: string | null) => {
+      if (!url) return;
+      console.log('🔗 Processing URL:', url);
+
+      try {
+        // Try Expo's parser first
+        const parsed = Linking.parse(url);
+        let token = parsed.queryParams?.token as string;
+        let onboarded = parsed.queryParams?.onboarded === 'true';
+
+        // Manual fallback parsing if Expo parser fails to find token
+        if (!token && url.includes('token=')) {
+          console.log('⚠️ Expo parser missed token, trying manual parse');
+          const match = url.match(/[?&]token=([^&]+)/);
+          if (match) token = decodeURIComponent(match[1]);
+
+          const onboardedMatch = url.match(/[?&]onboarded=([^&]+)/);
+          if (onboardedMatch) onboarded = onboardedMatch[1] === 'true';
+        }
+
+        if (token) {
+          console.log('✅ Token found:', token.substring(0, 10) + '...');
+          await handleAuthSuccess(token, onboarded);
+        } else {
+          console.log('❌ No token found in URL:', url);
+          // Optional: Show alert for debugging if needed
+          // Alert.alert('Debug', `Received URL but no token: ${url}`);
+        }
+      } catch (e) {
+        console.error('Error processing URL:', e);
+      }
+    };
+
+    // 1. Listen for incoming links while app is open
+    const subscription = Linking.addEventListener('url', (event) => {
+      handleUrl(event.url);
+    });
+
+    // 2. Check for initial link (if app was closed)
+    Linking.getInitialURL().then((url) => {
+      if (url) handleUrl(url);
+    });
+
+    return () => {
+      subscription.remove();
+    };
   }, []);
 
   function handleGetStarted() {
@@ -171,14 +220,14 @@ export default function OnboardingStart() {
       console.log('Auth success, saving token and routing...');
       await SecureStore.setItemAsync('session_token', token);
       await AsyncStorage.setItem('isLoggedIn', 'true');
-      
+
       if (onboarded) {
         // User already onboarded - check subscription and route accordingly
         const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
         const response = await fetch(`${BACKEND}/api/user/me`, {
           headers: { 'Authorization': `Bearer ${token}` },
         });
-        
+
         if (response.ok) {
           const data = await response.json();
           console.log('User data received, routing instantly...');
@@ -212,30 +261,51 @@ export default function OnboardingStart() {
 
     try {
       setIsAuthInProgress(true);
-      console.log('Starting Google Sign-In, GoogleSignin available:', !!GoogleSignin);
 
-      if (!GoogleSignin) {
-        // Fallback to web browser auth
+      // Check if running in Expo Go
+      const isExpoGo = Constants.executionEnvironment === 'storeClient';
+      console.log('Starting Google Sign-In. Expo Go:', isExpoGo, 'Native Module:', !!GoogleSignin);
+
+      if (!GoogleSignin || isExpoGo) {
+        // Fallback to web browser auth (always use this for Expo Go)
+        console.log('Using web browser auth (Expo Go or no native module)');
         console.log('Using web browser fallback for Google auth');
         const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
-        const authUrl = `${BACKEND}/api/auth/google/initiate`;
 
-        const result = await WebBrowser.openAuthSessionAsync(
-          authUrl,
-          Linking.createURL('/')
-        );
+        // Use openBrowserAsync instead of openAuthSessionAsync
+        // This allows the backend to redirect to any URL, and we'll catch it with the URL listener
+        // For Expo Go, we need to pass the correct redirect URI
+        const redirectUri = Linking.createURL('/');
+        const authUrl = `${BACKEND}/api/auth/google/initiate?redirect_uri=${encodeURIComponent(redirectUri)}`;
 
-        if (result.type === 'success' && result.url) {
-          const parsed = Linking.parse(result.url);
-          const token = parsed.queryParams?.token as string;
-          const onboarded = parsed.queryParams?.onboarded === 'true';
-          
-          if (token) {
-            await handleAuthSuccess(token, onboarded);
-          }
-        } else if (result.type === 'cancel') {
-          Alert.alert('Sign-in cancelled', 'You cancelled the sign-in flow.');
+        console.log('Auth URL with redirect_uri:', authUrl);
+
+        try {
+          await Linking.openURL(authUrl);
+          console.log('✅ Browser opened successfully via Linking');
+        } catch (browserError) {
+          console.error('❌ Failed to open browser:', browserError);
+          Alert.alert('Browser error', `Failed to open browser: ${browserError instanceof Error ? browserError.message : 'Unknown error'}`);
+          setIsAuthInProgress(false);
+          return;
         }
+
+        // The URL event listener will handle the redirect when it comes back
+        console.log('Browser opened, waiting for redirect...');
+
+        // Set a timeout in case the redirect never comes
+        setTimeout(() => {
+          if (isAuthInProgress) {
+            console.log('⏰ Auth timeout - no redirect received after 2 minutes');
+            setIsAuthInProgress(false);
+            Alert.alert(
+              'Sign-in timeout',
+              'Authentication took too long. Please try again.',
+              [{ text: 'OK' }]
+            );
+          }
+        }, 120000); // 2 minutes
+
         return;
       }
 
@@ -251,7 +321,7 @@ export default function OnboardingStart() {
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('Google Sign-In timed out')), 30000);
       });
-      
+
       const userInfo = await Promise.race([signInPromise, timeoutPromise]);
       console.log('Google Sign-In success:', userInfo);
 
@@ -266,7 +336,7 @@ export default function OnboardingStart() {
       // Send the ID token to your backend
       const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
       console.log('Sending to backend:', `${BACKEND}/api/auth/google/callback`);
-      
+
       const fetchPromise = fetch(`${BACKEND}/api/auth/google/callback`, {
         method: 'POST',
         headers: {
@@ -277,13 +347,13 @@ export default function OnboardingStart() {
           accessToken: tokens.accessToken,
         }),
       });
-      
+
       const fetchTimeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('Backend request timed out')), 15000);
       });
-      
+
       const response = await Promise.race([fetchPromise, fetchTimeoutPromise]) as Response;
-      
+
       if (!response.ok) {
         throw new Error(`Backend auth failed: ${response.status}`);
       }
@@ -328,7 +398,7 @@ export default function OnboardingStart() {
         const parsed = Linking.parse(result.url);
         const token = parsed.queryParams?.token as string;
         const onboarded = parsed.queryParams?.onboarded === 'true';
-        
+
         if (token) {
           await handleAuthSuccess(token, onboarded);
         }
@@ -363,6 +433,71 @@ export default function OnboardingStart() {
       }
     } catch (e) {
       console.error('checkExistingAccount error', e);
+    }
+  };
+
+  // Email OTP State
+  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [showEmailInput, setShowEmailInput] = useState(false);
+  const [showOtpInput, setShowOtpInput] = useState(false);
+  const [isEmailLoading, setIsEmailLoading] = useState(false);
+
+  const handleSendOtp = async () => {
+    if (!email || !email.includes('@')) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+
+    setIsEmailLoading(true);
+    try {
+      const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
+      const response = await fetch(`${BACKEND}/api/auth/email/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setShowEmailInput(false);
+        setShowOtpInput(true);
+        Alert.alert('Success', 'Code sent to your email!');
+      } else {
+        Alert.alert('Error', data.error || 'Failed to send code');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Network error. Please try again.');
+    } finally {
+      setIsEmailLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otp || otp.length < 6) {
+      Alert.alert('Error', 'Please enter the 6-digit code');
+      return;
+    }
+
+    setIsEmailLoading(true);
+    try {
+      const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
+      const response = await fetch(`${BACKEND}/api/auth/email/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, token: otp }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        await handleAuthSuccess(data.token, data.onboarded);
+      } else {
+        Alert.alert('Error', data.error || 'Invalid code');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Network error. Please try again.');
+    } finally {
+      setIsEmailLoading(false);
     }
   };
 
@@ -446,6 +581,75 @@ export default function OnboardingStart() {
           </View>
         </View>
 
+        {/* Email Input View */}
+        {showEmailInput && (
+          <View style={[StyleSheet.absoluteFill, { zIndex: 2000, backgroundColor: '#000', padding: 24, justifyContent: 'center' }]}>
+            <TouchableOpacity
+              style={{ position: 'absolute', top: 60, left: 24, zIndex: 2001 }}
+              onPress={() => setShowEmailInput(false)}
+            >
+              <Text style={{ color: '#fff', fontSize: 18 }}>✕</Text>
+            </TouchableOpacity>
+
+            <Text style={{ color: '#fff', fontSize: 24, fontWeight: 'bold', marginBottom: 24, textAlign: 'center' }}>Enter your email</Text>
+            <TextInput
+              style={{ borderWidth: 1, borderColor: '#333', backgroundColor: '#111', color: '#fff', padding: 16, borderRadius: 12, marginBottom: 16, fontSize: 16 }}
+              placeholder="name@example.com"
+              placeholderTextColor="#666"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+            <TouchableOpacity
+              onPress={handleSendOtp}
+              disabled={isEmailLoading}
+              style={{ backgroundColor: '#fff', padding: 16, borderRadius: 12, alignItems: 'center' }}
+            >
+              {isEmailLoading ? (
+                <ActivityIndicator color="#000" />
+              ) : (
+                <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 16 }}>Send Code</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* OTP Input View */}
+        {showOtpInput && (
+          <View style={[StyleSheet.absoluteFill, { zIndex: 2000, backgroundColor: '#000', padding: 24, justifyContent: 'center' }]}>
+            <TouchableOpacity
+              style={{ position: 'absolute', top: 60, left: 24, zIndex: 2001 }}
+              onPress={() => { setShowOtpInput(false); setShowEmailInput(true); }}
+            >
+              <Text style={{ color: '#fff', fontSize: 18 }}>← Back</Text>
+            </TouchableOpacity>
+
+            <Text style={{ color: '#fff', fontSize: 24, fontWeight: 'bold', marginBottom: 8, textAlign: 'center' }}>Check your email</Text>
+            <Text style={{ textAlign: 'center', color: '#999', marginBottom: 24 }}>We sent a code to {email}</Text>
+            <TextInput
+              style={{ borderWidth: 1, borderColor: '#333', backgroundColor: '#111', color: '#fff', padding: 16, borderRadius: 12, marginBottom: 16, fontSize: 24, textAlign: 'center', letterSpacing: 5 }}
+              placeholder="000000"
+              placeholderTextColor="#666"
+              value={otp}
+              onChangeText={setOtp}
+              keyboardType="number-pad"
+              maxLength={6}
+            />
+            <TouchableOpacity
+              onPress={handleVerifyOtp}
+              disabled={isEmailLoading}
+              style={{ backgroundColor: '#fff', padding: 16, borderRadius: 12, alignItems: 'center' }}
+            >
+              {isEmailLoading ? (
+                <ActivityIndicator color="#000" />
+              ) : (
+                <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 16 }}>Verify</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Auth Bottom Sheet */}
         {sheetVisible && (
           <>
@@ -502,7 +706,7 @@ export default function OnboardingStart() {
                     {isExistingUser ? 'Sign in to existing account' : 'Sign in to continue'}
                   </Text>
                   <Text style={styles.sheetSubheading}>
-                    {isExistingUser 
+                    {isExistingUser
                       ? 'Sign in with the account you already have'
                       : 'Choose how you wanna roll with 6 7'
                     }
@@ -510,8 +714,8 @@ export default function OnboardingStart() {
                 </View>
 
                 <View style={styles.buttonContainer}>
-                  <Pressable 
-                    style={[styles.authButton, isAuthInProgress && styles.authButtonDisabled]} 
+                  <Pressable
+                    style={[styles.authButton, isAuthInProgress && styles.authButtonDisabled]}
                     onPress={handleGooglePress}
                     disabled={isAuthInProgress}
                   >
@@ -529,8 +733,8 @@ export default function OnboardingStart() {
                   </Pressable>
 
                   {isAuthInProgress && (
-                    <Pressable 
-                      style={[styles.authButton, styles.cancelButton]} 
+                    <Pressable
+                      style={[styles.authButton, styles.cancelButton]}
                       onPress={() => {
                         setIsAuthInProgress(false);
                         console.log('User cancelled Google Sign-In');
@@ -546,6 +750,16 @@ export default function OnboardingStart() {
                       style={styles.iconImage}
                     />
                     <Text style={styles.authButtonText}>Continue with Apple</Text>
+                  </Pressable>
+
+                  <Pressable
+                    style={[styles.authButton, { marginTop: 14, backgroundColor: '#333' }]}
+                    onPress={() => {
+                      closeSheet();
+                      setShowEmailInput(true);
+                    }}
+                  >
+                    <Text style={[styles.authButtonText, { color: '#fff' }]}>Continue with Email</Text>
                   </Pressable>
                 </View>
               </View>

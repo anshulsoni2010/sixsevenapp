@@ -30,4 +30,17 @@ model User {
   stripeSubscriptionId String? @unique
   subscriptionStatus  String?  // 'active', 'canceled', 'past_due', etc.
   subscriptionEndsAt  DateTime?
+
+  // Credit Management
+  dailyTokenCount     Int      @default(0)
+  lastTokenUsageDate  DateTime @default(now())
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+  createdAt  DateTime @default(now())
+
+  @@unique([identifier, token])
 }

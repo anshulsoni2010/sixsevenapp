@@ -64,11 +64,13 @@ function AlphaConfirmScreen() {
             GoogleSignin.configure({
                 webClientId: Constants.expoConfig?.extra?.GOOGLE_WEB_CLIENT_ID,
                 iosClientId: Constants.expoConfig?.extra?.GOOGLE_IOS_CLIENT_ID,
+                androidClientId: Constants.expoConfig?.extra?.GOOGLE_WEB_CLIENT_ID, // Use web client for Android
                 offlineAccess: true,
             });
             console.log('Google Sign-In configured with:', {
                 webClientId: Constants.expoConfig?.extra?.GOOGLE_WEB_CLIENT_ID,
                 iosClientId: Constants.expoConfig?.extra?.GOOGLE_IOS_CLIENT_ID,
+                androidClientId: Constants.expoConfig?.extra?.GOOGLE_WEB_CLIENT_ID, // Use web client for Android
             });
         } else {
             console.log('Google Sign-In not available on this platform');
