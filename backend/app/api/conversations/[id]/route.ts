@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 
 export async function GET(
     req: Request,
-    { params }: { params: { id: string } }
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
         // Authentication
@@ -29,7 +29,7 @@ export async function GET(
             return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
         }
 
-        const conversationId = params.id;
+        const { id: conversationId } = await context.params;
 
         // Get conversation with all messages
         const conversation = await prisma.conversation.findFirst({
@@ -58,7 +58,7 @@ export async function GET(
 
 export async function DELETE(
     req: Request,
-    { params }: { params: { id: string } }
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
         // Authentication
@@ -81,7 +81,7 @@ export async function DELETE(
             return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
         }
 
-        const conversationId = params.id;
+        const { id: conversationId } = await context.params;
 
         // Verify ownership before deleting
         const conversation = await prisma.conversation.findFirst({
