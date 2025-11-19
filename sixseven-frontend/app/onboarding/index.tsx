@@ -23,7 +23,7 @@ import * as Linking from 'expo-linking';
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
-import { Mail01Icon } from '@hugeicons/react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 // Google Sign-In imports
 let GoogleSignin: any = null;
@@ -87,7 +87,6 @@ export default function OnboardingStart() {
       GoogleSignin.configure({
         webClientId: Constants.expoConfig?.extra?.GOOGLE_WEB_CLIENT_ID,
         iosClientId: Constants.expoConfig?.extra?.GOOGLE_IOS_CLIENT_ID,
-        androidClientId: Constants.expoConfig?.extra?.GOOGLE_WEB_CLIENT_ID, // Use web client for Android
         offlineAccess: true,
       });
     }
@@ -586,7 +585,7 @@ export default function OnboardingStart() {
         {sheetVisible && (
           <>
             <RNAnimated.View
-              pointerEvents="auto"
+              pointerEvents="none"
               style={[StyleSheet.absoluteFill, { zIndex: 998, opacity: overlayOpacity }]}
             >
               {BlurViewComponent ? (
@@ -604,12 +603,7 @@ export default function OnboardingStart() {
               )}
             </RNAnimated.View>
 
-            <TouchableWithoutFeedback onPress={closeSheet}>
-              <View pointerEvents="box-only" style={[StyleSheet.absoluteFill, { zIndex: 999 }]} />
-            </TouchableWithoutFeedback>
-
             <RNAnimated.View
-              {...panResponder.panHandlers}
               onLayout={(e) => {
                 const h = e.nativeEvent.layout.height;
                 if (h && sheetHeightRef.current !== h) {
@@ -649,10 +643,11 @@ export default function OnboardingStart() {
                     </View>
 
                     <View style={styles.buttonContainer}>
-                      <Pressable
+                      <TouchableOpacity
                         style={[styles.authButton, isAuthInProgress && styles.authButtonDisabled]}
                         onPress={handleGooglePress}
                         disabled={isAuthInProgress}
+                        activeOpacity={0.7}
                       >
                         {isAuthInProgress ? (
                           <ActivityIndicator size="small" color="#FFFFFF" />
@@ -665,35 +660,37 @@ export default function OnboardingStart() {
                         <Text style={styles.authButtonText}>
                           {isAuthInProgress ? 'Signing in...' : 'Continue with Google'}
                         </Text>
-                      </Pressable>
+                      </TouchableOpacity>
 
                       {isAuthInProgress && (
-                        <Pressable
+                        <TouchableOpacity
                           style={[styles.authButton, styles.cancelButton]}
                           onPress={() => {
                             setIsAuthInProgress(false);
                             console.log('User cancelled Google Sign-In');
                           }}
+                          activeOpacity={0.7}
                         >
                           <Text style={styles.cancelButtonText}>Cancel</Text>
-                        </Pressable>
+                        </TouchableOpacity>
                       )}
 
-                      <Pressable style={[styles.authButton, { marginTop: 14 }]} onPress={handleApplePress}>
+                      <TouchableOpacity style={[styles.authButton, { marginTop: 14 }]} onPress={handleApplePress} activeOpacity={0.7}>
                         <Image
                           source={require('../../assets/icon/apple.png')}
                           style={styles.iconImage}
                         />
                         <Text style={styles.authButtonText}>Continue with Apple</Text>
-                      </Pressable>
+                      </TouchableOpacity>
 
-                      <Pressable
+                      <TouchableOpacity
                         style={[styles.authButton, { marginTop: 14, backgroundColor: '#222', borderWidth: 1, borderColor: '#333' }]}
                         onPress={() => setShowEmailInput(true)}
+                        activeOpacity={0.7}
                       >
-                        <Mail01Icon size={24} color="#fff" variant="stroke" />
+                        <Ionicons name="mail-outline" size={24} color="#fff" />
                         <Text style={[styles.authButtonText, { color: '#fff' }]}>Continue with Email</Text>
-                      </Pressable>
+                      </TouchableOpacity>
                     </View>
                   </View>
 
