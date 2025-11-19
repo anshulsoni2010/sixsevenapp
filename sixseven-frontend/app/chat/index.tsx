@@ -91,6 +91,9 @@ export default function ChatScreen() {
   const [credits, setCredits] = useState(50);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [conversations, setConversations] = useState<any[]>([]);
+  const sidebarTranslateX = useRef(new Animated.Value(-300)).current;
   const suggestionKey = useMemo(() => Math.random().toString(36).slice(2, 8), []);
 
   // Dropdown animation values
@@ -200,6 +203,52 @@ export default function ChatScreen() {
     };
     loadUserData();
   }, []);
+
+  // Fetch conversations
+  const fetchConversations = async () => {
+    try {
+      const token = await SecureStore.getItemAsync('session_token');
+      const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
+
+      const response = await fetch(`${BACKEND}/api/conversations`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setConversations(data.conversations || []);
+      }
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+    }
+  };
+
+  // Toggle sidebar
+  const toggleSidebar = () => {
+    if (showSidebar) {
+      // Close
+      Animated.timing(sidebarTranslateX, {
+        toValue: -300,
+        duration: 250,
+        useNativeDriver: true,
+        easing: Easing.out(Easing.ease),
+      }).start(() => setShowSidebar(false));
+    } else {
+      // Open
+      setShowSidebar(true);
+      fetchConversations();
+      Animated.timing(sidebarTranslateX, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+        easing: Easing.out(Easing.ease),
+      }).start();
+    }
+  };
 
   const handleSend = async () => {
     if (!inputText.trim() || loading) return;
@@ -383,8 +432,8 @@ export default function ChatScreen() {
               </View>
 
               <View style={styles.rightSection}>
-                <TouchableOpacity style={styles.searchButton} accessibilityLabel="Search">
-                  <Image source={require('../../assets/icon/search-icon.png')} style={{ height: '100%', aspectRatio: 1 }} />
+                <TouchableOpacity style={styles.searchButton} accessibilityLabel="Conversations" onPress={toggleSidebar}>
+                  <Ionicons name="chatbubbles-outline" size={24} color="#FFE0C2" />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -470,6 +519,59 @@ export default function ChatScreen() {
             </KeyboardAvoidingView>
           </View>
         </View>
+
+        {/* Sidebar */}
+        {showSidebar && (
+          <>
+            <TouchableWithoutFeedback onPress={toggleSidebar}>
+              <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 999 }]} />
+            </TouchableWithoutFeedback>
+
+            <Animated.View
+              style={[
+                styles.sidebar,
+                {
+                  transform: [{ translateX: sidebarTranslateX }],
+                  zIndex: 1000,
+                },
+              ]}
+            >
+              <View style={styles.sidebarHeader}>
+                <Text style={styles.sidebarTitle}>Conversations</Text>
+                <TouchableOpacity onPress={toggleSidebar}>
+                  <Ionicons name="close" size={24} color="#FFE0C2" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={styles.conversationList}>
+                {conversations.length === 0 ? (
+                  <Text style={styles.noConversations}>No conversations yet</Text>
+                ) : (
+                  conversations.map((conv) => (
+                    <TouchableOpacity
+                      key={conv.id}
+                      style={styles.conversationItem}
+                      onPress={() => {
+                        // TODO: Load conversation
+                        toggleSidebar();
+                      }}
+                    >
+                      <Text style={styles.conversationTitle} numberOfLines={1}>
+                        {conv.title || 'Untitled'}
+                      </Text>
+                      <Text style={styles.conversationPreview} numberOfLines={2}>
+                        {conv.lastMessage}
+                      </Text>
+                      <Text style={styles.conversationMeta}>
+                        {conv.messageCount} messages
+                      </Text>
+                    </TouchableOpacity>
+                  ))
+                )}
+              </ScrollView>
+            </Animated.View>
+          </>
+        )}
       </SafeAreaView>
     </ImageBackground>
   );
@@ -1002,5 +1104,64 @@ const styles = StyleSheet.create({
   sendInner: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  // Sidebar styles
+  sidebar: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 300,
+    backgroundColor: '#1A1A1A',
+    borderRightWidth: 1,
+    borderRightColor: '#333',
+  },
+  sidebarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+  },
+  sidebarTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#FFE0C2',
+    fontFamily: 'Outfit_600SemiBold',
+  },
+  conversationList: {
+    flex: 1,
+  },
+  noConversations: {
+    color: '#888',
+    textAlign: 'center',
+    marginTop: 40,
+    fontSize: 14,
+    fontFamily: 'Outfit_400Regular',
+  },
+  conversationItem: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2A2A2A',
+  },
+  conversationTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFE0C2',
+    marginBottom: 4,
+    fontFamily: 'Outfit_600SemiBold',
+  },
+  conversationPreview: {
+    fontSize: 14,
+    color: '#888',
+    marginBottom: 4,
+    fontFamily: 'Outfit_400Regular',
+  },
+  conversationMeta: {
+    fontSize: 12,
+    color: '#666',
+    fontFamily: 'Outfit_400Regular',
   },
 });
