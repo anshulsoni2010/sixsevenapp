@@ -583,70 +583,127 @@ export default function OnboardingStart() {
 
         {/* Email Input View */}
         {showEmailInput && (
-          <View style={[StyleSheet.absoluteFill, { zIndex: 2000, backgroundColor: '#000', padding: 24, justifyContent: 'center' }]}>
+          <View style={[StyleSheet.absoluteFill, { zIndex: 2000, backgroundColor: '#151515', padding: 24, justifyContent: 'center' }]}>
             <TouchableOpacity
-              style={{ position: 'absolute', top: 60, left: 24, zIndex: 2001 }}
+              style={{ position: 'absolute', top: 60, left: 24, zIndex: 2001, padding: 8 }}
               onPress={() => setShowEmailInput(false)}
             >
-              <Text style={{ color: '#fff', fontSize: 18 }}>✕</Text>
+              <Text style={{ color: '#fff', fontSize: 24, fontFamily: 'Outfit_400Regular' }}>✕</Text>
             </TouchableOpacity>
 
-            <Text style={{ color: '#fff', fontSize: 24, fontWeight: 'bold', marginBottom: 24, textAlign: 'center' }}>Enter your email</Text>
-            <TextInput
-              style={{ borderWidth: 1, borderColor: '#333', backgroundColor: '#111', color: '#fff', padding: 16, borderRadius: 12, marginBottom: 16, fontSize: 16 }}
-              placeholder="name@example.com"
-              placeholderTextColor="#666"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-            <TouchableOpacity
-              onPress={handleSendOtp}
-              disabled={isEmailLoading}
-              style={{ backgroundColor: '#fff', padding: 16, borderRadius: 12, alignItems: 'center' }}
-            >
-              {isEmailLoading ? (
-                <ActivityIndicator color="#000" />
-              ) : (
-                <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 16 }}>Send Code</Text>
-              )}
-            </TouchableOpacity>
+            <View style={{ width: '100%', maxWidth: 400, alignSelf: 'center', gap: 20 }}>
+              <View>
+                <Text style={{ color: '#FFFFFF', fontSize: 32, fontFamily: 'Outfit_700Bold', marginBottom: 8, textAlign: 'center' }}>
+                  Enter your email
+                </Text>
+                <Text style={{ color: '#999', fontSize: 16, fontFamily: 'Outfit_400Regular', textAlign: 'center' }}>
+                  We'll send you a code to sign in
+                </Text>
+              </View>
+
+              <TextInput
+                style={{
+                  backgroundColor: '#222',
+                  color: '#fff',
+                  padding: 20,
+                  borderRadius: 16,
+                  fontSize: 18,
+                  fontFamily: 'Outfit_400Regular',
+                  borderWidth: 1,
+                  borderColor: '#333'
+                }}
+                placeholder="name@example.com"
+                placeholderTextColor="#666"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoFocus
+              />
+
+              <TouchableOpacity
+                onPress={handleSendOtp}
+                disabled={isEmailLoading}
+                activeOpacity={0.8}
+                style={{
+                  backgroundColor: '#FFE0C2',
+                  padding: 18,
+                  borderRadius: 16,
+                  alignItems: 'center',
+                  marginTop: 8
+                }}
+              >
+                {isEmailLoading ? (
+                  <ActivityIndicator color="#000" />
+                ) : (
+                  <Text style={{ color: '#000', fontFamily: 'Outfit_600SemiBold', fontSize: 18 }}>Send Code</Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
         {/* OTP Input View */}
         {showOtpInput && (
-          <View style={[StyleSheet.absoluteFill, { zIndex: 2000, backgroundColor: '#000', padding: 24, justifyContent: 'center' }]}>
+          <View style={[StyleSheet.absoluteFill, { zIndex: 2000, backgroundColor: '#151515', padding: 24, justifyContent: 'center' }]}>
             <TouchableOpacity
-              style={{ position: 'absolute', top: 60, left: 24, zIndex: 2001 }}
+              style={{ position: 'absolute', top: 60, left: 24, zIndex: 2001, padding: 8 }}
               onPress={() => { setShowOtpInput(false); setShowEmailInput(true); }}
             >
-              <Text style={{ color: '#fff', fontSize: 18 }}>← Back</Text>
+              <Text style={{ color: '#fff', fontSize: 18, fontFamily: 'Outfit_400Regular' }}>← Back</Text>
             </TouchableOpacity>
 
-            <Text style={{ color: '#fff', fontSize: 24, fontWeight: 'bold', marginBottom: 8, textAlign: 'center' }}>Check your email</Text>
-            <Text style={{ textAlign: 'center', color: '#999', marginBottom: 24 }}>We sent a code to {email}</Text>
-            <TextInput
-              style={{ borderWidth: 1, borderColor: '#333', backgroundColor: '#111', color: '#fff', padding: 16, borderRadius: 12, marginBottom: 16, fontSize: 24, textAlign: 'center', letterSpacing: 5 }}
-              placeholder="000000"
-              placeholderTextColor="#666"
-              value={otp}
-              onChangeText={setOtp}
-              keyboardType="number-pad"
-              maxLength={6}
-            />
-            <TouchableOpacity
-              onPress={handleVerifyOtp}
-              disabled={isEmailLoading}
-              style={{ backgroundColor: '#fff', padding: 16, borderRadius: 12, alignItems: 'center' }}
-            >
-              {isEmailLoading ? (
-                <ActivityIndicator color="#000" />
-              ) : (
-                <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 16 }}>Verify</Text>
-              )}
-            </TouchableOpacity>
+            <View style={{ width: '100%', maxWidth: 400, alignSelf: 'center', gap: 24 }}>
+              <View>
+                <Text style={{ color: '#FFFFFF', fontSize: 32, fontFamily: 'Outfit_700Bold', marginBottom: 8, textAlign: 'center' }}>
+                  Check your email
+                </Text>
+                <Text style={{ color: '#999', fontSize: 16, fontFamily: 'Outfit_400Regular', textAlign: 'center' }}>
+                  We sent a code to <Text style={{ color: '#fff' }}>{email}</Text>
+                </Text>
+              </View>
+
+              <TextInput
+                style={{
+                  backgroundColor: '#222',
+                  color: '#fff',
+                  padding: 20,
+                  borderRadius: 16,
+                  fontSize: 32,
+                  textAlign: 'center',
+                  letterSpacing: 8,
+                  fontFamily: 'Outfit_600SemiBold',
+                  borderWidth: 1,
+                  borderColor: '#333'
+                }}
+                placeholder="000000"
+                placeholderTextColor="#444"
+                value={otp}
+                onChangeText={setOtp}
+                keyboardType="number-pad"
+                maxLength={6}
+                autoFocus
+              />
+
+              <TouchableOpacity
+                onPress={handleVerifyOtp}
+                disabled={isEmailLoading}
+                activeOpacity={0.8}
+                style={{
+                  backgroundColor: '#FFE0C2',
+                  padding: 18,
+                  borderRadius: 16,
+                  alignItems: 'center',
+                  marginTop: 8
+                }}
+              >
+                {isEmailLoading ? (
+                  <ActivityIndicator color="#000" />
+                ) : (
+                  <Text style={{ color: '#000', fontFamily: 'Outfit_600SemiBold', fontSize: 18 }}>Verify</Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
