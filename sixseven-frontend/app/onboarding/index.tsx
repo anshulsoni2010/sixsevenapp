@@ -23,6 +23,7 @@ import * as Linking from 'expo-linking';
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import { Mail01Icon } from '@hugeicons/react-native';
 
 // Google Sign-In imports
 let GoogleSignin: any = null;
@@ -581,132 +582,6 @@ export default function OnboardingStart() {
           </View>
         </View>
 
-        {/* Email Input View */}
-        {showEmailInput && (
-          <View style={[StyleSheet.absoluteFill, { zIndex: 2000, backgroundColor: '#151515', padding: 24, justifyContent: 'center' }]}>
-            <TouchableOpacity
-              style={{ position: 'absolute', top: 60, left: 24, zIndex: 2001, padding: 8 }}
-              onPress={() => setShowEmailInput(false)}
-            >
-              <Text style={{ color: '#fff', fontSize: 24, fontFamily: 'Outfit_400Regular' }}>✕</Text>
-            </TouchableOpacity>
-
-            <View style={{ width: '100%', maxWidth: 400, alignSelf: 'center', gap: 20 }}>
-              <View>
-                <Text style={{ color: '#FFFFFF', fontSize: 32, fontFamily: 'Outfit_700Bold', marginBottom: 8, textAlign: 'center' }}>
-                  Enter your email
-                </Text>
-                <Text style={{ color: '#999', fontSize: 16, fontFamily: 'Outfit_400Regular', textAlign: 'center' }}>
-                  We'll send you a code to sign in
-                </Text>
-              </View>
-
-              <TextInput
-                style={{
-                  backgroundColor: '#222',
-                  color: '#fff',
-                  padding: 20,
-                  borderRadius: 16,
-                  fontSize: 18,
-                  fontFamily: 'Outfit_400Regular',
-                  borderWidth: 1,
-                  borderColor: '#333'
-                }}
-                placeholder="name@example.com"
-                placeholderTextColor="#666"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                autoFocus
-              />
-
-              <TouchableOpacity
-                onPress={handleSendOtp}
-                disabled={isEmailLoading}
-                activeOpacity={0.8}
-                style={{
-                  backgroundColor: '#FFE0C2',
-                  padding: 18,
-                  borderRadius: 16,
-                  alignItems: 'center',
-                  marginTop: 8
-                }}
-              >
-                {isEmailLoading ? (
-                  <ActivityIndicator color="#000" />
-                ) : (
-                  <Text style={{ color: '#000', fontFamily: 'Outfit_600SemiBold', fontSize: 18 }}>Send Code</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
-        {/* OTP Input View */}
-        {showOtpInput && (
-          <View style={[StyleSheet.absoluteFill, { zIndex: 2000, backgroundColor: '#151515', padding: 24, justifyContent: 'center' }]}>
-            <TouchableOpacity
-              style={{ position: 'absolute', top: 60, left: 24, zIndex: 2001, padding: 8 }}
-              onPress={() => { setShowOtpInput(false); setShowEmailInput(true); }}
-            >
-              <Text style={{ color: '#fff', fontSize: 18, fontFamily: 'Outfit_400Regular' }}>← Back</Text>
-            </TouchableOpacity>
-
-            <View style={{ width: '100%', maxWidth: 400, alignSelf: 'center', gap: 24 }}>
-              <View>
-                <Text style={{ color: '#FFFFFF', fontSize: 32, fontFamily: 'Outfit_700Bold', marginBottom: 8, textAlign: 'center' }}>
-                  Check your email
-                </Text>
-                <Text style={{ color: '#999', fontSize: 16, fontFamily: 'Outfit_400Regular', textAlign: 'center' }}>
-                  We sent a code to <Text style={{ color: '#fff' }}>{email}</Text>
-                </Text>
-              </View>
-
-              <TextInput
-                style={{
-                  backgroundColor: '#222',
-                  color: '#fff',
-                  padding: 20,
-                  borderRadius: 16,
-                  fontSize: 32,
-                  textAlign: 'center',
-                  letterSpacing: 8,
-                  fontFamily: 'Outfit_600SemiBold',
-                  borderWidth: 1,
-                  borderColor: '#333'
-                }}
-                placeholder="000000"
-                placeholderTextColor="#444"
-                value={otp}
-                onChangeText={setOtp}
-                keyboardType="number-pad"
-                maxLength={6}
-                autoFocus
-              />
-
-              <TouchableOpacity
-                onPress={handleVerifyOtp}
-                disabled={isEmailLoading}
-                activeOpacity={0.8}
-                style={{
-                  backgroundColor: '#FFE0C2',
-                  padding: 18,
-                  borderRadius: 16,
-                  alignItems: 'center',
-                  marginTop: 8
-                }}
-              >
-                {isEmailLoading ? (
-                  <ActivityIndicator color="#000" />
-                ) : (
-                  <Text style={{ color: '#000', fontFamily: 'Outfit_600SemiBold', fontSize: 18 }}>Verify</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
         {/* Auth Bottom Sheet */}
         {sheetVisible && (
           <>
@@ -756,83 +631,196 @@ export default function OnboardingStart() {
                 },
               ]}
             >
-              <View style={styles.authSection}>
-                <View style={styles.sheetHeader}>
-                  <View style={styles.tabBar} />
-                  <Text style={styles.sheetHeading}>
-                    {isExistingUser ? 'Sign in to existing account' : 'Sign in to continue'}
-                  </Text>
-                  <Text style={styles.sheetSubheading}>
-                    {isExistingUser
-                      ? 'Sign in with the account you already have'
-                      : 'Choose how you wanna roll with 6 7'
-                    }
-                  </Text>
-                </View>
+              {/* Default Sign In Options */}
+              {!showEmailInput && !showOtpInput && (
+                <>
+                  <View style={styles.authSection}>
+                    <View style={styles.sheetHeader}>
+                      <View style={styles.tabBar} />
+                      <Text style={styles.sheetHeading}>
+                        {isExistingUser ? 'Sign in to existing account' : 'Sign in to continue'}
+                      </Text>
+                      <Text style={styles.sheetSubheading}>
+                        {isExistingUser
+                          ? 'Sign in with the account you already have'
+                          : 'Choose how you wanna roll with 6 7'
+                        }
+                      </Text>
+                    </View>
 
-                <View style={styles.buttonContainer}>
-                  <Pressable
-                    style={[styles.authButton, isAuthInProgress && styles.authButtonDisabled]}
-                    onPress={handleGooglePress}
-                    disabled={isAuthInProgress}
-                  >
-                    {isAuthInProgress ? (
-                      <ActivityIndicator size="small" color="#FFFFFF" />
-                    ) : (
-                      <Image
-                        source={require('../../assets/icon/google.png')}
-                        style={styles.iconImage}
-                      />
-                    )}
-                    <Text style={styles.authButtonText}>
-                      {isAuthInProgress ? 'Signing in...' : 'Continue with Google'}
+                    <View style={styles.buttonContainer}>
+                      <Pressable
+                        style={[styles.authButton, isAuthInProgress && styles.authButtonDisabled]}
+                        onPress={handleGooglePress}
+                        disabled={isAuthInProgress}
+                      >
+                        {isAuthInProgress ? (
+                          <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                          <Image
+                            source={require('../../assets/icon/google.png')}
+                            style={styles.iconImage}
+                          />
+                        )}
+                        <Text style={styles.authButtonText}>
+                          {isAuthInProgress ? 'Signing in...' : 'Continue with Google'}
+                        </Text>
+                      </Pressable>
+
+                      {isAuthInProgress && (
+                        <Pressable
+                          style={[styles.authButton, styles.cancelButton]}
+                          onPress={() => {
+                            setIsAuthInProgress(false);
+                            console.log('User cancelled Google Sign-In');
+                          }}
+                        >
+                          <Text style={styles.cancelButtonText}>Cancel</Text>
+                        </Pressable>
+                      )}
+
+                      <Pressable style={[styles.authButton, { marginTop: 14 }]} onPress={handleApplePress}>
+                        <Image
+                          source={require('../../assets/icon/apple.png')}
+                          style={styles.iconImage}
+                        />
+                        <Text style={styles.authButtonText}>Continue with Apple</Text>
+                      </Pressable>
+
+                      <Pressable
+                        style={[styles.authButton, { marginTop: 14, backgroundColor: '#222', borderWidth: 1, borderColor: '#333' }]}
+                        onPress={() => setShowEmailInput(true)}
+                      >
+                        <Mail01Icon size={24} color="#fff" variant="stroke" />
+                        <Text style={[styles.authButtonText, { color: '#fff' }]}>Continue with Email</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+
+                  <View style={styles.termsSection}>
+                    <Text style={styles.termsText}>
+                      By continuing, you accept our{' '}
+                      <Text style={styles.termsLink} onPress={() => router.push('/terms')}>
+                        Terms
+                      </Text>
+                      {' & '}
+                      <Text style={styles.termsLink} onPress={() => router.push('/privacy')}>
+                        Privacy Policy
+                      </Text>
                     </Text>
-                  </Pressable>
+                  </View>
+                </>
+              )}
 
-                  {isAuthInProgress && (
-                    <Pressable
-                      style={[styles.authButton, styles.cancelButton]}
-                      onPress={() => {
-                        setIsAuthInProgress(false);
-                        console.log('User cancelled Google Sign-In');
+              {/* Email Input State */}
+              {showEmailInput && (
+                <View style={styles.authSection}>
+                  <View style={styles.sheetHeader}>
+                    <View style={styles.tabBar} />
+                    <Text style={styles.sheetHeading}>Enter your email</Text>
+                    <Text style={styles.sheetSubheading}>We'll send you a code to sign in</Text>
+                  </View>
+
+                  <View style={{ gap: 16, paddingTop: 8 }}>
+                    <TextInput
+                      style={{
+                        backgroundColor: '#222',
+                        color: '#fff',
+                        padding: 18,
+                        borderRadius: 14,
+                        fontSize: 18,
+                        fontFamily: 'Outfit_400Regular',
+                        borderWidth: 1,
+                        borderColor: '#333'
                       }}
-                    >
-                      <Text style={styles.cancelButtonText}>Cancel</Text>
-                    </Pressable>
-                  )}
-
-                  <Pressable style={[styles.authButton, { marginTop: 14 }]} onPress={handleApplePress}>
-                    <Image
-                      source={require('../../assets/icon/apple.png')}
-                      style={styles.iconImage}
+                      placeholder="name@example.com"
+                      placeholderTextColor="#666"
+                      value={email}
+                      onChangeText={setEmail}
+                      autoCapitalize="none"
+                      keyboardType="email-address"
+                      autoFocus
                     />
-                    <Text style={styles.authButtonText}>Continue with Apple</Text>
-                  </Pressable>
 
-                  <Pressable
-                    style={[styles.authButton, { marginTop: 14, backgroundColor: '#333' }]}
-                    onPress={() => {
-                      closeSheet();
-                      setShowEmailInput(true);
-                    }}
-                  >
-                    <Text style={[styles.authButtonText, { color: '#fff' }]}>Continue with Email</Text>
-                  </Pressable>
+                    <TouchableOpacity
+                      onPress={handleSendOtp}
+                      disabled={isEmailLoading}
+                      activeOpacity={0.8}
+                      style={[styles.authButton, { backgroundColor: '#FFE0C2', marginTop: 8 }]}
+                    >
+                      {isEmailLoading ? (
+                        <ActivityIndicator color="#000" />
+                      ) : (
+                        <Text style={[styles.authButtonText, { color: '#000' }]}>Send Code</Text>
+                      )}
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={() => setShowEmailInput(false)}
+                      style={{ alignItems: 'center', padding: 12 }}
+                    >
+                      <Text style={{ color: '#666', fontFamily: 'Outfit_400Regular', fontSize: 16 }}>Cancel</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </View>
+              )}
 
-              <View style={styles.termsSection}>
-                <Text style={styles.termsText}>
-                  By continuing, you accept our{' '}
-                  <Text style={styles.termsLink} onPress={() => router.push('/terms')}>
-                    Terms
-                  </Text>
-                  {' & '}
-                  <Text style={styles.termsLink} onPress={() => router.push('/privacy')}>
-                    Privacy Policy
-                  </Text>
-                </Text>
-              </View>
+              {/* OTP Input State */}
+              {showOtpInput && (
+                <View style={styles.authSection}>
+                  <View style={styles.sheetHeader}>
+                    <View style={styles.tabBar} />
+                    <Text style={styles.sheetHeading}>Check your email</Text>
+                    <Text style={styles.sheetSubheading}>
+                      We sent a code to <Text style={{ color: '#fff' }}>{email}</Text>
+                    </Text>
+                  </View>
+
+                  <View style={{ gap: 16, paddingTop: 8 }}>
+                    <TextInput
+                      style={{
+                        backgroundColor: '#222',
+                        color: '#fff',
+                        padding: 18,
+                        borderRadius: 14,
+                        fontSize: 32,
+                        textAlign: 'center',
+                        letterSpacing: 8,
+                        fontFamily: 'Outfit_600SemiBold',
+                        borderWidth: 1,
+                        borderColor: '#333'
+                      }}
+                      placeholder="000000"
+                      placeholderTextColor="#444"
+                      value={otp}
+                      onChangeText={setOtp}
+                      keyboardType="number-pad"
+                      maxLength={6}
+                      autoFocus
+                    />
+
+                    <TouchableOpacity
+                      onPress={handleVerifyOtp}
+                      disabled={isEmailLoading}
+                      activeOpacity={0.8}
+                      style={[styles.authButton, { backgroundColor: '#FFE0C2', marginTop: 8 }]}
+                    >
+                      {isEmailLoading ? (
+                        <ActivityIndicator color="#000" />
+                      ) : (
+                        <Text style={[styles.authButtonText, { color: '#000' }]}>Verify</Text>
+                      )}
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={() => { setShowOtpInput(false); setShowEmailInput(true); }}
+                      style={{ alignItems: 'center', padding: 12 }}
+                    >
+                      <Text style={{ color: '#666', fontFamily: 'Outfit_400Regular', fontSize: 16 }}>Back</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
             </RNAnimated.View>
           </>
         )}
@@ -992,43 +980,54 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   sheetHeading: { color: '#FFFFFF', fontSize: 22, fontWeight: '700' },
-  sheetSubheading: { color: '#FFFFFF', fontSize: 16, opacity: 0.75, marginTop: 6 },
+  sheetSubheading: { color: '#FFFFFF', fontSize: 16, opacity: 0.75, marginTop: 6, textAlign: 'center' },
   buttonContainer: { paddingTop: 8 },
   authButton: {
     width: '100%',
     backgroundColor: '#222222',
     height: 56,
     borderRadius: 14,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row',
-    paddingHorizontal: 18,
+    gap: 12,
   },
   authButtonDisabled: {
-    opacity: 0.6,
+    opacity: 0.7,
+  },
+  authButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontFamily: 'Outfit_600SemiBold',
+  },
+  iconImage: {
+    width: 24,
+    height: 24,
+    resizeMode: 'contain',
   },
   cancelButton: {
-    backgroundColor: '#333333',
-    marginTop: 8,
-  },
-  cancelButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  iconImage: { width: 24, height: 24, marginRight: 12 },
-  authButtonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
-  existingInput: {
-    backgroundColor: '#1E1E1E',
+    marginTop: 12,
+    backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: '#333',
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    color: '#FFFFFF',
-    fontSize: 16,
   },
-  termsSection: { paddingTop: 12 },
-  termsText: { color: '#888888', fontSize: 12, textAlign: 'center' },
-  termsLink: { color: '#FFE0C2', textDecorationLine: 'underline' },
+  cancelButtonText: {
+    color: '#999',
+    fontSize: 16,
+    fontFamily: 'Outfit_500Medium',
+  },
+  termsSection: {
+    marginTop: 24,
+    alignItems: 'center',
+  },
+  termsText: {
+    color: '#666',
+    fontSize: 12,
+    textAlign: 'center',
+    fontFamily: 'Outfit_400Regular',
+  },
+  termsLink: {
+    color: '#FFFFFF',
+    textDecorationLine: 'underline',
+  },
 });
