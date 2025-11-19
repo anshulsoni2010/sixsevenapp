@@ -88,6 +88,7 @@ export default function ChatScreen() {
   const [hasChatStarted, setHasChatStarted] = useState(false);
   const [isDropdownAnimating, setIsDropdownAnimating] = useState(false);
   const [credits, setCredits] = useState(50);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const suggestionKey = useMemo(() => Math.random().toString(36).slice(2, 8), []);
 
   // Dropdown animation values
@@ -200,6 +201,7 @@ export default function ChatScreen() {
         body: JSON.stringify({
           text: userMessage.text,
           model: selectedModel,
+          conversationId: conversationId,
         }),
       });
 
@@ -219,6 +221,11 @@ export default function ChatScreen() {
 
       if (data.credits !== undefined) {
         setCredits(data.credits);
+      }
+
+      // Store conversation ID for subsequent messages
+      if (data.conversationId && !conversationId) {
+        setConversationId(data.conversationId);
       }
     } catch (error) {
       console.error('Chat Error:', error);

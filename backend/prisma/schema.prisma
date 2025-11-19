@@ -34,6 +34,10 @@ model User {
   // Credit Management
   dailyTokenCount     Int      @default(0)
   lastTokenUsageDate  DateTime @default(now())
+
+  // Relations
+  conversations       Conversation[]
+  usageLogs          UsageLog[]
 }
 
 model VerificationToken {
@@ -43,4 +47,49 @@ model VerificationToken {
   createdAt  DateTime @default(now())
 
   @@unique([identifier, token])
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@index([userId])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           String   // "user" or "assistant"
+  content        String   @db.Text
+  model          String?  // "1x", "2x", "3x", "4x"
+  tokensUsed     Int?
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  usageLogs    UsageLog[]
+
+  @@index([conversationId])
+}
+
+model UsageLog {
+  id           String   @id @default(cuid())
+  userId       String
+  messageId    String?
+  model        String
+  tokensUsed   Int
+  success      Boolean  @default(true)
+  errorMessage String?
+  createdAt    DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message Message? @relation(fields: [messageId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([createdAt])
 }
