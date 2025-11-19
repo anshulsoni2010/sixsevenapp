@@ -21,6 +21,7 @@ import {
   TouchableWithoutFeedback,
   Animated,
   Easing,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -89,12 +90,45 @@ export default function ChatScreen() {
   const [isDropdownAnimating, setIsDropdownAnimating] = useState(false);
   const [credits, setCredits] = useState(50);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const suggestionKey = useMemo(() => Math.random().toString(36).slice(2, 8), []);
 
   // Dropdown animation values
   const dropdownScale = useRef(new Animated.Value(0.8)).current;
   const dropdownOpacity = useRef(new Animated.Value(0)).current;
   const dropdownTranslateY = useRef(new Animated.Value(-10)).current;
+
+  // Keyboard event listeners
+  useEffect(() => {
+    const keyboardWillShow = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => {
+        LayoutAnimation.configureNext(LayoutAnimation.create(
+          300,
+          LayoutAnimation.Types.easeInEaseOut,
+          LayoutAnimation.Properties.opacity
+        ));
+        setIsKeyboardVisible(true);
+      }
+    );
+
+    const keyboardWillHide = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        LayoutAnimation.configureNext(LayoutAnimation.create(
+          300,
+          LayoutAnimation.Types.easeInEaseOut,
+          LayoutAnimation.Properties.opacity
+        ));
+        setIsKeyboardVisible(false);
+      }
+    );
+
+    return () => {
+      keyboardWillShow.remove();
+      keyboardWillHide.remove();
+    };
+  }, []);
 
   // suggestion show animation
   useEffect(() => {
@@ -367,7 +401,7 @@ export default function ChatScreen() {
             </View>
 
             {/* Logo */}
-            {!hasChatStarted && (
+            {!hasChatStarted && !isKeyboardVisible && (
               <View style={styles.logoContainer}>
                 <Image
                   source={require('../../assets/images/chat-sixsevenlogo.png')}
@@ -399,7 +433,7 @@ export default function ChatScreen() {
           {/* SECOND CONTAINER */}
           <View style={styles.secondContainer}>
             {/* Suggested prompts */}
-            {!hasChatStarted && (
+            {!hasChatStarted && !isKeyboardVisible && (
               <ScrollView
                 style={styles.suggestedPromptsSection}
                 contentContainerStyle={{ paddingBottom: 8 }}
@@ -413,7 +447,10 @@ export default function ChatScreen() {
             )}
 
             {/* Input Section */}
-            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+              keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+            >
               <View style={styles.inputSection}>
                 <ChatInput
                   value={inputText}
