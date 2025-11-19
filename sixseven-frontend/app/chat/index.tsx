@@ -204,6 +204,11 @@ export default function ChatScreen() {
     loadUserData();
   }, []);
 
+  // Fetch conversations on mount
+  useEffect(() => {
+    fetchConversations();
+  }, []);
+
   // Fetch conversations
   const fetchConversations = async () => {
     try {
@@ -224,6 +229,59 @@ export default function ChatScreen() {
       }
     } catch (error) {
       console.error('Error fetching conversations:', error);
+    }
+  };
+
+  // Load a specific conversation
+  const loadConversation = async (convId: string) => {
+    try {
+      const token = await SecureStore.getItemAsync('session_token');
+      const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
+
+      const response = await fetch(`${BACKEND}/api/conversations/${convId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const conversation = data.conversation;
+
+        // Load messages
+        if (conversation.messages && conversation.messages.length > 0) {
+          const loadedMessages: Message[] = conversation.messages.map((msg: any) => ({
+            id: msg.id || Date.now().toString(),
+            text: msg.content || msg.text,
+            isUser: msg.role === 'user',
+            timestamp: new Date(msg.createdAt || Date.now()),
+          }));
+
+          setMessages(loadedMessages);
+          setConversationId(convId);
+          setHasChatStarted(true);
+        } else {
+          // Empty conversation, start fresh
+          setMessages([{
+            id: '1',
+            text: 'Hey fam! Ready to translate your texts to Gen Alpha? Just send me your message or a screenshot! 🔥',
+            isUser: false,
+            timestamp: new Date(),
+          }]);
+          setConversationId(convId);
+          setHasChatStarted(false);
+        }
+      } else {
+        console.error('Failed to load conversation:', response.status);
+        // Fallback to new chat
+        createNewChat();
+      }
+    } catch (error) {
+      console.error('Error loading conversation:', error);
+      // Fallback to new chat
+      createNewChat();
     }
   };
 
@@ -309,6 +367,8 @@ export default function ChatScreen() {
       // Store conversation ID for subsequent messages
       if (data.conversationId && !conversationId) {
         setConversationId(data.conversationId);
+        // Refresh conversations list to show the new conversation
+        fetchConversations();
       }
     } catch (error) {
       console.error('Chat Error:', error);
@@ -410,6 +470,22 @@ export default function ChatScreen() {
     setShowModelDropdown(false);
   };
 
+  const createNewChat = () => {
+    setConversationId(null);
+    setMessages([{
+      id: '1',
+      text: 'Hey fam! Ready to translate your texts to Gen Alpha? Just send me your message or a screenshot! 🔥',
+      isUser: false,
+      timestamp: new Date(),
+    }]);
+    setHasChatStarted(false);
+    setInputText('');
+    // Close sidebar if open
+    if (showSidebar) {
+      toggleSidebar();
+    }
+  };
+
   const onSubmitEditing = (_e: NativeSyntheticEvent<TextInputSubmitEditingEventData>) => {
     handleSend();
   };
@@ -427,7 +503,7 @@ export default function ChatScreen() {
             {/* Top Bar: left controls & right controls */}
             <View style={styles.topBar}>
               <View style={styles.leftSection}>
-                <ActionButton />
+                <ActionButton onPress={createNewChat} />
                 <CreditButton credits={credits} />
               </View>
 
@@ -580,8 +656,7 @@ export default function ChatScreen() {
                           conversationId === conv.id && styles.conversationItemActive
                         ]}
                         onPress={() => {
-                          // TODO: Load conversation
-                          setConversationId(conv.id);
+                          loadConversation(conv.id);
                           toggleSidebar();
                         }}
                       >
@@ -618,9 +693,9 @@ function MessageBubble({ message }: { message: Message }) {
 
 /* ---------- Internal components (in-file) ---------- */
 
-function ActionButton() {
+function ActionButton({ onPress }: { onPress: () => void }) {
   return (
-    <TouchableOpacity activeOpacity={0.85} accessibilityLabel="Add" style={{ height: 50, width: 60, borderRadius: 25, overflow: 'hidden' }}>
+    <TouchableOpacity activeOpacity={0.85} accessibilityLabel="New Chat" style={{ height: 50, width: 60, borderRadius: 25, overflow: 'hidden' }} onPress={onPress}>
       <LinearGradient
         colors={['#2E2E2E', '#2A2A2A']}
         start={{ x: 0, y: 0 }}
