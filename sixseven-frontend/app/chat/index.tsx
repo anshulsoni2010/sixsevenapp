@@ -22,6 +22,9 @@ import {
   Animated,
   Easing,
   Keyboard,
+  ActionSheetIOS,
+  Modal,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -54,6 +57,13 @@ type Message = {
   text: string;
   isUser: boolean;
   timestamp: Date;
+};
+
+type Conversation = {
+  id: string;
+  title: string;
+  lastMessage?: string;
+  updatedAt: string;
 };
 
 const suggestionsDefault = [
@@ -92,10 +102,15 @@ export default function ChatScreen() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
-  const [conversations, setConversations] = useState<any[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredConversations, setFilteredConversations] = useState<any[]>([]);
-  const sidebarTranslateX = useRef(new Animated.Value(-300)).current;
+  const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
+  const [sidebarTranslateX] = useState(new Animated.Value(-300));
+
+  // Rename Modal State
+  const [renameModalVisible, setRenameModalVisible] = useState(false);
+  const [conversationToRename, setConversationToRename] = useState<Conversation | null>(null);
+  const [renameText, setRenameText] = useState('');
   const suggestionKey = useMemo(() => Math.random().toString(36).slice(2, 8), []);
 
   // Dropdown animation values
@@ -242,30 +257,142 @@ export default function ChatScreen() {
     }
   };
 
-  // Delete a conversation
-  const deleteConversation = async (convId: string) => {
+  const deleteConversation = async (id: string) => {
+    // Optimistic update
+    const prevConversations = [...conversations];
+    setConversations(prev => prev.filter(c => c.id !== id));
+
     try {
       const token = await SecureStore.getItemAsync('session_token');
       const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
-
-      const response = await fetch(`${BACKEND}/api/conversations/${convId}`, {
+      const response = await fetch(`${BACKEND}/api/conversations/${id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete');
+      }
+
+      // If current conversation was deleted, reset
+      if (conversationId === id) {
+        createNewChat();
+      }
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      setConversations(prevConversations); // Revert
+      Alert.alert('Error', 'Failed to delete conversation');
+    }
+  };
+
+  const renameConversation = async (id: string, newTitle: string) => {
+    if (!newTitle.trim()) return;
+
+    // Optimistic update
+    setConversations(prev => prev.map(c => c.id === id ? { ...c, title: newTitle } : c));
+    setRenameModalVisible(false);
+
+    try {
+      const token = await SecureStore.getItemAsync('session_token');
+      const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
+      await fetch(`${BACKEND}/api/conversations/${id}`, {
+        method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ title: newTitle }),
       });
-
-      if (response.ok) {
-        // Remove from local state
-        setConversations(prev => prev.filter(conv => conv.id !== convId));
-        // If current conversation was deleted, start new chat
-        if (conversationId === convId) {
-          createNewChat();
-        }
-      }
     } catch (error) {
-      console.error('Error deleting conversation:', error);
+      console.error('Rename error:', error);
+      fetchConversations(); // Revert on error
+    }
+  };
+
+  const archiveConversation = async (id: string) => {
+    // Optimistic update (remove from list)
+    setConversations(prev => prev.filter(c => c.id !== id));
+
+    try {
+      const token = await SecureStore.getItemAsync('session_token');
+      const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
+      await fetch(`${BACKEND}/api/conversations/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isArchived: true }),
+      });
+    } catch (error) {
+      console.error('Archive error:', error);
+      fetchConversations(); // Revert on error
+    }
+  };
+
+  const handleLongPress = (conversation: Conversation) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Rename', 'Archive', 'Delete'],
+          destructiveButtonIndex: 3,
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) {
+            // Rename
+            if (Alert.prompt) {
+              Alert.prompt(
+                'Rename Chat',
+                'Enter a new name for this chat',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Rename', onPress: (text?: string) => text && renameConversation(conversation.id, text) },
+                ],
+                'plain-text',
+                conversation.title
+              );
+            } else {
+              setConversationToRename(conversation);
+              setRenameText(conversation.title || '');
+              setRenameModalVisible(true);
+            }
+          } else if (buttonIndex === 2) {
+            archiveConversation(conversation.id);
+          } else if (buttonIndex === 3) {
+            Alert.alert(
+              'Delete Chat',
+              'Are you sure you want to delete this chat?',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Delete', style: 'destructive', onPress: () => deleteConversation(conversation.id) },
+              ]
+            );
+          }
+        }
+      );
+    } else {
+      // Android
+      Alert.alert(
+        'Chat Options',
+        'Choose an action',
+        [
+          {
+            text: 'Rename', onPress: () => {
+              setConversationToRename(conversation);
+              setRenameText(conversation.title || '');
+              setRenameModalVisible(true);
+            }
+          },
+          { text: 'Archive', onPress: () => archiveConversation(conversation.id) },
+          { text: 'Delete', onPress: () => deleteConversation(conversation.id), style: 'destructive' },
+          { text: 'Cancel', style: 'cancel' },
+        ]
+      );
     }
   };
 
@@ -349,7 +476,7 @@ export default function ChatScreen() {
     if (!inputText.trim() || loading) return;
 
     if (credits <= 0) {
-      alert("You're out of credits for today! Come back tomorrow.");
+      alert("You're out of credits for today! Come back tomorrow!");
       return;
     }
 
@@ -688,6 +815,7 @@ export default function ChatScreen() {
                           loadConversation(conv.id);
                           toggleSidebar();
                         }}
+                        onLongPress={() => handleLongPress(conv)}
                       >
                         <Text style={[
                           styles.conversationTitle,
@@ -717,6 +845,50 @@ export default function ChatScreen() {
             </Animated.View>
           </>
         )}
+
+        {/* Rename Modal */}
+        <Modal
+          visible={renameModalVisible}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setRenameModalVisible(false)}
+        >
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.modalOverlay}
+          >
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Rename Chat</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={renameText}
+                onChangeText={setRenameText}
+                placeholder="Enter new name"
+                placeholderTextColor="#666"
+                autoFocus={true}
+                maxLength={50}
+              />
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonCancel]}
+                  onPress={() => setRenameModalVisible(false)}
+                >
+                  <Text style={styles.modalButtonTextCancel}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalButtonConfirm]}
+                  onPress={() => {
+                    if (conversationToRename) {
+                      renameConversation(conversationToRename.id, renameText);
+                    }
+                  }}
+                >
+                  <Text style={styles.modalButtonTextConfirm}>Rename</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
       </SafeAreaView>
     </ImageBackground>
   );
@@ -1376,5 +1548,71 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '500',
     fontFamily: 'Outfit_500Medium',
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '85%',
+    backgroundColor: '#1A1A1A',
+    borderRadius: 16,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: '#333',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFF',
+    marginBottom: 16,
+    fontFamily: 'Outfit_600SemiBold',
+  },
+  modalInput: {
+    backgroundColor: '#2A2A2A',
+    borderRadius: 12,
+    padding: 16,
+    color: '#FFF',
+    fontSize: 16,
+    marginBottom: 24,
+    fontFamily: 'Outfit_400Regular',
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+  },
+  modalButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+  },
+  modalButtonCancel: {
+    backgroundColor: 'transparent',
+  },
+  modalButtonConfirm: {
+    backgroundColor: '#FFE0C2',
+  },
+  modalButtonTextCancel: {
+    color: '#AAA',
+    fontSize: 16,
+    fontWeight: '500',
+    fontFamily: 'Outfit_500Medium',
+  },
+  modalButtonTextConfirm: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Outfit_600SemiBold',
   },
 });
