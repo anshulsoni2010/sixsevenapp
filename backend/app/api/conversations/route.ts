@@ -48,6 +48,7 @@ export async function GET(req: Request) {
             updatedAt: conv.updatedAt,
             messageCount: conv._count.messages,
             lastMessage: conv.messages[0]?.content.substring(0, 100) || '',
+            isArchived: conv.isArchived,
         }));
 
         return NextResponse.json({ conversations: formattedConversations });
