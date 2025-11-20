@@ -99,7 +99,7 @@ export default function ChatScreen() {
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [hasChatStarted, setHasChatStarted] = useState(false);
   const [isDropdownAnimating, setIsDropdownAnimating] = useState(false);
-  const [credits, setCredits] = useState(50);
+  const [credits, setCredits] = useState(30);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
@@ -207,7 +207,7 @@ export default function ChatScreen() {
                 await AsyncStorage.setItem('user', JSON.stringify(userObj));
               }
               if (userData.dailyTokenCount !== undefined) {
-                setCredits(50 - userData.dailyTokenCount);
+                setCredits(30 - userData.dailyTokenCount);
               }
             }
           } catch (apiError) {
@@ -768,7 +768,7 @@ export default function ChatScreen() {
                   <>
                     <View style={styles.sidebarBranding}>
                       <Image
-                        source={require('../../assets/images/icon.png')}
+                        source={require('../../assets/images/splashlogo.png')}
                         style={styles.brandingLogo}
                       />
                     </View>
@@ -1018,6 +1018,12 @@ function ActionButton({ onPress }: { onPress: () => void }) {
 }
 
 function CreditButton({ credits = 0 }: { credits?: number }) {
+  const maxCredits = 30;
+  const usedCredits = maxCredits - credits;
+  const progress = usedCredits / maxCredits;
+  const circumference = 2 * Math.PI * 14; // radius = 14
+  const strokeDashoffset = circumference * (1 - progress);
+
   return (
     <TouchableOpacity activeOpacity={0.85} accessibilityLabel="Credits" style={{ height: 50, borderRadius: 25, overflow: 'hidden' }}>
       <LinearGradient
@@ -1027,9 +1033,44 @@ function CreditButton({ credits = 0 }: { credits?: number }) {
         style={{ flex: 1, padding: 1 }}
       >
         <View
-          style={{ flex: 1, backgroundColor: '#FFE0C2', borderRadius: 24, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 6, gap: 12 }}
+          style={{ flex: 1, backgroundColor: '#FFE0C2', borderRadius: 24, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 6, gap: 8 }}
         >
           <Image source={require('../../assets/images/crediticon.png')} style={styles.coinIcon} />
+
+          {/* Circular Progress */}
+          <View style={{ width: 32, height: 32, justifyContent: 'center', alignItems: 'center' }}>
+            <SvgXml
+              xml={`
+                <svg width="32" height="32" viewBox="0 0 32 32">
+                  <!-- Background circle -->
+                  <circle
+                    cx="16"
+                    cy="16"
+                    r="14"
+                    stroke="rgba(0, 0, 0, 0.1)"
+                    strokeWidth="3"
+                    fill="none"
+                  />
+                  <!-- Progress circle -->
+                  <circle
+                    cx="16"
+                    cy="16"
+                    r="14"
+                    stroke="#000"
+                    strokeWidth="3"
+                    fill="none"
+                    strokeDasharray="${circumference}"
+                    strokeDashoffset="${strokeDashoffset}"
+                    strokeLinecap="round"
+                    transform="rotate(-90 16 16)"
+                  />
+                </svg>
+              `}
+              width={32}
+              height={32}
+            />
+          </View>
+
           <Text style={styles.creditText}>{credits}</Text>
         </View>
       </LinearGradient>

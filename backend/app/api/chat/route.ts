@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
 // Note: Make sure GEMINI_API_KEY is set in .env
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
-const DAILY_TOKEN_LIMIT = 50;
+const DAILY_TOKEN_LIMIT = 30;
 
 const SYSTEM_PROMPTS = {
     '1x': `You are a Gen Z translator. Your goal is to rewrite the user's text into mild Gen Z slang. 
@@ -149,6 +149,7 @@ export async function POST(req: Request) {
         let responseText: string;
         let success = true;
         let errorMessage: string | undefined;
+        let tokensUsed = 1; // Default fallback
 
         try {
             const geminiModel = genAI.getGenerativeModel({
@@ -158,6 +159,9 @@ export async function POST(req: Request) {
 
             const result = await geminiModel.generateContent(text);
             responseText = result.response.text();
+
+            // Get actual token usage from Gemini
+            tokensUsed = result.response.usageMetadata?.totalTokenCount || 1;
         } catch (error: any) {
             success = false;
             errorMessage = error.message || 'Gemini API error';
@@ -174,7 +178,7 @@ export async function POST(req: Request) {
                 role: 'assistant',
                 content: responseText,
                 model: selectedModel,
-                tokensUsed: 1, // Simplified - you could calculate actual tokens if needed
+                tokensUsed: tokensUsed,
             }
         });
 
@@ -184,7 +188,7 @@ export async function POST(req: Request) {
                 userId: userId,
                 messageId: aiMessage.id,
                 model: selectedModel,
-                tokensUsed: 1,
+                tokensUsed: tokensUsed,
                 success: success,
                 errorMessage: errorMessage,
             }
@@ -194,7 +198,7 @@ export async function POST(req: Request) {
         const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: {
-                dailyTokenCount: isNewDay ? 1 : { increment: 1 },
+                dailyTokenCount: isNewDay ? tokensUsed : { increment: tokensUsed },
                 lastTokenUsageDate: now,
             },
             select: {
