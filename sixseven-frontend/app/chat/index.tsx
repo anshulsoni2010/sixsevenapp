@@ -767,7 +767,10 @@ export default function ChatScreen() {
                 ) : (
                   <>
                     <View style={styles.sidebarBranding}>
-                      <Text style={styles.brandingText}>67</Text>
+                      <Image
+                        source={require('../../assets/images/icon.png')}
+                        style={styles.brandingLogo}
+                      />
                     </View>
                     <TouchableOpacity
                       style={styles.newChatButton}
@@ -1539,12 +1542,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+    overflow: 'hidden',
   },
-  brandingText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#000',
-    fontFamily: 'Outfit_700Bold',
+  brandingLogo: {
+    width: 32,
+    height: 32,
   },
   sidebarHeader: {
     flexDirection: 'row',
