@@ -43,8 +43,13 @@ The backend now fully supports conversation persistence and AI-generated titles.
     -   **Rename**: Opens a dialog to change the title.
     -   **Archive**: Conversation disappears from the list.
     -   **Delete**: Conversation is permanently removed.
-5.  **Load History**: Click a previous conversation. Verify messages load correctly.
-6.  **Profile**: Click "My Profile" in the sidebar. Verify navigation.
+5.  **Archived Chats**:
+    -   Click "Archived Chats" at the bottom of the sidebar.
+    -   Verify archived chats are listed.
+    -   Long-press an archived chat and select "Unarchive".
+    -   Verify it returns to the main list.
+6.  **Load History**: Click a previous conversation. Verify messages load correctly.
+7.  **Profile**: Click "My Profile" in the sidebar. Verify navigation.
 
 ## Next Steps
 -   **Test on Device**: Run `npx expo start` and test on your physical device.

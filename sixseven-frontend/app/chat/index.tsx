@@ -118,6 +118,7 @@ export default function ChatScreen() {
   const [renameText, setRenameText] = useState('');
   const [optionsModalVisible, setOptionsModalVisible] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
   const suggestionKey = useMemo(() => Math.random().toString(36).slice(2, 8), []);
 
   // Dropdown animation values
@@ -320,7 +321,7 @@ export default function ChatScreen() {
 
   const archiveConversation = async (id: string) => {
     // Optimistic update (remove from list)
-    setConversations(prev => prev.filter(c => c.id !== id));
+    setConversations(prev => prev.map(c => c.id === id ? { ...c, isArchived: true } : c));
 
     try {
       const token = await SecureStore.getItemAsync('session_token');
@@ -335,6 +336,27 @@ export default function ChatScreen() {
       });
     } catch (error) {
       console.error('Archive error:', error);
+      fetchConversations(); // Revert on error
+    }
+  };
+
+  const unarchiveConversation = async (id: string) => {
+    // Optimistic update
+    setConversations(prev => prev.map(c => c.id === id ? { ...c, isArchived: false } : c));
+
+    try {
+      const token = await SecureStore.getItemAsync('session_token');
+      const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
+      await fetch(`${BACKEND}/api/conversations/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isArchived: false }),
+      });
+    } catch (error) {
+      console.error('Unarchive error:', error);
       fetchConversations(); // Revert on error
     }
   };
@@ -717,26 +739,38 @@ export default function ChatScreen() {
             </TouchableWithoutFeedback>
             <Animated.View style={[styles.sidebar, { transform: [{ translateX: sidebarTranslateX }] }]}>
               <View style={styles.sidebarHeader}>
-                <TouchableOpacity
-                  style={styles.newChatButton}
-                  onPress={createNewChat}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="add" size={20} color="#000" />
-                  <Text style={styles.newChatText}>New Chat</Text>
-                </TouchableOpacity>
+                {showArchived ? (
+                  <TouchableOpacity
+                    style={styles.backButton}
+                    onPress={() => setShowArchived(false)}
+                  >
+                    <Ionicons name="arrow-back" size={24} color="#FFF" />
+                    <Text style={styles.headerTitle}>Archived</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.newChatButton}
+                    onPress={createNewChat}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="add" size={20} color="#000" />
+                    <Text style={styles.newChatText}>New Chat</Text>
+                  </TouchableOpacity>
+                )}
               </View>
 
-              <Text style={styles.sectionTitle}>Recent</Text>
+              <Text style={styles.sectionTitle}>{showArchived ? 'Archived Chats' : 'Recent'}</Text>
 
               <ScrollView style={styles.conversationList}>
-                {filteredConversations.length === 0 ? (
+                {filteredConversations.filter(c => showArchived ? c.isArchived : !c.isArchived).length === 0 ? (
                   <View style={styles.emptyState}>
-                    <Text style={styles.emptyStateText}>No conversations yet</Text>
+                    <Text style={styles.emptyStateText}>
+                      {showArchived ? 'No archived chats' : 'No conversations yet'}
+                    </Text>
                   </View>
                 ) : (
                   filteredConversations
-                    .filter(c => !c.isArchived)
+                    .filter(c => showArchived ? c.isArchived : !c.isArchived)
                     .map((conv) => (
                       <TouchableOpacity
                         key={conv.id}
@@ -763,6 +797,15 @@ export default function ChatScreen() {
               </ScrollView>
               {/* User Profile Section */}
               <View style={styles.sidebarFooter}>
+                {!showArchived && (
+                  <TouchableOpacity
+                    style={styles.archivedButton}
+                    onPress={() => setShowArchived(true)}
+                  >
+                    <Ionicons name="archive-outline" size={20} color="#666" />
+                    <Text style={styles.archivedText}>Archived Chats</Text>
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity style={styles.userProfileItem} onPress={() => router.push('/profile' as any)}>
                   <View style={styles.userAvatarSmall}>
                     {userAvatar ? (
@@ -860,12 +903,22 @@ export default function ChatScreen() {
                 onPress={() => {
                   setOptionsModalVisible(false);
                   if (selectedConversation) {
-                    archiveConversation(selectedConversation.id);
+                    if (selectedConversation.isArchived) {
+                      unarchiveConversation(selectedConversation.id);
+                    } else {
+                      archiveConversation(selectedConversation.id);
+                    }
                   }
                 }}
               >
-                <Ionicons name="archive-outline" size={24} color="#FFF" />
-                <Text style={styles.optionText}>Archive</Text>
+                <Ionicons
+                  name={selectedConversation?.isArchived ? "refresh-outline" : "archive-outline"}
+                  size={24}
+                  color="#FFF"
+                />
+                <Text style={styles.optionText}>
+                  {selectedConversation?.isArchived ? "Unarchive" : "Archive"}
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -1542,6 +1595,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     paddingVertical: 4,
+  },
+  archivedButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 12,
+    marginBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1A1A1A',
+  },
+  archivedText: {
+    fontSize: 15,
+    color: '#666',
+    fontWeight: '500',
+    fontFamily: 'Outfit_500Medium',
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    color: '#FFF',
+    fontWeight: '600',
+    fontFamily: 'Outfit_600SemiBold',
   },
   userAvatarSmall: {
     width: 36,
