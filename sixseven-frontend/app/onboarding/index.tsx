@@ -604,6 +604,7 @@ export default function OnboardingStart() {
             </RNAnimated.View>
 
             <RNAnimated.View
+              pointerEvents="auto"
               onLayout={(e) => {
                 const h = e.nativeEvent.layout.height;
                 if (h && sheetHeightRef.current !== h) {
