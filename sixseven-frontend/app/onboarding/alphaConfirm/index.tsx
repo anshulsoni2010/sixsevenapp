@@ -25,6 +25,7 @@ import * as SecureStore from 'expo-secure-store';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 let GoogleSignin: any = null;
 let statusCodes: any = null;
 
@@ -56,6 +57,13 @@ function AlphaConfirmScreen() {
     const [selectedAlpha, setSelectedAlpha] = useState<string | null>(null);
     const [sheetVisible, setSheetVisible] = useState(false);
     const [isAuthInProgress, setIsAuthInProgress] = useState(false);
+
+    // Email OTP State
+    const [email, setEmail] = useState('');
+    const [otp, setOtp] = useState('');
+    const [showEmailInput, setShowEmailInput] = useState(false);
+    const [showOtpInput, setShowOtpInput] = useState(false);
+    const [isEmailLoading, setIsEmailLoading] = useState(false);
 
     // Configure Google Sign-In
     useEffect(() => {
@@ -400,6 +408,64 @@ function AlphaConfirmScreen() {
         }
     };
 
+    const handleSendOtp = async () => {
+        if (!email || !email.includes('@')) {
+            Alert.alert('Error', 'Please enter a valid email address');
+            return;
+        }
+
+        setIsEmailLoading(true);
+        try {
+            const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
+            const response = await fetch(`${BACKEND}/api/auth/email/send`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email }),
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                setShowEmailInput(false);
+                setShowOtpInput(true);
+                Alert.alert('Success', 'Code sent to your email!');
+            } else {
+                Alert.alert('Error', data.error || 'Failed to send code');
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Network error. Please try again.');
+        } finally {
+            setIsEmailLoading(false);
+        }
+    };
+
+    const handleVerifyOtp = async () => {
+        if (!otp || otp.length < 6) {
+            Alert.alert('Error', 'Please enter the 6-digit code');
+            return;
+        }
+
+        setIsEmailLoading(true);
+        try {
+            const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
+            const response = await fetch(`${BACKEND}/api/auth/email/verify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, token: otp }),
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                await handleAuthSuccess(data.token, data.onboarded);
+            } else {
+                Alert.alert('Error', data.error || 'Invalid code');
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Network error. Please try again.');
+        } finally {
+            setIsEmailLoading(false);
+        }
+    };
+
     const opacity = useSharedValue(1);
     const translateY = useSharedValue(0);
     const aStyle = useAnimatedStyle(() => ({
@@ -524,53 +590,178 @@ function AlphaConfirmScreen() {
                         ]}
                     >
                         <View style={styles.authSection}>
-                            <View style={styles.sheetHeader}>
-                                <View style={styles.tabBar} />
-                                <Text style={styles.sheetHeading}>Sign in to continue</Text>
-                                <Text style={styles.sheetSubheading}>
-                                    Choose how you wanna roll with 6 7
-                                </Text>
-                            </View>
+                            {/* Default Auth State */}
+                            {!showEmailInput && !showOtpInput && (
+                                <>
+                                    <View style={styles.sheetHeader}>
+                                        <View style={styles.tabBar} />
+                                        <Text style={styles.sheetHeading}>Sign in to continue</Text>
+                                        <Text style={styles.sheetSubheading}>
+                                            Choose how you wanna roll with 6 7
+                                        </Text>
+                                    </View>
 
-                            <View style={styles.buttonContainer}>
-                                <Pressable 
-                                    style={[styles.authButton, isAuthInProgress && styles.authButtonDisabled]} 
-                                    onPress={handleGooglePress}
-                                    disabled={isAuthInProgress}
-                                >
-                                    {isAuthInProgress ? (
-                                        <ActivityIndicator size="small" color="#FFFFFF" />
-                                    ) : (
-                                        <Image
-                                            source={require('../../../assets/icon/google.png')}
-                                            style={styles.iconImage}
+                                    <View style={styles.buttonContainer}>
+                                        <Pressable 
+                                            style={[styles.authButton, isAuthInProgress && styles.authButtonDisabled]} 
+                                            onPress={handleGooglePress}
+                                            disabled={isAuthInProgress}
+                                        >
+                                            {isAuthInProgress ? (
+                                                <ActivityIndicator size="small" color="#FFFFFF" />
+                                            ) : (
+                                                <Image
+                                                    source={require('../../../assets/icon/google.png')}
+                                                    style={styles.iconImage}
+                                                />
+                                            )}
+                                            <Text style={styles.authButtonText}>
+                                                {isAuthInProgress ? 'Signing in...' : 'Continue with Google'}
+                                            </Text>
+                                        </Pressable>
+
+                                        {isAuthInProgress && (
+                                            <Pressable 
+                                                style={[styles.authButton, styles.cancelButton]} 
+                                                onPress={() => {
+                                                    setIsAuthInProgress(false);
+                                                    console.log('User cancelled Google Sign-In');
+                                                }}
+                                            >
+                                                <Text style={styles.cancelButtonText}>Cancel</Text>
+                                            </Pressable>
+                                        )}
+
+                                        <Pressable style={[styles.authButton, { marginTop: 14 }]} onPress={handleApplePress}>
+                                            <Image
+                                                source={require('../../../assets/icon/apple.png')}
+                                                style={styles.iconImage}
+                                            />
+                                            <Text style={styles.authButtonText}>Continue with Apple</Text>
+                                        </Pressable>
+
+                                        <Pressable
+                                            style={[styles.authButton, { marginTop: 14, backgroundColor: '#222', borderWidth: 1, borderColor: '#333' }]}
+                                            onPress={() => setShowEmailInput(true)}
+                                        >
+                                            <Ionicons name="mail-outline" size={24} color="#fff" />
+                                            <Text style={[styles.authButtonText, { color: '#fff' }]}>Continue with Email</Text>
+                                        </Pressable>
+                                    </View>
+                                </>
+                            )}
+
+                            {/* Email Input State */}
+                            {showEmailInput && (
+                                <>
+                                    <View style={styles.sheetHeader}>
+                                        <View style={styles.tabBar} />
+                                        <Text style={styles.sheetHeading}>Enter your email</Text>
+                                        <Text style={styles.sheetSubheading}>We'll send you a code to sign in</Text>
+                                    </View>
+
+                                    <View style={{ gap: 16, paddingTop: 8 }}>
+                                        <TextInput
+                                            style={{
+                                                backgroundColor: '#222',
+                                                color: '#fff',
+                                                padding: 18,
+                                                borderRadius: 14,
+                                                fontSize: 18,
+                                                fontFamily: 'Outfit_400Regular',
+                                                borderWidth: 1,
+                                                borderColor: '#333'
+                                            }}
+                                            placeholder="name@example.com"
+                                            placeholderTextColor="#666"
+                                            value={email}
+                                            onChangeText={setEmail}
+                                            autoCapitalize="none"
+                                            keyboardType="email-address"
+                                            autoFocus
                                         />
-                                    )}
-                                    <Text style={styles.authButtonText}>
-                                        {isAuthInProgress ? 'Signing in...' : 'Continue with Google'}
-                                    </Text>
-                                </Pressable>
 
-                                {isAuthInProgress && (
-                                    <Pressable 
-                                        style={[styles.authButton, styles.cancelButton]} 
-                                        onPress={() => {
-                                            setIsAuthInProgress(false);
-                                            console.log('User cancelled Google Sign-In');
-                                        }}
-                                    >
-                                        <Text style={styles.cancelButtonText}>Cancel</Text>
-                                    </Pressable>
-                                )}
+                                        <Pressable
+                                            onPress={handleSendOtp}
+                                            disabled={isEmailLoading}
+                                            style={[styles.authButton, { backgroundColor: '#FFE0C2', marginTop: 8 }]}
+                                        >
+                                            {isEmailLoading ? (
+                                                <ActivityIndicator color="#000" />
+                                            ) : (
+                                                <Text style={[styles.authButtonText, { color: '#000' }]}>Send Code</Text>
+                                            )}
+                                        </Pressable>
 
-                                <Pressable style={[styles.authButton, { marginTop: 14 }]} onPress={handleApplePress}>
-                                    <Image
-                                        source={require('../../../assets/icon/apple.png')}
-                                        style={styles.iconImage}
-                                    />
-                                    <Text style={styles.authButtonText}>Continue with Apple</Text>
-                                </Pressable>
-                            </View>
+                                        <Pressable
+                                            onPress={() => setShowEmailInput(false)}
+                                            style={{ alignItems: 'center', padding: 12 }}
+                                        >
+                                            <Text style={{ color: '#666', fontFamily: 'Outfit_400Regular', fontSize: 16 }}>Cancel</Text>
+                                        </Pressable>
+                                    </View>
+                                </>
+                            )}
+
+                            {/* OTP Input State */}
+                            {showOtpInput && (
+                                <>
+                                    <View style={styles.sheetHeader}>
+                                        <View style={styles.tabBar} />
+                                        <Text style={styles.sheetHeading}>Check your email</Text>
+                                        <Text style={styles.sheetSubheading}>
+                                            We sent a code to <Text style={{ color: '#fff' }}>{email}</Text>
+                                        </Text>
+                                    </View>
+
+                                    <View style={{ gap: 16, paddingTop: 8 }}>
+                                        <TextInput
+                                            style={{
+                                                backgroundColor: '#222',
+                                                color: '#fff',
+                                                padding: 18,
+                                                borderRadius: 14,
+                                                fontSize: 32,
+                                                textAlign: 'center',
+                                                letterSpacing: 8,
+                                                fontFamily: 'Outfit_600SemiBold',
+                                                borderWidth: 1,
+                                                borderColor: '#333'
+                                            }}
+                                            placeholder="000000"
+                                            placeholderTextColor="#444"
+                                            value={otp}
+                                            onChangeText={setOtp}
+                                            keyboardType="number-pad"
+                                            maxLength={6}
+                                            autoFocus
+                                        />
+
+                                        <Pressable
+                                            onPress={handleVerifyOtp}
+                                            disabled={isEmailLoading}
+                                            style={[styles.authButton, { backgroundColor: '#FFE0C2', marginTop: 8 }]}
+                                        >
+                                            {isEmailLoading ? (
+                                                <ActivityIndicator color="#000" />
+                                            ) : (
+                                                <Text style={[styles.authButtonText, { color: '#000' }]}>Verify Code</Text>
+                                            )}
+                                        </Pressable>
+
+                                        <Pressable
+                                            onPress={() => {
+                                                setShowOtpInput(false);
+                                                setOtp('');
+                                                setShowEmailInput(true);
+                                            }}
+                                            style={{ alignItems: 'center', padding: 12 }}
+                                        >
+                                            <Text style={{ color: '#666', fontFamily: 'Outfit_400Regular', fontSize: 16 }}>Back</Text>
+                                        </Pressable>
+                                    </View>
+                                </>
+                            )}
                         </View>
 
                         <View style={styles.termsSection}>
