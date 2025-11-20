@@ -39,7 +39,8 @@ The backend now fully supports conversation persistence and AI-generated titles.
     -   Sidebar updates with a new conversation.
     -   Title is auto-generated (might take a second refresh or be instant).
 4.  **Conversation Options**: Long-press a conversation in the sidebar. Verify:
-    -   **Rename**: Change the title.
+    -   A custom bottom sheet opens (matching app theme).
+    -   **Rename**: Opens a dialog to change the title.
     -   **Archive**: Conversation disappears from the list.
     -   **Delete**: Conversation is permanently removed.
 5.  **Load History**: Click a previous conversation. Verify messages load correctly.

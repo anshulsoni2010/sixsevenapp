@@ -64,6 +64,7 @@ type Conversation = {
   title: string;
   lastMessage?: string;
   updatedAt: string;
+  isArchived?: boolean;
 };
 
 const suggestionsDefault = [
@@ -106,11 +107,17 @@ export default function ChatScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
   const [sidebarTranslateX] = useState(new Animated.Value(-300));
+  const sidebarOpacity = sidebarTranslateX.interpolate({
+    inputRange: [-300, 0],
+    outputRange: [0, 1],
+  });
 
   // Rename Modal State
   const [renameModalVisible, setRenameModalVisible] = useState(false);
   const [conversationToRename, setConversationToRename] = useState<Conversation | null>(null);
   const [renameText, setRenameText] = useState('');
+  const [optionsModalVisible, setOptionsModalVisible] = useState(false);
+  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const suggestionKey = useMemo(() => Math.random().toString(36).slice(2, 8), []);
 
   // Dropdown animation values
@@ -334,66 +341,8 @@ export default function ChatScreen() {
 
   const handleLongPress = (conversation: Conversation) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: ['Cancel', 'Rename', 'Archive', 'Delete'],
-          destructiveButtonIndex: 3,
-          cancelButtonIndex: 0,
-        },
-        (buttonIndex) => {
-          if (buttonIndex === 1) {
-            // Rename
-            if (Alert.prompt) {
-              Alert.prompt(
-                'Rename Chat',
-                'Enter a new name for this chat',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  { text: 'Rename', onPress: (text?: string) => text && renameConversation(conversation.id, text) },
-                ],
-                'plain-text',
-                conversation.title
-              );
-            } else {
-              setConversationToRename(conversation);
-              setRenameText(conversation.title || '');
-              setRenameModalVisible(true);
-            }
-          } else if (buttonIndex === 2) {
-            archiveConversation(conversation.id);
-          } else if (buttonIndex === 3) {
-            Alert.alert(
-              'Delete Chat',
-              'Are you sure you want to delete this chat?',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Delete', style: 'destructive', onPress: () => deleteConversation(conversation.id) },
-              ]
-            );
-          }
-        }
-      );
-    } else {
-      // Android
-      Alert.alert(
-        'Chat Options',
-        'Choose an action',
-        [
-          {
-            text: 'Rename', onPress: () => {
-              setConversationToRename(conversation);
-              setRenameText(conversation.title || '');
-              setRenameModalVisible(true);
-            }
-          },
-          { text: 'Archive', onPress: () => archiveConversation(conversation.id) },
-          { text: 'Delete', onPress: () => deleteConversation(conversation.id), style: 'destructive' },
-          { text: 'Cancel', style: 'cancel' },
-        ]
-      );
-    }
+    setSelectedConversation(conversation);
+    setOptionsModalVisible(true);
   };
 
   // Load a specific conversation
@@ -764,46 +713,31 @@ export default function ChatScreen() {
         {showSidebar && (
           <>
             <TouchableWithoutFeedback onPress={toggleSidebar}>
-              <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 999 }]} />
+              <Animated.View style={[styles.sidebarOverlay, { opacity: sidebarOpacity }]} />
             </TouchableWithoutFeedback>
-
-            <Animated.View
-              style={[
-                styles.sidebar,
-                {
-                  transform: [{ translateX: sidebarTranslateX }],
-                  zIndex: 1000,
-                },
-              ]}
-            >
-              {/* Header with New Chat */}
+            <Animated.View style={[styles.sidebar, { transform: [{ translateX: sidebarTranslateX }] }]}>
               <View style={styles.sidebarHeader}>
                 <TouchableOpacity
                   style={styles.newChatButton}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    createNewChat();
-                  }}
+                  onPress={createNewChat}
+                  activeOpacity={0.8}
                 >
                   <Ionicons name="add" size={20} color="#000" />
                   <Text style={styles.newChatText}>New Chat</Text>
                 </TouchableOpacity>
-
-                <TouchableOpacity onPress={toggleSidebar} style={styles.closeButton}>
-                  <Ionicons name="close" size={24} color="#666" />
-                </TouchableOpacity>
               </View>
 
-              {/* Conversations List */}
-              <ScrollView style={styles.conversationList} showsVerticalScrollIndicator={false}>
-                {conversations.length === 0 ? (
+              <Text style={styles.sectionTitle}>Recent</Text>
+
+              <ScrollView style={styles.conversationList}>
+                {filteredConversations.length === 0 ? (
                   <View style={styles.emptyState}>
                     <Text style={styles.emptyStateText}>No conversations yet</Text>
                   </View>
                 ) : (
-                  <>
-                    <Text style={styles.sectionTitle}>Recent</Text>
-                    {conversations.map((conv) => (
+                  filteredConversations
+                    .filter(c => !c.isArchived)
+                    .map((conv) => (
                       <TouchableOpacity
                         key={conv.id}
                         style={[
@@ -821,14 +755,12 @@ export default function ChatScreen() {
                           styles.conversationTitle,
                           conversationId === conv.id && styles.conversationTitleActive
                         ]} numberOfLines={1}>
-                          {conv.title || 'Untitled Chat'}
+                          {conv.title || 'New Conversation'}
                         </Text>
                       </TouchableOpacity>
-                    ))}
-                  </>
+                    ))
                 )}
               </ScrollView>
-
               {/* User Profile Section */}
               <View style={styles.sidebarFooter}>
                 <TouchableOpacity style={styles.userProfileItem} onPress={() => router.push('/profile' as any)}>
@@ -888,6 +820,82 @@ export default function ChatScreen() {
               </View>
             </View>
           </KeyboardAvoidingView>
+        </Modal>
+
+        {/* Options Modal (Bottom Sheet) */}
+        <Modal
+          visible={optionsModalVisible}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setOptionsModalVisible(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setOptionsModalVisible(false)}
+          >
+            <View style={styles.bottomSheet}>
+              <View style={styles.bottomSheetHandle} />
+              <Text style={styles.bottomSheetTitle} numberOfLines={1}>
+                {selectedConversation?.title || 'Options'}
+              </Text>
+
+              <TouchableOpacity
+                style={styles.optionItem}
+                onPress={() => {
+                  setOptionsModalVisible(false);
+                  if (selectedConversation) {
+                    setConversationToRename(selectedConversation);
+                    setRenameText(selectedConversation.title || '');
+                    setTimeout(() => setRenameModalVisible(true), 100); // Delay to allow modal close
+                  }
+                }}
+              >
+                <Ionicons name="pencil-outline" size={24} color="#FFF" />
+                <Text style={styles.optionText}>Rename</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.optionItem}
+                onPress={() => {
+                  setOptionsModalVisible(false);
+                  if (selectedConversation) {
+                    archiveConversation(selectedConversation.id);
+                  }
+                }}
+              >
+                <Ionicons name="archive-outline" size={24} color="#FFF" />
+                <Text style={styles.optionText}>Archive</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.optionItem}
+                onPress={() => {
+                  setOptionsModalVisible(false);
+                  if (selectedConversation) {
+                    Alert.alert(
+                      'Delete Chat',
+                      'Are you sure you want to delete this chat?',
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Delete', style: 'destructive', onPress: () => deleteConversation(selectedConversation.id) },
+                      ]
+                    );
+                  }
+                }}
+              >
+                <Ionicons name="trash-outline" size={24} color="#FF453A" />
+                <Text style={[styles.optionText, { color: '#FF453A' }]}>Delete</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.optionItem, styles.cancelOption]}
+                onPress={() => setOptionsModalVisible(false)}
+              >
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
         </Modal>
       </SafeAreaView>
     </ImageBackground>
@@ -1424,6 +1432,11 @@ const styles = StyleSheet.create({
   },
 
   // Sidebar styles
+  sidebarOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 999,
+  },
   sidebar: {
     position: 'absolute',
     left: 0,
@@ -1612,6 +1625,61 @@ const styles = StyleSheet.create({
   modalButtonTextConfirm: {
     color: '#000',
     fontSize: 16,
+    fontWeight: '600',
+    fontFamily: 'Outfit_600SemiBold',
+  },
+  // Bottom Sheet Styles
+  bottomSheet: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#1A1A1A',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+    borderTopWidth: 1,
+    borderTopColor: '#333',
+  },
+  bottomSheetHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#333',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  bottomSheetTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 20,
+    textAlign: 'center',
+    fontFamily: 'Outfit_600SemiBold',
+  },
+  optionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    gap: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#2A2A2A',
+  },
+  optionText: {
+    fontSize: 17,
+    color: '#FFF',
+    fontWeight: '500',
+    fontFamily: 'Outfit_500Medium',
+  },
+  cancelOption: {
+    borderBottomWidth: 0,
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  cancelText: {
+    fontSize: 17,
+    color: '#666',
     fontWeight: '600',
     fontFamily: 'Outfit_600SemiBold',
   },
