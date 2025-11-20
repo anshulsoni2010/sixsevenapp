@@ -719,7 +719,7 @@ export default function OnboardingStart() {
                     <Text style={styles.sheetSubheading}>We'll send you a code to sign in</Text>
                   </View>
 
-                  <View style={{ gap: 16, paddingTop: 8 }}>
+                  <View style={{ gap: 16, paddingTop: 8 }} pointerEvents="auto">
                     <TextInput
                       style={{
                         backgroundColor: '#222',
@@ -774,7 +774,7 @@ export default function OnboardingStart() {
                     </Text>
                   </View>
 
-                  <View style={{ gap: 16, paddingTop: 8 }}>
+                  <View style={{ gap: 16, paddingTop: 8 }} pointerEvents="auto">
                     <TextInput
                       style={{
                         backgroundColor: '#222',
