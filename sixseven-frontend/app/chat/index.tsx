@@ -649,152 +649,71 @@ export default function ChatScreen() {
                 },
               ]}
             >
-              <LinearGradient
-                colors={['#0F0F0F', '#0A0A0A', '#0F0F0F']}
-                locations={[0, 0.5, 1]}
-                style={styles.sidebarGradient}
-              >
-              {/* Header */}
+              {/* Header with New Chat */}
               <View style={styles.sidebarHeader}>
-                <Text style={styles.sidebarTitle}>Chats</Text>
-                <TouchableOpacity onPress={toggleSidebar} style={styles.closeButton}>
-                  <Ionicons name="close" size={24} color="#888" />
-                </TouchableOpacity>
-              </View>
-
-              {/* Search Bar */}
-              <View style={styles.searchContainer}>
-                <View style={styles.searchBar}>
-                  <Ionicons name="search" size={16} color="#666" style={styles.searchIcon} />
-                  <TextInput
-                    style={styles.searchInput}
-                    placeholder="Search conversations..."
-                    placeholderTextColor="#666"
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                  />
-                  {searchQuery.length > 0 && (
-                    <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
-                      <Ionicons name="close-circle" size={16} color="#666" />
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-
-              {/* New Chat Button */}
-              <View style={styles.newChatContainer}>
                 <TouchableOpacity
                   style={styles.newChatButton}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setConversationId(null);
-                    setMessages([{
-                      id: '1',
-                      text: 'Hey fam! Ready to translate your texts to Gen Alpha? Just send me your message or a screenshot! 🔥',
-                      isUser: false,
-                      timestamp: new Date(),
-                    }]);
-                    setHasChatStarted(false);
-                    setSearchQuery('');
-                    toggleSidebar();
+                    createNewChat();
                   }}
                 >
-                  <LinearGradient
-                    colors={['#2E2E2E', '#1A1A1A']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.newChatGradient}
-                  >
-                    <Ionicons name="add" size={20} color="#FFE0C2" />
-                    <Text style={styles.newChatText}>New Chat</Text>
-                  </LinearGradient>
+                  <Ionicons name="add" size={20} color="#FFF" />
+                  <Text style={styles.newChatText}>New Chat</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={toggleSidebar} style={styles.closeButton}>
+                  <Ionicons name="close" size={24} color="#666" />
                 </TouchableOpacity>
               </View>
 
               {/* Conversations List */}
               <ScrollView style={styles.conversationList} showsVerticalScrollIndicator={false}>
-                {filteredConversations.length === 0 && conversations.length > 0 ? (
-                  <View style={styles.emptySearchState}>
-                    <Ionicons name="search" size={32} color="#333" />
-                    <Text style={styles.emptySearchText}>No conversations found</Text>
-                    <Text style={styles.emptySearchSubtext}>Try a different search term</Text>
-                  </View>
-                ) : filteredConversations.length === 0 ? (
+                {conversations.length === 0 ? (
                   <View style={styles.emptyState}>
-                    <View style={styles.emptyStateIcon}>
-                      <Ionicons name="chatbubbles-outline" size={48} color="#333" />
-                    </View>
                     <Text style={styles.emptyStateText}>No conversations yet</Text>
-                    <Text style={styles.emptyStateSubtext}>Start a new chat to begin your Gen Alpha journey</Text>
                   </View>
                 ) : (
                   <>
-                    <Text style={styles.sectionTitle}>
-                      {searchQuery ? `Found ${filteredConversations.length} chat${filteredConversations.length !== 1 ? 's' : ''}` : 'Recent Chats'}
-                    </Text>
-                    {filteredConversations.map((conv) => (
-                      <View key={conv.id} style={styles.conversationItemContainer}>
-                        <TouchableOpacity
-                          style={[
-                            styles.conversationItem,
-                            conversationId === conv.id && styles.conversationItemActive
-                          ]}
-                          onPress={() => {
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                            loadConversation(conv.id);
-                            setSearchQuery('');
-                            toggleSidebar();
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          <View style={styles.conversationContent}>
-                            <View style={styles.conversationIcon}>
-                              <Ionicons
-                                name="chatbubble-outline"
-                                size={16}
-                                color={conversationId === conv.id ? "#FFE0C2" : "#666"}
-                              />
-                            </View>
-                            <View style={styles.conversationTextContainer}>
-                              <Text style={styles.conversationTitle} numberOfLines={1}>
-                                {conv.title || 'Untitled Chat'}
-                              </Text>
-                              {conv.lastMessage && (
-                                <Text style={styles.conversationPreview} numberOfLines={1}>
-                                  {conv.lastMessage}
-                                </Text>
-                              )}
-                              <View style={styles.conversationMeta}>
-                                <Text style={styles.conversationDate}>
-                                  {new Date(conv.updatedAt).toLocaleDateString()}
-                                </Text>
-                                {conv.messageCount > 0 && (
-                                  <Text style={styles.messageCount}>
-                                    {conv.messageCount} messages
-                                  </Text>
-                                )}
-                              </View>
-                            </View>
-                          </View>
-                        </TouchableOpacity>
-
-                          {/* Delete Button */}
-                        <TouchableOpacity
-                          style={styles.deleteButton}
-                          onPress={() => {
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                            deleteConversation(conv.id);
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          <Ionicons name="trash-outline" size={16} color="#FF6B6B" />
-                        </TouchableOpacity>
-                      </View>
+                    <Text style={styles.sectionTitle}>Recent</Text>
+                    {conversations.map((conv) => (
+                      <TouchableOpacity
+                        key={conv.id}
+                        style={[
+                          styles.conversationItem,
+                          conversationId === conv.id && styles.conversationItemActive
+                        ]}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          loadConversation(conv.id);
+                          toggleSidebar();
+                        }}
+                      >
+                        <Text style={[
+                          styles.conversationTitle,
+                          conversationId === conv.id && styles.conversationTitleActive
+                        ]} numberOfLines={1}>
+                          {conv.title || 'Untitled Chat'}
+                        </Text>
+                      </TouchableOpacity>
                     ))}
                   </>
                 )}
               </ScrollView>
-              </LinearGradient>
+
+              {/* User Profile Section */}
+              <View style={styles.sidebarFooter}>
+                <TouchableOpacity style={styles.userProfileItem} onPress={() => router.push('/profile' as any)}>
+                  <View style={styles.userAvatarSmall}>
+                    {userAvatar ? (
+                      <Image source={{ uri: userAvatar }} style={styles.avatarImageSmall} />
+                    ) : (
+                      <Ionicons name="person" size={16} color="#FFF" />
+                    )}
+                  </View>
+                  <Text style={styles.userNameText}>My Profile</Text>
+                </TouchableOpacity>
+              </View>
             </Animated.View>
           </>
         )}
@@ -1338,226 +1257,106 @@ const styles = StyleSheet.create({
     left: 0,
     top: 0,
     bottom: 0,
-    width: 320,
-    shadowColor: '#000',
-    shadowOffset: { width: 2, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 10,
-    borderTopRightRadius: 20,
-    borderBottomRightRadius: 20,
-  },
-  sidebarGradient: {
-    flex: 1,
+    width: 280,
+    backgroundColor: '#000000', // Solid black
+    paddingTop: 50, // Space for status bar
+    borderRightWidth: 1,
+    borderRightColor: '#1A1A1A',
   },
   sidebarHeader: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 16,
-  },
-  sidebarTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFE0C2',
-    fontFamily: 'Outfit_700Bold',
-  },
-  closeButton: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  searchContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#E5E5E5',
-    fontFamily: 'Outfit_400Regular',
-    paddingVertical: 0,
-  },
-  clearButton: {
-    padding: 4,
-  },
-  newChatContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingBottom: 20,
   },
   newChatButton: {
-    borderRadius: 12,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  newChatGradient: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
+    gap: 12,
+    backgroundColor: '#1A1A1A',
+    paddingVertical: 12,
     paddingHorizontal: 16,
+    borderRadius: 8,
+    marginRight: 12,
   },
   newChatText: {
-    fontSize: 16,
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#FFFFFF',
+    fontFamily: 'Outfit_500Medium',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  sectionTitle: {
+    fontSize: 12,
     fontWeight: '600',
-    color: '#FFE0C2',
+    color: '#666',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     fontFamily: 'Outfit_600SemiBold',
   },
   conversationList: {
     flex: 1,
-    paddingHorizontal: 12,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#888',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 12,
-    fontFamily: 'Outfit_700Bold',
   },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 100,
-    paddingHorizontal: 24,
-  },
-  emptyStateIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
+    paddingTop: 40,
   },
   emptyStateText: {
-    color: '#CCC',
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
-    textAlign: 'center',
-    fontFamily: 'Outfit_600SemiBold',
-  },
-  emptyStateSubtext: {
-    color: '#888',
+    color: '#444',
     fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
     fontFamily: 'Outfit_400Regular',
-  },
-  emptySearchState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 80,
-    paddingHorizontal: 24,
-  },
-  emptySearchText: {
-    color: '#CCC',
-    fontSize: 16,
-    fontWeight: '500',
-    marginTop: 16,
-    textAlign: 'center',
-    fontFamily: 'Outfit_500Medium',
-  },
-  emptySearchSubtext: {
-    color: '#888',
-    fontSize: 13,
-    marginTop: 4,
-    textAlign: 'center',
-    fontFamily: 'Outfit_400Regular',
-  },
-  conversationItemContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
   },
   conversationItem: {
-    flex: 1,
     paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    marginRight: 8,
+    paddingHorizontal: 20,
+    marginHorizontal: 8,
+    borderRadius: 8,
   },
   conversationItemActive: {
-    backgroundColor: 'rgba(255, 224, 194, 0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 224, 194, 0.3)',
-  },
-  conversationContent: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-  },
-  conversationIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-  conversationTextContainer: {
-    flex: 1,
-    gap: 4,
+    backgroundColor: '#1A1A1A',
   },
   conversationTitle: {
-    fontSize: 16,
-    color: '#E5E5E5',
-    fontFamily: 'Outfit_500Medium',
-    lineHeight: 20,
-  },
-  conversationPreview: {
     fontSize: 14,
-    color: '#888',
+    color: '#AAAAAA',
     fontFamily: 'Outfit_400Regular',
-    lineHeight: 18,
   },
-  conversationMeta: {
+  conversationTitleActive: {
+    color: '#FFFFFF',
+    fontWeight: '500',
+  },
+  sidebarFooter: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#1A1A1A',
+  },
+  userProfileItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 6,
+    gap: 12,
+    paddingVertical: 8,
   },
-  conversationDate: {
-    fontSize: 12,
-    color: '#666',
-    fontFamily: 'Outfit_400Regular',
-  },
-  messageCount: {
-    fontSize: 12,
-    color: '#666',
-    fontFamily: 'Outfit_400Regular',
-  },
-  deleteButton: {
+  userAvatarSmall: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+    backgroundColor: '#222',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 4,
+    overflow: 'hidden',
+  },
+  avatarImageSmall: {
+    width: '100%',
+    height: '100%',
+  },
+  userNameText: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '500',
+    fontFamily: 'Outfit_500Medium',
   },
 });
