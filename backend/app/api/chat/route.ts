@@ -115,11 +115,22 @@ export async function POST(req: Request) {
                 return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
             }
         } else {
+            // Generate title using AI
+            let title = text.substring(0, 50);
+            try {
+                const titleModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+                const titleResult = await titleModel.generateContent(`Generate a very short, concise title (max 4-5 words) for a conversation that starts with this message: "${text}". Return ONLY the title, no quotes.`);
+                const aiTitle = titleResult.response.text().trim().replace(/^"|"$/g, '');
+                if (aiTitle) title = aiTitle;
+            } catch (e) {
+                console.error("Failed to generate title:", e);
+            }
+
             // Create new conversation
             conversation = await prisma.conversation.create({
                 data: {
                     userId: userId,
-                    title: text.substring(0, 50), // Use first 50 chars as title
+                    title: title,
                 }
             });
         }
