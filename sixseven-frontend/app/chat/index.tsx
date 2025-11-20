@@ -121,6 +121,21 @@ export default function ChatScreen() {
   const [showArchived, setShowArchived] = useState(false);
   const suggestionKey = useMemo(() => Math.random().toString(36).slice(2, 8), []);
 
+  // Sync filteredConversations with conversations
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredConversations(conversations);
+    } else {
+      const lowerQuery = searchQuery.toLowerCase();
+      setFilteredConversations(
+        conversations.filter(c =>
+          (c.title && c.title.toLowerCase().includes(lowerQuery)) ||
+          (c.lastMessage && c.lastMessage.toLowerCase().includes(lowerQuery))
+        )
+      );
+    }
+  }, [conversations, searchQuery]);
+
   // Dropdown animation values
   const dropdownScale = useRef(new Animated.Value(0.8)).current;
   const dropdownOpacity = useRef(new Animated.Value(0)).current;
