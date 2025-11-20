@@ -777,7 +777,7 @@ export default function ChatScreen() {
                       onPress={createNewChat}
                       activeOpacity={0.8}
                     >
-                      <Ionicons name="add-circle-outline" size={20} color="#000" />
+                      <Ionicons name="sparkles" size={18} color="#000" />
                       <Text style={styles.newChatText}>New Chat</Text>
                     </TouchableOpacity>
                   </>
@@ -1535,18 +1535,15 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   sidebarBranding: {
-    width: 40,
-    height: 40,
     borderRadius: 12,
-    backgroundColor: '#FFE0C2',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
     overflow: 'hidden',
   },
   brandingLogo: {
-    width: 32,
-    height: 32,
+    width: 50,
+    height: 50,
   },
   sidebarHeader: {
     flexDirection: 'row',
@@ -1561,23 +1558,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#FFE0C2', // App accent color
-    paddingVertical: 14,
+    backgroundColor: '#FFE0C2',
+    paddingVertical: 13,
     paddingHorizontal: 20,
-    borderRadius: 16,
-    marginRight: 12,
+    borderRadius: 14,
     shadowColor: '#FFE0C2',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 224, 194, 0.3)',
   },
   newChatText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
     color: '#000000',
-    fontFamily: 'Outfit_600SemiBold',
-    letterSpacing: 0.3,
+    fontFamily: 'Outfit_700Bold',
+    letterSpacing: 0.5,
   },
   closeButton: {
     padding: 8,
