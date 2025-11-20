@@ -30,13 +30,13 @@ let GoogleSignin: any = null;
 let statusCodes: any = null;
 
 if (Platform.OS !== 'web') {
-  try {
-    const googleSigninModule = require('@react-native-google-signin/google-signin');
-    GoogleSignin = googleSigninModule.GoogleSignin;
-    statusCodes = googleSigninModule.statusCodes;
-  } catch (error) {
-    console.warn('Google Sign-In not available:', error);
-  }
+    try {
+        const googleSigninModule = require('@react-native-google-signin/google-signin');
+        GoogleSignin = googleSigninModule.GoogleSignin;
+        statusCodes = googleSigninModule.statusCodes;
+    } catch (error) {
+        console.warn('Google Sign-In not available:', error);
+    }
 }
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -174,7 +174,7 @@ function AlphaConfirmScreen() {
                 const mod: any = await import('expo-blur');
                 const Blur = mod?.BlurView || mod?.default || null;
                 if (mounted && Blur) setBlurViewComponent(() => Blur);
-            } catch {}
+            } catch { }
         })();
         return () => {
             mounted = false;
@@ -228,7 +228,7 @@ function AlphaConfirmScreen() {
                 const response = await fetch(`${BACKEND}/api/user/me`, {
                     headers: { 'Authorization': `Bearer ${token}` },
                 });
-                
+
                 if (response.ok) {
                     const data = await response.json();
                     // Save user data to AsyncStorage
@@ -287,7 +287,7 @@ function AlphaConfirmScreen() {
             const timeoutPromise = new Promise((_, reject) => {
                 setTimeout(() => reject(new Error('Google Sign-In timed out')), 30000); // 30 second timeout
             });
-            
+
             const userInfo = await Promise.race([signInPromise, timeoutPromise]);
             console.log('Google Sign-In success:', userInfo);
 
@@ -302,7 +302,7 @@ function AlphaConfirmScreen() {
             // Send the ID token to your backend with timeout
             const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
             console.log('Sending to backend:', `${BACKEND}/api/auth/google/callback`);
-            
+
             const fetchPromise = fetch(`${BACKEND}/api/auth/google/callback`, {
                 method: 'POST',
                 headers: {
@@ -313,13 +313,13 @@ function AlphaConfirmScreen() {
                     accessToken: tokens.accessToken,
                 }),
             });
-            
+
             const fetchTimeoutPromise = new Promise((_, reject) => {
                 setTimeout(() => reject(new Error('Backend request timed out')), 15000); // 15 second timeout
             });
-            
+
             const response = await Promise.race([fetchPromise, fetchTimeoutPromise]) as Response;
-            
+
             if (!response.ok) {
                 throw new Error(`Backend auth failed: ${response.status}`);
             }
@@ -366,7 +366,7 @@ function AlphaConfirmScreen() {
                 const parsed = Linking.parse(result.url);
                 const token = parsed.queryParams?.token as string;
                 const onboarded = parsed.queryParams?.onboarded === 'true';
-                
+
                 if (token) {
                     await handleAuthSuccess(token, onboarded);
                 }
@@ -517,11 +517,11 @@ function AlphaConfirmScreen() {
 
                 <View style={[styles.bottomContainer, { paddingBottom: SP.md + insets.bottom }]}>
                     <View style={styles.confirmButtonWrapper}>
-                        <Pressable 
+                        <Pressable
                             style={[
                                 styles.confirmButtonInner,
                                 !selectedAlpha && styles.confirmButtonDisabled
-                            ]} 
+                            ]}
                             onPress={openSheet}
                             disabled={!selectedAlpha}
                         >
@@ -602,8 +602,8 @@ function AlphaConfirmScreen() {
                                     </View>
 
                                     <View style={styles.buttonContainer}>
-                                        <Pressable 
-                                            style={[styles.authButton, isAuthInProgress && styles.authButtonDisabled]} 
+                                        <Pressable
+                                            style={[styles.authButton, isAuthInProgress && styles.authButtonDisabled]}
                                             onPress={handleGooglePress}
                                             disabled={isAuthInProgress}
                                         >
@@ -621,8 +621,8 @@ function AlphaConfirmScreen() {
                                         </Pressable>
 
                                         {isAuthInProgress && (
-                                            <Pressable 
-                                                style={[styles.authButton, styles.cancelButton]} 
+                                            <Pressable
+                                                style={[styles.authButton, styles.cancelButton]}
                                                 onPress={() => {
                                                     setIsAuthInProgress(false);
                                                     console.log('User cancelled Google Sign-In');
