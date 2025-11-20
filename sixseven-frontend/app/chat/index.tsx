@@ -1447,6 +1447,8 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     borderRightWidth: 1,
     borderRightColor: '#2A2A2A',
+    zIndex: 1000,
+    elevation: 10,
   },
   sidebarHeader: {
     flexDirection: 'row',
