@@ -753,28 +753,41 @@ export default function ChatScreen() {
               <Animated.View style={[styles.sidebarOverlay, { opacity: sidebarOpacity }]} />
             </TouchableWithoutFeedback>
             <Animated.View style={[styles.sidebar, { transform: [{ translateX: sidebarTranslateX }] }]}>
+              {/* Sidebar Header */}
               <View style={styles.sidebarHeader}>
                 {showArchived ? (
                   <TouchableOpacity
                     style={styles.backButton}
                     onPress={() => setShowArchived(false)}
+                    activeOpacity={0.7}
                   >
-                    <Ionicons name="arrow-back" size={24} color="#FFF" />
-                    <Text style={styles.headerTitle}>Archived</Text>
+                    <Ionicons name="arrow-back" size={22} color="#FFE0C2" />
+                    <Text style={styles.headerTitle}>Archived Chats</Text>
                   </TouchableOpacity>
                 ) : (
-                  <TouchableOpacity
-                    style={styles.newChatButton}
-                    onPress={createNewChat}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons name="add" size={20} color="#000" />
-                    <Text style={styles.newChatText}>New Chat</Text>
-                  </TouchableOpacity>
+                  <>
+                    <View style={styles.sidebarBranding}>
+                      <Text style={styles.brandingText}>67</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.newChatButton}
+                      onPress={createNewChat}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="add-circle-outline" size={20} color="#000" />
+                      <Text style={styles.newChatText}>New Chat</Text>
+                    </TouchableOpacity>
+                  </>
                 )}
               </View>
 
-              <Text style={styles.sectionTitle}>{showArchived ? 'Archived Chats' : 'Recent'}</Text>
+              {/* Section Title */}
+              <View style={styles.sectionTitleContainer}>
+                <Text style={styles.sectionTitle}>{showArchived ? 'Archived' : 'Chats'}</Text>
+                {!showArchived && conversations.filter(c => !c.isArchived).length > 0 && (
+                  <Text style={styles.sectionCount}>{conversations.filter(c => !c.isArchived).length}</Text>
+                )}
+              </View>
 
               <ScrollView style={styles.conversationList}>
                 {filteredConversations.filter(c => showArchived ? c.isArchived : !c.isArchived).length === 0 ? (
@@ -1510,13 +1523,28 @@ const styles = StyleSheet.create({
     left: 0,
     top: 0,
     bottom: 0,
-    width: 280,
-    backgroundColor: '#0F0F0F', // Slightly lighter than pure black for depth
+    width: 300,
+    backgroundColor: '#0A0A0A',
     paddingTop: Platform.OS === 'ios' ? 60 : 50,
     borderRightWidth: 1,
-    borderRightColor: '#2A2A2A',
+    borderRightColor: '#1F1F1F',
     zIndex: 1000,
     elevation: 10,
+  },
+  sidebarBranding: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#FFE0C2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  brandingText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000',
+    fontFamily: 'Outfit_700Bold',
   },
   sidebarHeader: {
     flexDirection: 'row',
@@ -1537,34 +1565,52 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginRight: 12,
     shadowColor: '#FFE0C2',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
   newChatText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     color: '#000000',
     fontFamily: 'Outfit_600SemiBold',
+    letterSpacing: 0.3,
   },
   closeButton: {
     padding: 8,
     backgroundColor: '#1A1A1A',
     borderRadius: 20,
   },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#666',
+  sectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 12,
-    fontFamily: 'Outfit_600SemiBold',
+    marginBottom: 4,
+  },
+  sectionTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#666',
+    fontFamily: 'Outfit_700Bold',
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 1.2,
+  },
+  sectionCount: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#444',
+    fontFamily: 'Outfit_600SemiBold',
+    backgroundColor: '#1A1A1A',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
   },
   conversationList: {
     flex: 1,
+    paddingHorizontal: 8,
   },
   emptyState: {
     alignItems: 'center',
@@ -1578,22 +1624,25 @@ const styles = StyleSheet.create({
     fontFamily: 'Outfit_400Regular',
   },
   conversationItem: {
-    paddingVertical: 16,
+    paddingVertical: 14,
     paddingHorizontal: 16,
-    marginHorizontal: 12,
-    borderRadius: 12,
-    marginBottom: 6,
+    marginHorizontal: 4,
+    borderRadius: 10,
+    marginBottom: 4,
+    borderLeftWidth: 3,
+    borderLeftColor: 'transparent',
   },
   conversationItemActive: {
-    backgroundColor: 'rgba(255, 224, 194, 0.08)',
+    backgroundColor: 'rgba(255, 224, 194, 0.06)',
+    borderLeftColor: '#FFE0C2',
     borderWidth: 1,
-    borderColor: 'rgba(255, 224, 194, 0.2)',
+    borderColor: 'rgba(255, 224, 194, 0.15)',
   },
   conversationTitle: {
-    fontSize: 15,
-    color: '#999',
+    fontSize: 14,
+    color: '#AAA',
     fontFamily: 'Outfit_400Regular',
-    letterSpacing: 0.2,
+    letterSpacing: 0.3,
   },
   conversationTitleActive: {
     color: '#FFE0C2',
@@ -1601,69 +1650,76 @@ const styles = StyleSheet.create({
     fontFamily: 'Outfit_600SemiBold',
   },
   sidebarFooter: {
-    padding: 20,
+    paddingHorizontal: 16,
+    paddingTop: 16,
     paddingBottom: Platform.OS === 'ios' ? 40 : 20,
     borderTopWidth: 1,
     borderTopColor: '#1A1A1A',
-    backgroundColor: '#0F0F0F',
+    backgroundColor: '#0A0A0A',
   },
   userProfileItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 4,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: '#111',
   },
   archivedButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    marginBottom: 12,
-    marginHorizontal: 12,
-    backgroundColor: '#1A1A1A',
-    borderRadius: 12,
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 10,
+    marginHorizontal: 4,
+    backgroundColor: '#111',
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#2A2A2A',
+    borderColor: '#1A1A1A',
   },
   archivedText: {
-    fontSize: 15,
-    color: '#CCC',
+    fontSize: 14,
+    color: '#AAA',
     fontWeight: '500',
     fontFamily: 'Outfit_500Medium',
+    letterSpacing: 0.2,
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
     paddingVertical: 8,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#FFF',
     fontWeight: '600',
     fontFamily: 'Outfit_600SemiBold',
+    letterSpacing: 0.3,
   },
   userAvatarSmall: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#222',
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: '#1A1A1A',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#333',
+    borderWidth: 1.5,
+    borderColor: '#2A2A2A',
   },
   avatarImageSmall: {
     width: '100%',
     height: '100%',
   },
   userNameText: {
-    fontSize: 15,
-    color: '#FFFFFF',
-    fontWeight: '500',
-    fontFamily: 'Outfit_500Medium',
+    fontSize: 14,
+    color: '#FFF',
+    fontWeight: '600',
+    fontFamily: 'Outfit_600SemiBold',
+    letterSpacing: 0.2,
   },
   // Modal Styles
   modalOverlay: {
