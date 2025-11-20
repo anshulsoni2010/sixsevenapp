@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
 // Note: Make sure GEMINI_API_KEY is set in .env
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
-const DAILY_TOKEN_LIMIT = 30;
+const DAILY_TOKEN_LIMIT = 450;
 
 const SYSTEM_PROMPTS = {
     '1x': `You are a Gen Z translator. Your goal is to rewrite the user's text into mild Gen Z slang. 

@@ -1,4 +1,5 @@
-// app/screens/ChatScreen.tsx
+// Constants
+const DAILY_CREDIT_LIMIT = 450;
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -99,7 +100,8 @@ export default function ChatScreen() {
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [hasChatStarted, setHasChatStarted] = useState(false);
   const [isDropdownAnimating, setIsDropdownAnimating] = useState(false);
-  const [credits, setCredits] = useState(30);
+  const [credits, setCredits] = useState(DAILY_CREDIT_LIMIT);
+  const [maxCredits, setMaxCredits] = useState(DAILY_CREDIT_LIMIT);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
@@ -120,6 +122,41 @@ export default function ChatScreen() {
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const suggestionKey = useMemo(() => Math.random().toString(36).slice(2, 8), []);
+
+  // Function to fetch credits from API
+  const fetchCredits = async () => {
+    try {
+      const token = await SecureStore.getItemAsync('session_token');
+      if (token) {
+        const BACKEND = Constants.expoConfig?.extra?.BACKEND_URL ?? 'http://localhost:3000';
+        const response = await fetch(`${BACKEND}/api/user/me`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          console.log('Fetched user data:', userData); // Debug log
+          console.log('dailyTokenCount:', userData.dailyTokenCount); // Debug log
+          if (userData.dailyTokenCount !== undefined) {
+            const calculatedCredits = Math.max(0, DAILY_CREDIT_LIMIT - userData.dailyTokenCount);
+            console.log('Calculated credits:', calculatedCredits); // Debug log
+            setCredits(calculatedCredits); // Ensure credits never go negative
+            setMaxCredits(DAILY_CREDIT_LIMIT);
+          }
+        } else {
+          console.error('Failed to fetch user data:', response.status, response.statusText);
+        }
+      } else {
+        console.error('No session token found');
+      }
+    } catch (error) {
+      console.error('Error fetching credits:', error);
+    }
+  };
 
   // Sync filteredConversations with conversations
   useEffect(() => {
@@ -206,9 +243,7 @@ export default function ChatScreen() {
                 userObj.name = userData.name;
                 await AsyncStorage.setItem('user', JSON.stringify(userObj));
               }
-              if (userData.dailyTokenCount !== undefined) {
-                setCredits(30 - userData.dailyTokenCount);
-              }
+              // Credits are now handled by fetchCredits function
             }
           } catch (apiError) {
             console.error('Error fetching user data from API:', apiError);
@@ -242,6 +277,16 @@ export default function ChatScreen() {
       }
     };
     loadUserData();
+    fetchCredits(); // Fetch credits on component mount
+  }, []);
+
+  // Fetch credits periodically and after chat operations
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchCredits();
+    }, 30000); // Fetch credits every 30 seconds
+
+    return () => clearInterval(interval);
   }, []);
 
   // Filter conversations based on search query
@@ -274,6 +319,8 @@ export default function ChatScreen() {
       if (response.ok) {
         const data = await response.json();
         setConversations(data.conversations || []);
+        // Also fetch fresh credits when conversations are loaded
+        fetchCredits();
       }
     } catch (error) {
       console.error('Error fetching conversations:', error);
@@ -511,8 +558,14 @@ export default function ChatScreen() {
       setMessages(prev => [...prev, aiMessage]);
 
       if (data.credits !== undefined) {
-        setCredits(data.credits);
+        setCredits(Math.max(0, data.credits)); // Ensure credits never go negative
       }
+      if (data.maxCredits !== undefined) {
+        setMaxCredits(data.maxCredits);
+      }
+
+      // Refresh credits from server to ensure accuracy
+      setTimeout(() => fetchCredits(), 1000);
 
       // Store conversation ID for subsequent messages
       if (data.conversationId && !conversationId) {
@@ -654,7 +707,7 @@ export default function ChatScreen() {
             <View style={styles.topBar}>
               <View style={styles.leftSection}>
                 <ActionButton onPress={createNewChat} />
-                <CreditButton credits={credits} />
+                <CreditButton credits={credits} maxCredits={maxCredits} />
               </View>
 
               <View style={styles.rightSection}>
@@ -1017,10 +1070,10 @@ function ActionButton({ onPress }: { onPress: () => void }) {
   );
 }
 
-function CreditButton({ credits = 0 }: { credits?: number }) {
-  const maxCredits = 30;
-  const usedCredits = maxCredits - credits;
-  const progress = usedCredits / maxCredits;
+function CreditButton({ credits = 0, maxCredits: maxCreditsProp }: { credits?: number; maxCredits?: number }) {
+  const maxCredits = maxCreditsProp || DAILY_CREDIT_LIMIT;
+  const usedCredits = Math.max(0, maxCredits - credits); // Ensure usedCredits never goes negative
+  const progress = Math.min(1, Math.max(0, usedCredits / maxCredits)); // Clamp progress between 0 and 1
   const circumference = 2 * Math.PI * 14; // radius = 14
   const strokeDashoffset = circumference * (1 - progress);
 
@@ -1035,8 +1088,6 @@ function CreditButton({ credits = 0 }: { credits?: number }) {
         <View
           style={{ flex: 1, backgroundColor: '#FFE0C2', borderRadius: 24, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 6, gap: 8 }}
         >
-          <Image source={require('../../assets/images/crediticon.png')} style={styles.coinIcon} />
-
           {/* Circular Progress */}
           <View style={{ width: 32, height: 32, justifyContent: 'center', alignItems: 'center' }}>
             <SvgXml
@@ -1254,10 +1305,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  coinIcon: {
-    width: 30,
-    height: 30,
-  },
   creditText: {
     fontSize: 16,
     fontWeight: '700',
