@@ -658,7 +658,7 @@ export default function ChatScreen() {
                     createNewChat();
                   }}
                 >
-                  <Ionicons name="add" size={20} color="#FFF" />
+                  <Ionicons name="add" size={20} color="#000" />
                   <Text style={styles.newChatText}>New Chat</Text>
                 </TouchableOpacity>
 
@@ -1258,37 +1258,45 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: 280,
-    backgroundColor: '#000000', // Solid black
-    paddingTop: 50, // Space for status bar
+    backgroundColor: '#0F0F0F', // Slightly lighter than pure black for depth
+    paddingTop: 50,
     borderRightWidth: 1,
-    borderRightColor: '#1A1A1A',
+    borderRightColor: '#2A2A2A',
   },
   sidebarHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingBottom: 20,
+    paddingBottom: 24,
   },
   newChatButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    backgroundColor: '#1A1A1A',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#FFE0C2', // App accent color
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: 24, // Pill shape like other buttons
     marginRight: 12,
+    shadowColor: '#FFE0C2',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   newChatText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#FFFFFF',
-    fontFamily: 'Outfit_500Medium',
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#000000',
+    fontFamily: 'Outfit_600SemiBold',
   },
   closeButton: {
     padding: 8,
+    backgroundColor: '#1A1A1A',
+    borderRadius: 20,
   },
   sectionTitle: {
     fontSize: 12,
@@ -1297,6 +1305,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     fontFamily: 'Outfit_600SemiBold',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   conversationList: {
     flex: 1,
@@ -1304,57 +1314,65 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 40,
+    paddingTop: 60,
+    opacity: 0.5,
   },
   emptyStateText: {
-    color: '#444',
+    color: '#666',
     fontSize: 14,
     fontFamily: 'Outfit_400Regular',
   },
   conversationItem: {
-    paddingVertical: 12,
+    paddingVertical: 14,
     paddingHorizontal: 20,
-    marginHorizontal: 8,
-    borderRadius: 8,
+    marginHorizontal: 10,
+    borderRadius: 12,
+    marginBottom: 4,
   },
   conversationItemActive: {
-    backgroundColor: '#1A1A1A',
+    backgroundColor: 'rgba(255, 224, 194, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 224, 194, 0.15)',
   },
   conversationTitle: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#AAAAAA',
     fontFamily: 'Outfit_400Regular',
   },
   conversationTitleActive: {
-    color: '#FFFFFF',
+    color: '#FFE0C2',
     fontWeight: '500',
+    fontFamily: 'Outfit_500Medium',
   },
   sidebarFooter: {
-    padding: 16,
+    padding: 20,
     borderTopWidth: 1,
     borderTopColor: '#1A1A1A',
+    backgroundColor: '#0F0F0F',
   },
   userProfileItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 8,
+    paddingVertical: 4,
   },
   userAvatarSmall: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#222',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#333',
   },
   avatarImageSmall: {
     width: '100%',
     height: '100%',
   },
   userNameText: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#FFFFFF',
     fontWeight: '500',
     fontFamily: 'Outfit_500Medium',
