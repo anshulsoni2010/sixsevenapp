@@ -777,7 +777,7 @@ export default function ChatScreen() {
                       onPress={createNewChat}
                       activeOpacity={0.8}
                     >
-                      <Ionicons name="sparkles" size={18} color="#000" />
+                      <Ionicons name="sparkles" size={18} color="#FFE0C2" />
                       <Text style={styles.newChatText}>New Chat</Text>
                     </TouchableOpacity>
                   </>
@@ -1558,15 +1558,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#FFE0C2',
+    backgroundColor: 'rgba(255, 224, 194, 0.15)',
     paddingVertical: 12,
     paddingHorizontal: 18,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 224, 194, 0.2)',
   },
   newChatText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#000000',
+    color: '#FFE0C2',
     fontFamily: 'Outfit_600SemiBold',
   },
   closeButton: {
