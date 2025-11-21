@@ -84,14 +84,7 @@ const modelImages = {
 
 export default function ChatScreen() {
   const router = useRouter();
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      text: 'Hey fam! Ready to translate your texts to Gen Alpha? Just send me your message or a screenshot! 🔥',
-      isUser: false,
-      timestamp: new Date(),
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const [suggestions] = useState(suggestionsDefault);
@@ -461,12 +454,7 @@ export default function ChatScreen() {
           setHasChatStarted(true);
         } else {
           // Empty conversation, start fresh
-          setMessages([{
-            id: '1',
-            text: 'Hey fam! Ready to translate your texts to Gen Alpha? Just send me your message or a screenshot! 🔥',
-            isUser: false,
-            timestamp: new Date(),
-          }]);
+          setMessages([]);
           setConversationId(convId);
           setHasChatStarted(false);
         }
@@ -675,12 +663,7 @@ export default function ChatScreen() {
 
   const createNewChat = () => {
     setConversationId(null);
-    setMessages([{
-      id: '1',
-      text: 'Hey fam! Ready to translate your texts to Gen Alpha? Just send me your message or a screenshot! 🔥',
-      isUser: false,
-      timestamp: new Date(),
-    }]);
+    setMessages([]);
     setHasChatStarted(false);
     setInputText('');
     // Close sidebar if open
