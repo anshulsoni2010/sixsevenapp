@@ -137,6 +137,7 @@ export async function GET(req: Request) {
       endsAt: user.subscriptionEndsAt,
       onboarded: user.onboarded,
       dailyTokenCount: user.dailyTokenCount,
+      createdAt: user.createdAt,
     });
 
   } catch (error) {
