@@ -1,5 +1,5 @@
 // Constants
-const DAILY_CREDIT_LIMIT = 450;
+const DAILY_CREDIT_LIMIT = 20000;
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
