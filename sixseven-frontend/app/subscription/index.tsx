@@ -9,16 +9,16 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
-  ImageBackground,
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import Constants from 'expo-constants';
 import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
+import { Colors } from '../../constants/theme';
+import { useThemeColor } from '../../hooks/use-theme-color';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const OUTER_WIDTH = Math.round(SCREEN_WIDTH * 0.9);
@@ -36,6 +36,12 @@ export default function SubscriptionScreen() {
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [managingSubscription, setManagingSubscription] = useState(false);
+
+  // Theme colors
+  const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
+  const iconColor = useThemeColor({}, 'icon');
+  const tintColor = useThemeColor({}, 'tint');
 
   useEffect(() => {
     loadSubscription();
@@ -146,28 +152,6 @@ export default function SubscriptionScreen() {
     router.push('/topup' as any);
   };
 
-  const handleLogout = async () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-      {
-        text: 'Cancel',
-        style: 'cancel',
-      },
-      {
-        text: 'Sign Out',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await SecureStore.deleteItemAsync('session_token');
-            router.replace('/onboarding' as any);
-          } catch (error) {
-            console.error('Error signing out:', error);
-            Alert.alert('Error', 'Failed to sign out. Please try again.');
-          }
-        },
-      },
-    ]);
-  };
-
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
     const d = new Date(dateString);
@@ -200,336 +184,276 @@ export default function SubscriptionScreen() {
 
   if (loading) {
     return (
-      <ImageBackground
-        source={require('../../assets/images/chatscreenbg.png')}
-        style={styles.container}
-        resizeMode="cover"
-      >
-        <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
-          <View style={styles.mainContainer}>
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#FFE0C2" />
-              <Text style={styles.loadingText}>Loading...</Text>
-            </View>
-          </View>
-        </SafeAreaView>
-      </ImageBackground>
+      <SafeAreaView edges={['top', 'bottom']} style={[styles.safeArea, { backgroundColor }]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={tintColor} />
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <ImageBackground
-      source={require('../../assets/images/chatscreenbg.png')}
-      style={styles.container}
-      resizeMode="cover"
-    >
-      <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
-        <View style={styles.mainContainer}>
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.8}>
-              <Ionicons name="chevron-back" size={24} color="#FFE0C2" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Subscription</Text>
-            <View style={{ width: 40 }} />
+    <SafeAreaView edges={['top', 'bottom']} style={[styles.safeArea, { backgroundColor }]}>
+      <View style={styles.mainContainer}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.iconButton} onPress={() => router.back()} activeOpacity={0.7}>
+            <Ionicons name="chevron-back" size={24} color={textColor} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: textColor }]}>Subscription</Text>
+          <View style={{ width: 40 }} />
+        </View>
+
+        {/* Subscription Content */}
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Current Plan */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: iconColor }]}>Current Plan</Text>
+            <View style={[styles.statusCard, { backgroundColor: textColor + '05' }]}>
+              <View style={styles.statusHeader}>
+                <Ionicons name="card-outline" size={32} color={tintColor} />
+                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(subscription?.status) }]}>
+                  <Text style={styles.statusBadgeText}>{subscription?.status?.toUpperCase() || 'INACTIVE'}</Text>
+                </View>
+              </View>
+
+              <View style={styles.statusDetails}>
+                <Text style={[styles.statusLabel, { color: iconColor }]}>Plan</Text>
+                <Text style={[styles.statusValue, { color: textColor }]}>
+                  {subscription?.subscribed ? getPlanName(subscription?.plan) : 'No Active Subscription'}
+                </Text>
+                {!subscription?.subscribed && (
+                  <Text style={[styles.planTypeLabel, { color: iconColor }]}>Subscribe to unlock all features</Text>
+                )}
+                {subscription?.plan && (
+                  <Text style={[styles.planTypeLabel, { color: tintColor }]}>
+                    {subscription.plan === 'weekly' ? '🔄 Weekly Billing' : '📅 Annual Billing'}
+                  </Text>
+                )}
+              </View>
+
+              {subscription?.subscribed && (
+                <>
+                  <View style={[styles.divider, { backgroundColor: textColor + '10' }]} />
+
+                  <View style={styles.statusDetails}>
+                    <Text style={[styles.statusLabel, { color: iconColor }]}>Plan Details</Text>
+                    <Text style={[styles.statusValue, { color: textColor }]}>
+                      {subscription?.plan === 'weekly' ? '$7 charged weekly' : '$67 charged annually'}
+                    </Text>
+                  </View>
+
+                  <View style={styles.statusDetails}>
+                    <Text style={[styles.statusLabel, { color: iconColor }]}>Next Billing Date</Text>
+                    <Text style={[styles.statusValue, { color: textColor }]}>{formatDate(subscription?.endsAt) || 'Loading...'}</Text>
+                  </View>
+
+                  <View style={styles.statusDetails}>
+                    <Text style={[styles.statusLabel, { color: iconColor }]}>Subscription Status</Text>
+                    <Text style={[styles.statusValue, { color: getStatusColor(subscription?.status) }]}>
+                      {subscription?.status === 'active' ? '✓ Active & Renewing' : subscription?.status || 'Unknown'}
+                    </Text>
+                  </View>
+
+                  <View style={styles.statusDetails}>
+                    <Text style={[styles.statusLabel, { color: iconColor }]}>Benefits Included</Text>
+                    <View style={styles.benefitsList}>
+                      <Text style={[styles.benefitItem, { color: iconColor }]}>• Unlimited Gen Alpha translations</Text>
+                      <Text style={[styles.benefitItem, { color: iconColor }]}>• Chat screenshot analysis</Text>
+                      <Text style={[styles.benefitItem, { color: iconColor }]}>• Priority support</Text>
+                      <Text style={[styles.benefitItem, { color: iconColor }]}>• Cancel anytime</Text>
+                    </View>
+                  </View>
+                </>
+              )}
+            </View>
           </View>
 
-          {/* Subscription Content */}
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Current Plan */}
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Current Plan</Text>
-              <View style={styles.statusCard}>
-                <View style={styles.statusHeader}>
-                  <Ionicons name="card" size={32} color="#FFE0C2" />
-                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(subscription?.status) }]}>
-                    <Text style={styles.statusBadgeText}>{subscription?.status?.toUpperCase() || 'INACTIVE'}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.statusDetails}>
-                  <Text style={styles.statusLabel}>Plan</Text>
-                  <Text style={styles.statusValue}>
-                    {subscription?.subscribed ? getPlanName(subscription?.plan) : 'No Active Subscription'}
-                  </Text>
-                  {!subscription?.subscribed && (
-                    <Text style={styles.planTypeLabel}>Subscribe to unlock all features</Text>
-                  )}
-                  {subscription?.plan && (
-                    <Text style={styles.planTypeLabel}>
-                      {subscription.plan === 'weekly' ? '🔄 Weekly Billing' : '📅 Annual Billing'}
-                    </Text>
-                  )}
-                </View>
-
-                {subscription?.subscribed && (
-                  <>
-                    <View style={styles.divider} />
-
-                    <View style={styles.statusDetails}>
-                      <Text style={styles.statusLabel}>Plan Details</Text>
-                      <Text style={styles.statusValue}>
-                        {subscription?.plan === 'weekly' ? '$7 charged weekly' : '$67 charged annually'}
-                      </Text>
-                    </View>
-
-                    <View style={styles.statusDetails}>
-                      <Text style={styles.statusLabel}>Next Billing Date</Text>
-                      <Text style={styles.statusValue}>{formatDate(subscription?.endsAt) || 'Loading...'}</Text>
-                    </View>
-
-                    <View style={styles.statusDetails}>
-                      <Text style={styles.statusLabel}>Subscription Status</Text>
-                      <Text style={[styles.statusValue, { color: getStatusColor(subscription?.status) }]}>
-                        {subscription?.status === 'active' ? '✓ Active & Renewing' : subscription?.status || 'Unknown'}
-                      </Text>
-                    </View>
-
-                    <View style={styles.statusDetails}>
-                      <Text style={styles.statusLabel}>Benefits Included</Text>
-                      <View style={styles.benefitsList}>
-                        <Text style={styles.benefitItem}>• Unlimited Gen Alpha translations</Text>
-                        <Text style={styles.benefitItem}>• Chat screenshot analysis</Text>
-                        <Text style={styles.benefitItem}>• Priority support</Text>
-                        <Text style={styles.benefitItem}>• Cancel anytime</Text>
-                      </View>
-                    </View>
-                  </>
-                )}
-              </View>
-            </View>
-
-            {/* Actions */}
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Actions</Text>
-              <View style={styles.actionsContainer}>
-                {subscription?.subscribed ? (
-                  <>
-                    <TouchableOpacity
-                      style={styles.actionButton}
-                      onPress={handleManageSubscription}
-                      disabled={managingSubscription}
-                      activeOpacity={0.8}
-                    >
-                      <LinearGradient
-                        colors={['#2E2E2E', '#2A2A2A']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 0, y: 1 }}
-                        style={styles.actionButtonGradient}
-                      >
-                        {managingSubscription ? (
-                          <ActivityIndicator color="#FFE0C2" size="small" />
-                        ) : (
-                          <>
-                            <Ionicons name="card" size={24} color="#FFE0C2" />
-                            <Text style={styles.actionButtonText}>Billing & Cancellation</Text>
-                            <Ionicons name="chevron-forward" size={20} color="#FFE0C2" />
-                          </>
-                        )}
-                      </LinearGradient>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity style={styles.actionButton} onPress={handleUpgrade} activeOpacity={0.8}>
-                      <LinearGradient
-                        colors={['#2E2E2E', '#2A2A2A']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 0, y: 1 }}
-                        style={styles.actionButtonGradient}
-                      >
-                        <Ionicons name="trending-up" size={24} color="#FFE0C2" />
-                        <Text style={styles.actionButtonText}>Change Plan</Text>
-                        <Ionicons name="chevron-forward" size={20} color="#FFE0C2" />
-                      </LinearGradient>
-                    </TouchableOpacity>
-                  </>
-                ) : (
-                  <TouchableOpacity style={styles.actionButton} onPress={handleUpgrade} activeOpacity={0.8}>
-                    <LinearGradient
-                      colors={['#FFE0C2', '#FFD700']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={styles.actionButtonGradient}
-                    >
-                      <Ionicons name="rocket" size={24} color="#111111" />
-                      <Text style={[styles.actionButtonText, { color: '#111111' }]}>Subscribe Now</Text>
-                      <Ionicons name="chevron-forward" size={20} color="#111111" />
-                    </LinearGradient>
+          {/* Actions */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: iconColor }]}>Actions</Text>
+            <View style={[styles.menuGroup, { backgroundColor: textColor + '05' }]}>
+              {subscription?.subscribed ? (
+                <>
+                  <TouchableOpacity
+                    style={[styles.menuItem, { borderBottomColor: textColor + '10' }]}
+                    onPress={handleManageSubscription}
+                    disabled={managingSubscription}
+                    activeOpacity={0.7}
+                  >
+                    {managingSubscription ? (
+                      <ActivityIndicator color={tintColor} size="small" />
+                    ) : (
+                      <>
+                        <View style={styles.menuItemLeft}>
+                          <Ionicons name="card-outline" size={20} color={textColor} />
+                          <Text style={[styles.menuItemText, { color: textColor }]}>Billing & Cancellation</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={16} color={iconColor} />
+                      </>
+                    )}
                   </TouchableOpacity>
-                )}
+
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={handleUpgrade}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.menuItemLeft}>
+                      <Ionicons name="trending-up-outline" size={20} color={textColor} />
+                      <Text style={[styles.menuItemText, { color: textColor }]}>Change Plan</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color={iconColor} />
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={handleUpgrade}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.menuItemLeft}>
+                    <Ionicons name="rocket-outline" size={20} color={tintColor} />
+                    <Text style={[styles.menuItemText, { color: tintColor }]}>Subscribe Now</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={tintColor} />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
+          {/* Information */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: iconColor }]}>Information</Text>
+            <View style={styles.infoGrid}>
+              <View style={[styles.infoItem, { backgroundColor: textColor + '05' }]}>
+                <Ionicons name="shield-checkmark-outline" size={24} color="#4CAF50" />
+                <View style={styles.infoTextContainer}>
+                  <Text style={[styles.infoTitle, { color: textColor }]}>Secure Payments</Text>
+                  <Text style={[styles.infoText, { color: iconColor }]}>All payments are processed securely through Stripe</Text>
+                </View>
+              </View>
+
+              <View style={[styles.infoItem, { backgroundColor: textColor + '05' }]}>
+                <Ionicons name="refresh-outline" size={24} color="#2196F3" />
+                <View style={styles.infoTextContainer}>
+                  <Text style={[styles.infoTitle, { color: textColor }]}>Easy Cancellation</Text>
+                  <Text style={[styles.infoText, { color: iconColor }]}>Cancel anytime from the subscription portal</Text>
+                </View>
+              </View>
+
+              <View style={[styles.infoItem, { backgroundColor: textColor + '05' }]}>
+                <Ionicons name="mail-outline" size={24} color="#FF9800" />
+                <View style={styles.infoTextContainer}>
+                  <Text style={[styles.infoTitle, { color: textColor }]}>Need Help?</Text>
+                  <Text style={[styles.infoText, { color: iconColor }]}>Contact us at support@sixseven.app</Text>
+                </View>
               </View>
             </View>
-
-            {/* Information */}
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionTitle}>Information</Text>
-              <View style={styles.infoGrid}>
-                <View style={styles.infoItem}>
-                  <Ionicons name="shield-checkmark" size={24} color="#4CAF50" />
-                  <View style={styles.infoTextContainer}>
-                    <Text style={styles.infoTitle}>Secure Payments</Text>
-                    <Text style={styles.infoText}>All payments are processed securely through Stripe</Text>
-                  </View>
-                </View>
-
-                <View style={styles.infoItem}>
-                  <Ionicons name="refresh" size={24} color="#2196F3" />
-                  <View style={styles.infoTextContainer}>
-                    <Text style={styles.infoTitle}>Easy Cancellation</Text>
-                    <Text style={styles.infoText}>Cancel anytime from the subscription portal</Text>
-                  </View>
-                </View>
-
-                <View style={styles.infoItem}>
-                  <Ionicons name="mail" size={24} color="#FF9800" />
-                  <View style={styles.infoTextContainer}>
-                    <Text style={styles.infoTitle}>Need Help?</Text>
-                    <Text style={styles.infoText}>Contact us at support@sixseven.app</Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-          </ScrollView>
-        </View>
-      </SafeAreaView>
-    </ImageBackground>
+          </View>
+        </ScrollView>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
   safeArea: {
     flex: 1,
-    alignItems: 'center',
   },
   mainContainer: {
-    width: OUTER_WIDTH,
-    height: '100%',
-    flexDirection: 'column',
-  },
-  scrollView: {
     flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 40,
+    alignItems: 'center',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingText: {
-    fontSize: 16,
-    color: '#FFE0C2',
-    fontFamily: 'SpaceGrotesk_400Regular',
-    marginTop: 16,
-  },
   header: {
-    height: 50,
+    width: OUTER_WIDTH,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    paddingVertical: 16,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFE0C2',
-    fontFamily: 'SpaceGrotesk_400Regular',
+    fontFamily: 'SpaceGrotesk_600SemiBold',
+  },
+  iconButton: {
+    padding: 8,
+  },
+  scrollView: {
+    flex: 1,
+    width: '100%',
+  },
+  scrollContent: {
+    alignItems: 'center',
+    paddingBottom: 40,
   },
 
-  // New sections
-  sectionContainer: {
-    marginBottom: 32,
+  // Sections
+  section: {
+    width: OUTER_WIDTH,
+    marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#FFE0C2',
-    fontFamily: 'SpaceGrotesk_700Bold',
-    marginBottom: 16,
-  },
-  actionsContainer: {
-    gap: 12,
-    marginBottom: 32,
-  },
-  actionButton: {
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  actionButtonGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    gap: 12,
-  },
-  actionButtonText: {
-    flex: 1,
-    fontSize: 16,
-    color: '#FFE0C2',
-    fontFamily: 'SpaceGrotesk_400Regular',
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'SpaceGrotesk_600SemiBold',
+    marginBottom: 8,
+    marginLeft: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 
   // Status card
   statusCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 16,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 224, 194, 0.2)',
+    padding: 20,
   },
   statusHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
   statusBadgeText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '700',
     color: '#FFFFFF',
     fontFamily: 'SpaceGrotesk_700Bold',
+    letterSpacing: 0.5,
   },
   statusDetails: {
     marginBottom: 16,
   },
   statusLabel: {
     fontSize: 12,
-    color: '#B4B4B4',
     fontFamily: 'SpaceGrotesk_400Regular',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 6,
   },
   statusValue: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
-    fontFamily: 'SpaceGrotesk_700Bold',
+    fontFamily: 'SpaceGrotesk_600SemiBold',
   },
   planTypeLabel: {
     fontSize: 13,
-    color: '#FFE0C2',
-    fontFamily: 'Outfit_400Regular',
+    fontFamily: 'SpaceGrotesk_400Regular',
     marginTop: 4,
   },
   benefitsList: {
@@ -538,44 +462,60 @@ const styles = StyleSheet.create({
   },
   benefitItem: {
     fontSize: 14,
-    color: '#E6E6E6',
-    fontFamily: 'Outfit_400Regular',
+    fontFamily: 'SpaceGrotesk_400Regular',
     lineHeight: 20,
   },
   divider: {
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    height: StyleSheet.hairlineWidth,
     marginVertical: 16,
+  },
+
+  // Menu
+  menuGroup: {
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'transparent',
+  },
+  menuItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  menuItemText: {
+    fontSize: 16,
+    fontFamily: 'SpaceGrotesk_400Regular',
   },
 
   // Information grid
   infoGrid: {
-    gap: 16,
+    gap: 12,
   },
   infoItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 12,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    padding: 16,
+    gap: 12,
   },
   infoTextContainer: {
     flex: 1,
-    marginLeft: 16,
   },
   infoTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    fontFamily: 'SpaceGrotesk_700Bold',
-    marginBottom: 8,
+    fontSize: 15,
+    fontWeight: '600',
+    fontFamily: 'SpaceGrotesk_600SemiBold',
+    marginBottom: 4,
   },
   infoText: {
-    fontSize: 14,
-    color: '#B8B8B8',
-    fontFamily: 'Outfit_400Regular',
-    lineHeight: 20,
+    fontSize: 13,
+    fontFamily: 'SpaceGrotesk_400Regular',
+    lineHeight: 18,
   },
 });

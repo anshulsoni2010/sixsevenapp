@@ -10,7 +10,6 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  ImageBackground,
 } from 'react-native';
 import { Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,6 +18,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
 import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
+import { Colors } from '../../../constants/theme';
+import { useThemeColor } from '../../../hooks/use-theme-color';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const OUTER_WIDTH = Math.round(SCREEN_WIDTH * 0.9);
@@ -28,6 +29,12 @@ export default function EditProfileScreen() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [userData, setUserData] = useState<any>(null);
+
+  // Theme colors
+  const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
+  const iconColor = useThemeColor({}, 'icon');
+  const tintColor = useThemeColor({}, 'tint');
 
   // Form state
   const [name, setName] = useState('');
@@ -138,54 +145,41 @@ export default function EditProfileScreen() {
 
   if (loading) {
     return (
-      <ImageBackground
-        source={require('../../../assets/images/chatscreenbg.png')}
-        style={styles.container}
-        resizeMode="cover"
-      >
-        <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
-          <View style={styles.mainContainer}>
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#ffffff" />
-            </View>
-          </View>
-        </SafeAreaView>
-      </ImageBackground>
+      <SafeAreaView edges={['top', 'bottom']} style={[styles.safeArea, { backgroundColor }]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={tintColor} />
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <ImageBackground
-      source={require('../../../assets/images/chatscreenbg.png')}
-      style={styles.container}
-      resizeMode="cover"
-    >
-      <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
-        <View style={styles.mainContainer}>
-          <KeyboardAvoidingView
-            style={{ flex: 1 }}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          >
-            {/* Header */}
-            <View style={styles.header}>
+    <SafeAreaView edges={['top', 'bottom']} style={[styles.safeArea, { backgroundColor }]}>
+      <View style={styles.mainContainer}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          {/* Header */}
+          <View style={styles.header}>
             <TouchableOpacity
-              style={styles.backButton}
+              style={styles.iconButton}
               onPress={() => router.back()}
-              activeOpacity={0.8}
+              activeOpacity={0.7}
             >
-              <Ionicons name="close" size={24} color="#FFE0C2" />
+              <Ionicons name="close" size={24} color={textColor} />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Edit Profile</Text>
+            <Text style={[styles.headerTitle, { color: textColor }]}>Edit Profile</Text>
             <TouchableOpacity
-              style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+              style={styles.iconButton}
               onPress={handleSave}
               disabled={saving}
-              activeOpacity={0.8}
+              activeOpacity={0.7}
             >
               {saving ? (
-                <ActivityIndicator size="small" color="#FFE0C2" />
+                <ActivityIndicator size="small" color={tintColor} />
               ) : (
-                <Text style={styles.saveButtonText}>Save</Text>
+                <Ionicons name="checkmark" size={24} color={tintColor} />
               )}
             </TouchableOpacity>
           </View>
@@ -197,50 +191,52 @@ export default function EditProfileScreen() {
             showsVerticalScrollIndicator={false}
           >
             {/* Name */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Name</Text>
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: iconColor }]}>Name</Text>
               <TextInput
-                style={styles.textInput}
+                style={[styles.textInput, { backgroundColor: textColor + '08', color: textColor, borderColor: textColor + '10' }]}
                 value={name}
                 onChangeText={setName}
                 placeholder="Enter your name"
-                placeholderTextColor="#666"
+                placeholderTextColor={iconColor}
                 maxLength={50}
               />
             </View>
 
             {/* Age */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Age</Text>
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: iconColor }]}>Age</Text>
               <TextInput
-                style={styles.textInput}
+                style={[styles.textInput, { backgroundColor: textColor + '08', color: textColor, borderColor: textColor + '10' }]}
                 value={age}
                 onChangeText={setAge}
                 placeholder="Enter your age"
-                placeholderTextColor="#666"
+                placeholderTextColor={iconColor}
                 keyboardType="numeric"
                 maxLength={3}
               />
             </View>
 
             {/* Gender */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Gender</Text>
-              <View style={styles.genderOptions}>
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: iconColor }]}>Gender</Text>
+              <View style={styles.optionsRow}>
                 {genderOptions.map((option) => (
                   <TouchableOpacity
                     key={option.value}
                     style={[
-                      styles.genderOption,
-                      gender === option.value && styles.genderOptionSelected,
+                      styles.option,
+                      { backgroundColor: textColor + '08', borderColor: textColor + '10' },
+                      gender === option.value && { backgroundColor: tintColor + '20', borderColor: tintColor },
                     ]}
                     onPress={() => setGender(option.value)}
-                    activeOpacity={0.8}
+                    activeOpacity={0.7}
                   >
                     <Text
                       style={[
-                        styles.genderOptionText,
-                        gender === option.value && styles.genderOptionTextSelected,
+                        styles.optionText,
+                        { color: iconColor },
+                        gender === option.value && { color: tintColor, fontWeight: '600' },
                       ]}
                     >
                       {option.label}
@@ -251,23 +247,25 @@ export default function EditProfileScreen() {
             </View>
 
             {/* Alpha Level */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Alpha Level</Text>
-              <View style={styles.alphaOptions}>
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: iconColor }]}>Alpha Level</Text>
+              <View style={styles.optionsRow}>
                 {alphaLevelOptions.map((option) => (
                   <TouchableOpacity
                     key={option}
                     style={[
                       styles.alphaOption,
-                      alphaLevel === option && styles.alphaOptionSelected,
+                      { backgroundColor: textColor + '08', borderColor: textColor + '10' },
+                      alphaLevel === option && { backgroundColor: tintColor + '20', borderColor: tintColor },
                     ]}
                     onPress={() => setAlphaLevel(option)}
-                    activeOpacity={0.8}
+                    activeOpacity={0.7}
                   >
                     <Text
                       style={[
-                        styles.alphaOptionText,
-                        alphaLevel === option && styles.alphaOptionTextSelected,
+                        styles.optionText,
+                        { color: iconColor },
+                        alphaLevel === option && { color: tintColor, fontWeight: '600' },
                       ]}
                     >
                       {option}
@@ -278,23 +276,23 @@ export default function EditProfileScreen() {
             </View>
 
             {/* Notifications */}
-            <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Preferences</Text>
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: iconColor }]}>Preferences</Text>
               <TouchableOpacity
-                style={styles.preferenceItem}
+                style={[styles.preferenceItem, { backgroundColor: textColor + '08', borderColor: textColor + '10' }]}
                 onPress={() => setNotifications(!notifications)}
-                activeOpacity={0.8}
+                activeOpacity={0.7}
               >
                 <View style={styles.preferenceLeft}>
-                  <Ionicons name="notifications" size={24} color="#FFE0C2" />
+                  <Ionicons name="notifications-outline" size={24} color={textColor} />
                   <View style={styles.preferenceText}>
-                    <Text style={styles.preferenceTitle}>Push Notifications</Text>
-                    <Text style={styles.preferenceSubtitle}>
+                    <Text style={[styles.preferenceTitle, { color: textColor }]}>Push Notifications</Text>
+                    <Text style={[styles.preferenceSubtitle, { color: iconColor }]}>
                       Receive updates about new features and tips
                     </Text>
                   </View>
                 </View>
-                <View style={[styles.toggle, notifications && styles.toggleActive]}>
+                <View style={[styles.toggle, notifications && { backgroundColor: tintColor }]}>
                   <View style={[styles.toggleKnob, notifications && styles.toggleKnobActive]} />
                 </View>
               </TouchableOpacity>
@@ -303,156 +301,95 @@ export default function EditProfileScreen() {
         </KeyboardAvoidingView>
       </View>
     </SafeAreaView>
-  </ImageBackground>
-);
-
+  );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
   safeArea: {
     flex: 1,
-    alignItems: 'center',
   },
   mainContainer: {
-    width: OUTER_WIDTH,
-    height: '100%',
-    flexDirection: 'column',
-  },
-
-  // Header
-  header: {
-    height: 50,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    justifyContent: 'center',
+    flex: 1,
     alignItems: 'center',
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FFE0C2',
-    fontFamily: 'SpaceGrotesk_400Regular',
-  },
-  saveButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 224, 194, 0.1)',
-  },
-  saveButtonDisabled: {
-    opacity: 0.5,
-  },
-  saveButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFE0C2',
-    fontFamily: 'SpaceGrotesk_400Regular',
-  },
-
-  // Loading
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-
-  // Scroll Content
+  header: {
+    width: OUTER_WIDTH,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    fontFamily: 'SpaceGrotesk_600SemiBold',
+  },
+  iconButton: {
+    padding: 8,
+  },
   scrollView: {
     flex: 1,
+    width: '100%',
   },
   scrollContent: {
+    alignItems: 'center',
     paddingBottom: 40,
   },
 
-  // Form Fields
-  fieldContainer: {
-    marginBottom: 28,
+  // Sections
+  section: {
+    width: OUTER_WIDTH,
+    marginBottom: 24,
   },
-  fieldLabel: {
-    fontSize: 18,
+  sectionTitle: {
+    fontSize: 14,
     fontWeight: '600',
-    color: '#FFE0C2',
     fontFamily: 'SpaceGrotesk_600SemiBold',
-    marginBottom: 16,
+    marginBottom: 8,
+    marginLeft: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
+
+  // Text Input
   textInput: {
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#FFE0C2',
     fontFamily: 'SpaceGrotesk_400Regular',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
   },
 
-  genderOptions: {
+  // Options
+  optionsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
   },
-  genderOption: {
+  option: {
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    paddingVertical: 12,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  genderOptionSelected: {
-    backgroundColor: 'rgba(255, 224, 194, 0.1)',
-    borderColor: '#FFE0C2',
-  },
-  genderOptionText: {
-    fontSize: 14,
-    color: '#B4B4B4',
-    fontFamily: 'SpaceGrotesk_400Regular',
-  },
-  genderOptionTextSelected: {
-    color: '#FFE0C2',
-    fontWeight: '500',
-  },
-
-  // Alpha Level Options
-  alphaOptions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+    minWidth: 80,
+    alignItems: 'center',
   },
   alphaOption: {
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
-    minWidth: 60,
+    minWidth: 70,
     alignItems: 'center',
   },
-  alphaOptionSelected: {
-    backgroundColor: 'rgba(255, 224, 194, 0.1)',
-    borderColor: '#FFE0C2',
-  },
-  alphaOptionText: {
-    fontSize: 16,
-    color: '#B4B4B4',
+  optionText: {
+    fontSize: 15,
     fontFamily: 'SpaceGrotesk_400Regular',
-    fontWeight: '500',
-  },
-  alphaOptionTextSelected: {
-    color: '#FFE0C2',
-    fontWeight: '600',
   },
 
   // Preferences
@@ -460,11 +397,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
   },
   preferenceLeft: {
     flexDirection: 'row',
@@ -477,13 +412,11 @@ const styles = StyleSheet.create({
   },
   preferenceTitle: {
     fontSize: 16,
-    color: '#FFE0C2',
     fontFamily: 'SpaceGrotesk_400Regular',
     marginBottom: 2,
   },
   preferenceSubtitle: {
     fontSize: 14,
-    color: '#B4B4B4',
     fontFamily: 'SpaceGrotesk_400Regular',
   },
   toggle: {
@@ -493,9 +426,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#666666',
     justifyContent: 'center',
     paddingHorizontal: 2,
-  },
-  toggleActive: {
-    backgroundColor: '#FFE0C2',
   },
   toggleKnob: {
     width: 24,

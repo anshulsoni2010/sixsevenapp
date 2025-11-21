@@ -374,13 +374,8 @@ export default function ProfileScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.menuItem}
-                onPress={() => {
-                  Alert.alert(
-                    'About 6 7',
-                    `Version 1.0.0\n\nTalk the Alpha, Walk the Alpha\n\nTransform your messages into Gen Alpha slang! 🔥\n\n© 2025 Six Seven`,
-                    [{ text: 'OK' }]
-                  );
-                }}
+                onPress={() => router.push('/about' as any)}
+                activeOpacity={0.7}
               >
                 <View style={styles.menuItemLeft}>
                   <Ionicons name="information-circle-outline" size={20} color={textColor} />
