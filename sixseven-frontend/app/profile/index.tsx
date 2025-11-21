@@ -242,19 +242,21 @@ export default function ProfileScreen() {
           {/* Stats Grid */}
           <View style={styles.statsGrid}>
             <View style={[styles.statItem, { backgroundColor: textColor + '08' }]}>
+              <Ionicons name="chatbubble-outline" size={20} color={tintColor} />
               <Text style={[styles.statValue, { color: textColor }]}>
                 {userData?.stats?.messagesTranslated || '0'}
               </Text>
               <Text style={[styles.statLabel, { color: iconColor }]}>Messages</Text>
             </View>
             <View style={[styles.statItem, { backgroundColor: textColor + '08' }]}>
+              <Ionicons name="flame-outline" size={20} color={tintColor} />
               <Text style={[styles.statValue, { color: textColor }]}>
                 {userData?.stats?.daysActive || '0'}
               </Text>
-              <Text style={[styles.statLabel, { color: iconColor }]}>Days</Text>
+              <Text style={[styles.statLabel, { color: iconColor }]}>Day Streak</Text>
             </View>
-
             <View style={[styles.statItem, { backgroundColor: textColor + '08' }]}>
+              <Ionicons name="trophy-outline" size={20} color={tintColor} />
               <Text style={[styles.statValue, { color: textColor }]}>
                 {userData?.alphaPoints || '0'}
               </Text>

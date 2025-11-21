@@ -63,14 +63,29 @@ export default function EditProfileScreen() {
 
         if (response.ok) {
           const data = await response.json();
+          console.log('Edit Profile - Loaded user data:', data);
           setUserData(data);
 
           // Populate form fields
-          setName(data.name || '');
-          setAge(data.age ? data.age.toString() : '');
-          setGender(data.gender || '');
-          setAlphaLevel(data.alphaLevel || '');
-          setNotifications(data.notifications || false);
+          const userName = data.name || '';
+          const userAge = data.age ? data.age.toString() : '';
+          const userGender = data.gender || '';
+          const userAlphaLevel = data.alphaLevel || '';
+          const userNotifications = data.notifications || false;
+
+          console.log('Edit Profile - Setting form values:', {
+            name: userName,
+            age: userAge,
+            gender: userGender,
+            alphaLevel: userAlphaLevel,
+            notifications: userNotifications,
+          });
+
+          setName(userName);
+          setAge(userAge);
+          setGender(userGender);
+          setAlphaLevel(userAlphaLevel);
+          setNotifications(userNotifications);
         }
       }
     } catch (error) {
