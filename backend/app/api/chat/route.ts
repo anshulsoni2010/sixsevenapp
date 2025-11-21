@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { SYSTEM_PROMPTS } from '../../lib/prompts';
+import { SYSTEM_PROMPTS } from '@/lib/prompts';
 
 const prisma = new PrismaClient();
 
