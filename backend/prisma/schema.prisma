@@ -68,6 +68,7 @@ model Message {
   conversationId String
   role           String   // "user" or "assistant"
   content        String   @db.Text
+  image          String?  @db.Text // Base64 image string
   model          String?  // "1x", "2x", "3x", "4x"
   tokensUsed     Int?
   createdAt      DateTime @default(now())

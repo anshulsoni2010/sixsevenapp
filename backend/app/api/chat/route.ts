@@ -66,10 +66,10 @@ export async function POST(req: Request) {
 
         // 3. Process Request
         const body = await req.json();
-        const { text, model, conversationId } = body;
+        const { text, image, model, conversationId } = body;
 
-        if (!text) {
-            return NextResponse.json({ error: 'Text is required' }, { status: 400 });
+        if (!text && !image) {
+            return NextResponse.json({ error: 'Text or image is required' }, { status: 400 });
         }
 
         const selectedModel = (model as string || '1x').toLowerCase();
@@ -91,106 +91,127 @@ export async function POST(req: Request) {
             }
         } else {
             // Generate title using AI
-            let title = text.substring(0, 50);
-            try {
-                const titleModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-                const titleResult = await titleModel.generateContent(`Generate a very short, concise title (max 4-5 words) for a conversation that starts with this message: "${text}". Return ONLY the title, no quotes.`);
-                const aiTitle = titleResult.response.text().trim().replace(/^"|"$/g, '');
-                if (aiTitle) title = aiTitle;
-            } catch (e) {
-                console.error("Failed to generate title:", e);
+            let title = (text || "Image Chat").substring(0, 50);
+            if (text) {
+                try {
+                    const titleModel = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+                    const titleResult = await titleModel.generateContent(`Generate a very short, concise title (max 4-5 words) for a conversation that starts with this message: "${text}". Return ONLY the title, no quotes.`);
+                    const aiTitle = titleResult.response.text().trim().replace(/^"|"$/g, '');
+                    if (aiTitle) title = aiTitle;
+                } catch (e) {
+                    console.error("Failed to generate title:", e);
+                }
+
+                // Create new conversation
+                conversation = await prisma.conversation.create({
+                    data: {
+                        userId: userId,
+                        title: title,
+                    }
+                });
             }
 
-            // Create new conversation
-            conversation = await prisma.conversation.create({
+            // 5. Save User Message
+            const userMessage = await prisma.message.create({
                 data: {
-                    userId: userId,
-                    title: title,
+                    conversationId: conversation.id,
+                    role: 'user',
+                    content: text || '[Image]',
+                    image: image, // Save image base64 if present (consider uploading to storage in prod)
+                    model: selectedModel,
                 }
             });
-        }
 
-        // 5. Save User Message
-        const userMessage = await prisma.message.create({
-            data: {
-                conversationId: conversation.id,
-                role: 'user',
-                content: text,
-                model: selectedModel,
+            // 6. Call Gemini
+            let responseText: string;
+            let success = true;
+            let errorMessage: string | undefined;
+            let tokensUsed = 1; // Default fallback
+
+            try {
+                const geminiModel = genAI.getGenerativeModel({
+                    model: "gemini-2.5-flash",
+                    systemInstruction: systemPrompt,
+                });
+
+                let result;
+                if (image) {
+                    // Remove header if present (e.g., "data:image/jpeg;base64,")
+                    const base64Image = image.replace(/^data:image\/\w+;base64,/, "");
+
+                    const prompt = text ? text : "Translate the text in this image to the selected Gen Alpha slang style. If there is no text, describe the image in Gen Alpha slang.";
+
+                    result = await geminiModel.generateContent([
+                        prompt,
+                        {
+                            inlineData: {
+                                data: base64Image,
+                                mimeType: "image/jpeg",
+                            },
+                        },
+                    ]);
+                } else {
+                    result = await geminiModel.generateContent(text);
+                }
+
+                responseText = result.response.text();
+
+                // Get actual token usage from Gemini
+                tokensUsed = result.response.usageMetadata?.totalTokenCount || 1;
+            } catch (error: any) {
+                success = false;
+                errorMessage = error.message || 'Gemini API error';
+                responseText = 'Sorry, I encountered an error processing your request.';
+
+                // Log the error but continue to save the failed attempt
+                console.error('Gemini API Error:', error);
             }
-        });
 
-        // 6. Call Gemini
-        let responseText: string;
-        let success = true;
-        let errorMessage: string | undefined;
-        let tokensUsed = 1; // Default fallback
-
-        try {
-            const geminiModel = genAI.getGenerativeModel({
-                model: "gemini-2.5-flash",
-                systemInstruction: systemPrompt,
+            // 7. Save AI Response Message
+            const aiMessage = await prisma.message.create({
+                data: {
+                    conversationId: conversation.id,
+                    role: 'assistant',
+                    content: responseText,
+                    model: selectedModel,
+                    tokensUsed: tokensUsed,
+                }
             });
 
-            const result = await geminiModel.generateContent(text);
-            responseText = result.response.text();
+            // 8. Log Usage
+            await prisma.usageLog.create({
+                data: {
+                    userId: userId,
+                    messageId: aiMessage.id,
+                    model: selectedModel,
+                    tokensUsed: tokensUsed,
+                    success: success,
+                    errorMessage: errorMessage,
+                }
+            });
 
-            // Get actual token usage from Gemini
-            tokensUsed = result.response.usageMetadata?.totalTokenCount || 1;
-        } catch (error: any) {
-            success = false;
-            errorMessage = error.message || 'Gemini API error';
-            responseText = 'Sorry, I encountered an error processing your request.';
+            // 9. Update Credits
+            const updatedUser = await prisma.user.update({
+                where: { id: userId },
+                data: {
+                    dailyTokenCount: isNewDay ? tokensUsed : { increment: tokensUsed },
+                    lastTokenUsageDate: now,
+                },
+                select: {
+                    dailyTokenCount: true
+                }
+            });
 
-            // Log the error but continue to save the failed attempt
-            console.error('Gemini API Error:', error);
-        }
-
-        // 7. Save AI Response Message
-        const aiMessage = await prisma.message.create({
-            data: {
+            return NextResponse.json({
+                text: responseText,
+                credits: DAILY_TOKEN_LIMIT - updatedUser.dailyTokenCount,
+                maxCredits: DAILY_TOKEN_LIMIT,
                 conversationId: conversation.id,
-                role: 'assistant',
-                content: responseText,
-                model: selectedModel,
-                tokensUsed: tokensUsed,
-            }
-        });
-
-        // 8. Log Usage
-        await prisma.usageLog.create({
-            data: {
-                userId: userId,
                 messageId: aiMessage.id,
-                model: selectedModel,
-                tokensUsed: tokensUsed,
-                success: success,
-                errorMessage: errorMessage,
-            }
-        });
+            });
 
-        // 9. Update Credits
-        const updatedUser = await prisma.user.update({
-            where: { id: userId },
-            data: {
-                dailyTokenCount: isNewDay ? tokensUsed : { increment: tokensUsed },
-                lastTokenUsageDate: now,
-            },
-            select: {
-                dailyTokenCount: true
-            }
-        });
-
-        return NextResponse.json({
-            text: responseText,
-            credits: DAILY_TOKEN_LIMIT - updatedUser.dailyTokenCount,
-            maxCredits: DAILY_TOKEN_LIMIT,
-            conversationId: conversation.id,
-            messageId: aiMessage.id,
-        });
-
-    } catch (error) {
-        console.error('Chat API Error:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        } catch (error) {
+            console.error('Chat API Error:', error);
+            return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        }
     }
-}

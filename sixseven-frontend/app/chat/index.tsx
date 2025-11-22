@@ -33,6 +33,8 @@ import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import { SvgXml } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import { Image as ExpoImage } from 'expo-image';
 import { HugeiconsIcon } from '@hugeicons/react-native';
 import { UnfoldMoreIcon, ArrowUp02Icon } from '@hugeicons/core-free-icons';
 import * as Haptics from 'expo-haptics';
@@ -58,6 +60,7 @@ type Message = {
   text: string;
   isUser: boolean;
   timestamp: Date;
+  image?: string; // Add image property
 };
 
 type Conversation = {
@@ -86,6 +89,7 @@ export default function ChatScreen() {
   const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [suggestions] = useState(suggestionsDefault);
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
@@ -115,6 +119,7 @@ export default function ChatScreen() {
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const suggestionKey = useMemo(() => Math.random().toString(36).slice(2, 8), []);
+  const flatListRef = useRef<ScrollView>(null); // Ref for scrolling messages
 
   // Function to fetch credits from API
   const fetchCredits = async () => {
@@ -447,6 +452,7 @@ export default function ChatScreen() {
             text: msg.content || msg.text,
             isUser: msg.role === 'user',
             timestamp: new Date(msg.createdAt || Date.now()),
+            image: msg.image, // Load image
           }));
 
           setMessages(loadedMessages);
@@ -494,7 +500,7 @@ export default function ChatScreen() {
   };
 
   const handleSend = async () => {
-    if (!inputText.trim() || loading) return;
+    if (!inputText.trim() && !selectedImage || loading) return;
 
     if (credits <= 0) {
       alert("You're out of credits for today! Come back tomorrow!");
@@ -509,10 +515,19 @@ export default function ChatScreen() {
       text: inputText.trim(),
       isUser: true,
       timestamp: new Date(),
+      image: selectedImage ? `data:image/jpeg;base64,${selectedImage}` : undefined,
     };
-    setMessages(prev => [...prev, userMessage]);
+
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
     setInputText('');
+    setSelectedImage(null);
     setLoading(true);
+
+    // Scroll to bottom
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }, 100);
 
     try {
       const token = await SecureStore.getItemAsync('session_token');
@@ -526,6 +541,7 @@ export default function ChatScreen() {
         },
         body: JSON.stringify({
           text: userMessage.text,
+          image: selectedImage,
           model: selectedModel,
           conversationId: conversationId,
         }),
@@ -661,11 +677,33 @@ export default function ChatScreen() {
     setShowModelDropdown(false);
   };
 
+  const pickImage = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (permissionResult.granted === false) {
+      Alert.alert("Permission Required", "Permission to access camera roll is required!");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.5,
+      base64: true,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setSelectedImage(result.assets[0].base64 || null);
+    }
+  };
+
   const createNewChat = () => {
     setConversationId(null);
     setMessages([]);
     setHasChatStarted(false);
     setInputText('');
+    setSelectedImage(null); // Clear selected image
     // Close sidebar if open
     if (showSidebar) {
       toggleSidebar();
@@ -730,9 +768,11 @@ export default function ChatScreen() {
           {hasChatStarted && (
             <View style={styles.messagesContainer}>
               <ScrollView
+                ref={flatListRef}
                 style={styles.messagesScrollView}
                 contentContainerStyle={styles.messagesContent}
                 showsVerticalScrollIndicator={false}
+                onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
               >
                 {messages.map((message) => (
                   <MessageBubble key={message.id} message={message} />
@@ -762,21 +802,43 @@ export default function ChatScreen() {
               behavior={Platform.OS === 'ios' ? 'padding' : undefined}
               keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
             >
-              <View style={styles.inputSection}>
-                <ChatInput
-                  value={inputText}
-                  onChangeText={setInputText}
-                  onSubmitEditing={onSubmitEditing}
-                  loading={loading}
-                  selectedModel={selectedModel}
-                  onToggleModelDropdown={toggleModelDropdown}
-                  showModelDropdown={showModelDropdown}
-                  onSelectModel={selectModel}
-                  onCloseDropdown={() => setShowModelDropdown(false)}
-                  dropdownOpacity={dropdownOpacity}
-                  dropdownScale={dropdownScale}
-                  dropdownTranslateY={dropdownTranslateY}
-                />
+              <View style={styles.inputContainer}>
+                {selectedImage && (
+                  <View style={styles.imagePreviewContainer}>
+                    <ExpoImage
+                      source={{ uri: `data:image/jpeg;base64,${selectedImage}` }}
+                      style={styles.imagePreview}
+                      contentFit="cover"
+                    />
+                    <TouchableOpacity
+                      style={styles.removeImageButton}
+                      onPress={() => setSelectedImage(null)}
+                    >
+                      <Ionicons name="close-circle" size={24} color="#FF4444" />
+                    </TouchableOpacity>
+                  </View>
+                )}
+                <View style={styles.inputRow}>
+                  <TouchableOpacity onPress={pickImage} style={styles.imageButton}>
+                    <View style={styles.imageButtonInner}>
+                      <Ionicons name="image-outline" size={20} color="#000" />
+                    </View>
+                  </TouchableOpacity>
+                  <ChatInput
+                    value={inputText}
+                    onChangeText={setInputText}
+                    onSubmitEditing={onSubmitEditing}
+                    loading={loading}
+                    selectedModel={selectedModel}
+                    onToggleModelDropdown={toggleModelDropdown}
+                    showModelDropdown={showModelDropdown}
+                    onSelectModel={selectModel}
+                    onCloseDropdown={() => setShowModelDropdown(false)}
+                    dropdownOpacity={dropdownOpacity}
+                    dropdownScale={dropdownScale}
+                    dropdownTranslateY={dropdownTranslateY}
+                  />
+                </View>
               </View>
             </KeyboardAvoidingView>
           </View>
@@ -1027,6 +1089,13 @@ export default function ChatScreen() {
 function MessageBubble({ message }: { message: Message }) {
   return (
     <View style={[styles.messageBubble, message.isUser ? styles.userMessage : styles.aiMessage]}>
+      {message.image && (
+        <ExpoImage
+          source={{ uri: message.image }}
+          style={styles.messageImage}
+          contentFit="cover"
+        />
+      )}
       <Text style={[styles.messageText, message.isUser ? styles.userText : styles.aiText]}>
         {message.text}
       </Text>
@@ -1160,94 +1229,96 @@ function ChatInput({
   dropdownTranslateY: Animated.Value;
 }) {
   return (
-    <View style={styles.inputInner}>
-      <View style={styles.topContainer}>
-        <TextInput
-          style={styles.inputField}
-          placeholder="Let's do 67"
-          placeholderTextColor="#B4B4B4"
-          value={value}
-          onChangeText={onChangeText}
-          multiline
-          maxLength={2000}
-          returnKeyType="send"
-          onSubmitEditing={onSubmitEditing}
-          selectionColor="#ffe1c249"
-          cursorColor='#FFE0C2'
-        />
-      </View>
-      <View style={styles.bottomContainer}>
-        <View style={styles.leftContainer}>
-          <TouchableOpacity style={styles.modelSelector} activeOpacity={0.8} onPress={onToggleModelDropdown}>
-            <Image source={modelImages[selectedModel as keyof typeof modelImages]} style={styles.modelImage} />
-            <HugeiconsIcon
-              icon={UnfoldMoreIcon}
-              size={18}
-              color="#B4B4B4"
-              strokeWidth={1.5}
-            />
-          </TouchableOpacity>
+    <View style={styles.inputWrapper}>
+      <View style={styles.inputInner}>
+        <View style={styles.topContainer}>
+          <TextInput
+            style={styles.inputField}
+            placeholder="Let's do 67"
+            placeholderTextColor="#B4B4B4"
+            value={value}
+            onChangeText={onChangeText}
+            multiline
+            maxLength={2000}
+            returnKeyType="send"
+            onSubmitEditing={onSubmitEditing}
+            selectionColor="#ffe1c249"
+            cursorColor='#FFE0C2'
+          />
         </View>
-        <View style={styles.rightContainer}>
-          <TouchableOpacity
-            style={styles.sendButton}
-            onPress={onSubmitEditing as any}
-            activeOpacity={0.85}
-            accessibilityLabel="Send"
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="#000" />
-            ) : (
-              <View style={styles.sendInner}>
-                <HugeiconsIcon
-                  icon={ArrowUp02Icon}
-                  size={26}
-                  color="#000"
-                  strokeWidth={2.0}
-                />
-              </View>
-            )}
-          </TouchableOpacity>
+        <View style={styles.bottomContainer}>
+          <View style={styles.leftContainer}>
+            <TouchableOpacity style={styles.modelSelector} activeOpacity={0.8} onPress={onToggleModelDropdown}>
+              <Image source={modelImages[selectedModel as keyof typeof modelImages]} style={styles.modelImage} />
+              <HugeiconsIcon
+                icon={UnfoldMoreIcon}
+                size={18}
+                color="#B4B4B4"
+                strokeWidth={1.5}
+              />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.rightContainer}>
+            <TouchableOpacity
+              style={styles.sendButton}
+              onPress={onSubmitEditing as any}
+              activeOpacity={0.85}
+              accessibilityLabel="Send"
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color="#000" />
+              ) : (
+                <View style={styles.sendInner}>
+                  <HugeiconsIcon
+                    icon={ArrowUp02Icon}
+                    size={26}
+                    color="#000"
+                    strokeWidth={2.0}
+                  />
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-      {showModelDropdown && (
-        <>
-          <TouchableWithoutFeedback onPress={onCloseDropdown}>
-            <View style={styles.dropdownBackdrop} />
-          </TouchableWithoutFeedback>
-          <Animated.View style={[styles.modelDropdown, {
-            opacity: dropdownOpacity,
-            transform: [
-              { scale: dropdownScale },
-              { translateY: dropdownTranslateY },
-            ],
-          }]}>
-            {['1x', '2x', '3x', '4x'].map((model) => (
-              <TouchableOpacity
-                key={model}
-                style={[
-                  styles.modelOption,
-                  selectedModel === model && styles.modelOptionSelected,
-                ]}
-                onPress={() => onSelectModel(model)}
-                activeOpacity={Platform.OS === 'ios' ? 0.7 : 0.8}
-              >
-                <Image
-                  source={modelImages[model as keyof typeof modelImages]}
+        {showModelDropdown && (
+          <>
+            <TouchableWithoutFeedback onPress={onCloseDropdown}>
+              <View style={styles.dropdownBackdrop} />
+            </TouchableWithoutFeedback>
+            <Animated.View style={[styles.modelDropdown, {
+              opacity: dropdownOpacity,
+              transform: [
+                { scale: dropdownScale },
+                { translateY: dropdownTranslateY },
+              ],
+            }]}>
+              {['1x', '2x', '3x', '4x'].map((model) => (
+                <TouchableOpacity
+                  key={model}
                   style={[
-                    styles.modelOptionImage,
-                    selectedModel === model && styles.modelOptionImageSelected
+                    styles.modelOption,
+                    selectedModel === model && styles.modelOptionSelected,
                   ]}
-                />
-                <Text style={[
-                  styles.modelOptionText,
-                  selectedModel === model && styles.modelOptionTextSelected
-                ]}>Alpha {model}</Text>
-              </TouchableOpacity>
-            ))}
-          </Animated.View>
-        </>
-      )}
+                  onPress={() => onSelectModel(model)}
+                  activeOpacity={Platform.OS === 'ios' ? 0.7 : 0.8}
+                >
+                  <Image
+                    source={modelImages[model as keyof typeof modelImages]}
+                    style={[
+                      styles.modelOptionImage,
+                      selectedModel === model && styles.modelOptionImageSelected
+                    ]}
+                  />
+                  <Text style={[
+                    styles.modelOptionText,
+                    selectedModel === model && styles.modelOptionTextSelected
+                  ]}>Alpha {model}</Text>
+                </TouchableOpacity>
+              ))}
+            </Animated.View>
+          </>
+        )}
+      </View>
     </View>
   );
 }
@@ -1353,6 +1424,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginVertical: 4,
   },
+  messageImage: {
+    width: '100%',
+    height: 150, // Or dynamic height based on aspect ratio
+    borderRadius: 12,
+    marginBottom: 8,
+  },
 
   userMessage: {
     alignSelf: 'flex-end',
@@ -1379,7 +1456,7 @@ const styles = StyleSheet.create({
 
   /* SECOND CONTAINER */
   secondContainer: {
-    gap: 125,
+    gap: 20, // Adjusted gap to accommodate image preview
     width: '100%',
     paddingBottom: 20,
   },
@@ -1436,12 +1513,17 @@ const styles = StyleSheet.create({
     width: '100%',
   },
 
-  inputInner: {
+  inputContainer: {
     width: '100%',
     backgroundColor: '#222222',
     borderRadius: 28,
     borderWidth: 1,
     borderColor: '#21201C',
+    paddingBottom: 16, // Adjusted padding for image preview
+  },
+
+  inputInner: {
+    width: '100%',
     padding: 16,
     gap: 38,
   },
@@ -1451,6 +1533,7 @@ const styles = StyleSheet.create({
     color: '#B4B4B4',
     maxHeight: 160,
     fontFamily: 'SpaceGrotesk_400Regular',
+    flex: 1, // Allow TextInput to take available space
   },
 
   topContainer: {
