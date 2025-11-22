@@ -5,6 +5,104 @@ import { prisma } from '../../../../../lib/prisma';
 import jwt from 'jsonwebtoken';
 import { serialize } from 'cookie';
 
+/**
+ * @swagger
+ * /api/auth/google/callback:
+ *   get:
+ *     summary: Google OAuth callback (web)
+ *     description: Handle Google OAuth callback for web authentication
+ *     parameters:
+ *       - in: query
+ *         name: code
+ *         schema:
+ *           type: string
+ *         description: Authorization code from Google
+ *       - in: query
+ *         name: state
+ *         schema:
+ *           type: string
+ *         description: State parameter for redirect URI
+ *       - in: query
+ *         name: error
+ *         schema:
+ *           type: string
+ *         description: Error from Google OAuth
+ *     responses:
+ *       302:
+ *         description: Redirect to app with authentication token
+ *       400:
+ *         description: Missing authorization code
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Authentication failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *   post:
+ *     summary: Google Sign-In (native)
+ *     description: Authenticate with Google ID token for native apps
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - idToken
+ *             properties:
+ *               idToken:
+ *                 type: string
+ *                 description: Google ID token
+ *               accessToken:
+ *                 type: string
+ *                 description: Google access token (optional)
+ *     responses:
+ *       200:
+ *         description: Authentication successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   description: JWT authentication token
+ *                 onboarded:
+ *                   type: boolean
+ *                   description: Whether the user has completed onboarding
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                       format: email
+ *                     name:
+ *                       type: string
+ *                       nullable: true
+ *                     picture:
+ *                       type: string
+ *                       format: uri
+ *                       nullable: true
+ *       400:
+ *         description: Missing ID token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Authentication failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);

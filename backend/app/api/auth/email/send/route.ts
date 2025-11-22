@@ -2,6 +2,50 @@ import { NextResponse } from 'next/server';
 import { prisma } from '../../../../../lib/prisma';
 import nodemailer from 'nodemailer';
 
+/**
+ * @swagger
+ * /api/auth/email/send:
+ *   post:
+ *     summary: Send verification email
+ *     description: Send a verification code to the user's email address
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: Email address to send verification code to
+ *     responses:
+ *       200:
+ *         description: Verification email sent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *       400:
+ *         description: Email is required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Failed to send email
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+
 export async function POST(req: Request) {
     try {
         const body = await req.json();

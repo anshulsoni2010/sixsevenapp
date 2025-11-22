@@ -2,6 +2,72 @@ import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../../../../lib/prisma';
 
+/**
+ * @swagger
+ * /api/auth/onboard:
+ *   post:
+ *     summary: Complete user onboarding
+ *     description: Update user profile information and mark as onboarded
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: User's display name
+ *               age:
+ *                 type: integer
+ *                 minimum: 13
+ *                 maximum: 120
+ *                 description: User's age
+ *               gender:
+ *                 type: string
+ *                 enum: [male, female, other, prefer-not-to-say]
+ *                 description: User's gender
+ *               alphaLevel:
+ *                 type: string
+ *                 description: User's preferred alpha level
+ *               notifications:
+ *                 type: boolean
+ *                 description: Whether to enable notifications
+ *     responses:
+ *       200:
+ *         description: Onboarding completed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *                 onboarded:
+ *                   type: boolean
+ *                   example: true
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+
 export async function POST(req: Request) {
   try {
     const jwtSecret = process.env.JWT_SECRET;

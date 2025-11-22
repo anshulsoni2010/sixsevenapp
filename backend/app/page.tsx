@@ -1,120 +1,104 @@
+import Image from "next/image";
+
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-black text-white">
-      <div className="container mx-auto px-4 py-16">
-        <div className="text-center mb-16">
-          <h1 className="text-6xl font-bold mb-4 bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
-            6 7
-          </h1>
-          <h2 className="text-2xl font-semibold mb-2 text-zinc-300">
-            Backend API
-          </h2>
-          <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
-            Talk the Alpha, Walk the Alpha • Transform your messages into Gen Alpha slang
-          </p>
-        </div>
-
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-zinc-800/50 backdrop-blur-sm rounded-xl p-8 mb-8 border border-zinc-700">
-            <h3 className="text-xl font-semibold mb-4 text-orange-400">🚀 API Status</h3>
-            <div className="flex items-center gap-3">
-              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-zinc-300">All systems operational</span>
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-8 mb-8">
-            <div className="bg-zinc-800/50 backdrop-blur-sm rounded-xl p-6 border border-zinc-700">
-              <h3 className="text-lg font-semibold mb-3 text-orange-400">🔐 Authentication</h3>
-              <p className="text-zinc-400 text-sm mb-4">
-                Secure JWT-based authentication for user management and API access.
-              </p>
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-zinc-500">Method:</span>
-                  <span className="text-zinc-300">JWT Bearer Token</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-zinc-500">Provider:</span>
-                  <span className="text-zinc-300">Google OAuth</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-zinc-800/50 backdrop-blur-sm rounded-xl p-6 border border-zinc-700">
-              <h3 className="text-lg font-semibold mb-3 text-orange-400">💳 Subscriptions</h3>
-              <p className="text-zinc-400 text-sm mb-4">
-                Stripe-powered subscription management with multiple tiers.
-              </p>
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-zinc-500">Provider:</span>
-                  <span className="text-zinc-300">Stripe</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-zinc-500">Plans:</span>
-                  <span className="text-zinc-300">Monthly & Yearly</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-zinc-800/50 backdrop-blur-sm rounded-xl p-6 border border-zinc-700">
-            <h3 className="text-lg font-semibold mb-4 text-orange-400">📋 API Endpoints</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between py-2 border-b border-zinc-700">
-                <div>
-                  <span className="text-zinc-300 font-medium">GET</span>
-                  <span className="text-zinc-400 ml-2">/api/user/me</span>
-                </div>
-                <span className="text-xs text-zinc-500">Get user profile</span>
-              </div>
-              <div className="flex items-center justify-between py-2 border-b border-zinc-700">
-                <div>
-                  <span className="text-orange-400 font-medium">PATCH</span>
-                  <span className="text-zinc-400 ml-2">/api/user/me</span>
-                </div>
-                <span className="text-xs text-zinc-500">Update user profile</span>
-              </div>
-              <div className="flex items-center justify-between py-2 border-b border-zinc-700">
-                <div>
-                  <span className="text-red-400 font-medium">DELETE</span>
-                  <span className="text-zinc-400 ml-2">/api/user/me</span>
-                </div>
-                <span className="text-xs text-zinc-500">Delete user account</span>
-              </div>
-              <div className="flex items-center justify-between py-2 border-b border-zinc-700">
-                <div>
-                  <span className="text-green-400 font-medium">POST</span>
-                  <span className="text-zinc-400 ml-2">/api/auth/google</span>
-                </div>
-                <span className="text-xs text-zinc-500">Google OAuth login</span>
-              </div>
-              <div className="flex items-center justify-between py-2">
-                <div>
-                  <span className="text-blue-400 font-medium">POST</span>
-                  <span className="text-zinc-400 ml-2">/api/stripe/webhook</span>
-                </div>
-                <span className="text-xs text-zinc-500">Stripe webhook handler</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="text-center mt-12">
-            <div className="flex flex-col gap-4 items-center">
-              <a
-                href="/api/docs"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg transition-colors"
-              >
-                📚 View API Documentation
-              </a>
-              <p className="text-zinc-500 text-sm">
-                © 2025 Six Seven • Built with Next.js, Prisma & PostgreSQL
-              </p>
-            </div>
-          </div>
+    <main className="flex min-h-screen flex-col items-center justify-between p-24">
+      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
+        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
+          Get started by editing{" "}
+          <code className="font-mono font-bold">app/page.tsx</code>
+        </p>
+        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
+          <Image
+            src="/next.svg"
+            alt="Next.js Logo"
+            width={180}
+            height={37}
+            priority
+          />
         </div>
       </div>
-    </div>
+
+      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:from-transparent before:dark:to-blue-700/10 after:dark:from-sky-900 after:dark:via-[#0141ff]/40">
+        <Image
+          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
+          src="/vercel.svg"
+          alt="Vercel Logo"
+          width={100}
+          height={24}
+          priority
+        />
+      </div>
+
+      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
+        <a
+          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
+          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <h2 className="mb-3 text-2xl font-semibold">
+            Docs{" "}
+            <span className="inline-block transition-transform group-hover:translate-x-1">
+              -&gt;
+            </span>
+          </h2>
+          <p className="m-0 max-w-[30ch] text-sm opacity-50">
+            Find in-depth information about Next.js features and API.
+          </p>
+        </a>
+
+        <a
+          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <h2 className="mb-3 text-2xl font-semibold">
+            Learn{" "}
+            <span className="inline-block transition-transform group-hover:translate-x-1">
+              -&gt;
+            </span>
+          </h2>
+          <p className="m-0 max-w-[30ch] text-sm opacity-50">
+            Learn about Next.js in an interactive course with&nbsp;quizzes!
+          </p>
+        </a>
+
+        <a
+          href="https://vercel.com/templates?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
+          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <h2 className="mb-3 text-2xl font-semibold">
+            Templates{" "}
+            <span className="inline-block transition-transform group-hover:translate-x-1">
+              -&gt;
+            </span>
+          </h2>
+          <p className="m-0 max-w-[30ch] text-sm opacity-50">
+            Explore starter templates for Next.js.
+          </p>
+        </a>
+
+        <a
+          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
+          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <h2 className="mb-3 text-2xl font-semibold">
+            Deploy{" "}
+            <span className="inline-block transition-transform group-hover:translate-x-1">
+              -&gt;
+            </span>
+          </h2>
+          <p className="m-0 max-w-[30ch] text-sm opacity-50">
+            Instantly deploy your Next.js site to a shareable URL.
+          </p>
+        </a>
+      </div>
+    </main>
   );
 }

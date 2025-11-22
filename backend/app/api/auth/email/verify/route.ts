@@ -2,6 +2,72 @@ import { NextResponse } from 'next/server';
 import { prisma } from '../../../../../lib/prisma';
 import jwt from 'jsonwebtoken';
 
+/**
+ * @swagger
+ * /api/auth/email/verify:
+ *   post:
+ *     summary: Verify email code
+ *     description: Verify the email verification code and authenticate the user
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - token
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: Email address
+ *               token:
+ *                 type: string
+ *                 description: 6-digit verification code
+ *     responses:
+ *       200:
+ *         description: Email verified successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   description: JWT authentication token
+ *                 onboarded:
+ *                   type: boolean
+ *                   description: Whether the user has completed onboarding
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                       format: email
+ *                     name:
+ *                       type: string
+ *                       nullable: true
+ *                     picture:
+ *                       type: string
+ *                       format: uri
+ *                       nullable: true
+ *       400:
+ *         description: Invalid or expired code
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Verification failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+
 export async function POST(req: Request) {
     try {
         const body = await req.json();

@@ -2,6 +2,45 @@ import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../../../../lib/prisma';
 
+/**
+ * @swagger
+ * /api/auth/me:
+ *   get:
+ *     summary: Get current user
+ *     description: Get the current authenticated user from session cookie
+ *     responses:
+ *       200:
+ *         description: User information retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   type: object
+ *                   nullable: true
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                       format: email
+ *                     name:
+ *                       type: string
+ *                     picture:
+ *                       type: string
+ *                       format: uri
+ *                 onboarded:
+ *                   type: boolean
+ *                   description: Whether the user has completed onboarding
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+
 export async function GET(req: Request) {
   try {
     const cookie = req.headers.get('cookie') ?? '';

@@ -13,6 +13,100 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 const DAILY_TOKEN_LIMIT = 50000;
 
+/**
+ * @swagger
+ * /api/chat:
+ *   post:
+ *     summary: Send a chat message
+ *     description: Process a chat message with optional image and generate AI response in Gen Alpha slang
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               text:
+ *                 type: string
+ *                 description: The text message to process
+ *               image:
+ *                 type: string
+ *                 description: Base64 encoded image for OCR processing
+ *               model:
+ *                 type: string
+ *                 enum: [1x, 2x, 3x, 4x]
+ *                 default: 1x
+ *                 description: The alpha level model to use
+ *               conversationId:
+ *                 type: string
+ *                 description: Existing conversation ID to continue the chat
+ *             oneOf:
+ *               - required: [text]
+ *               - required: [image]
+ *     responses:
+ *       200:
+ *         description: Chat response generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 text:
+ *                   type: string
+ *                   description: The AI generated response
+ *                 credits:
+ *                   type: integer
+ *                   description: Remaining daily credits
+ *                 maxCredits:
+ *                   type: integer
+ *                   description: Maximum daily credits
+ *                 conversationId:
+ *                   type: string
+ *                   description: The conversation ID
+ *                 messageId:
+ *                   type: string
+ *                   description: The message ID
+ *       400:
+ *         description: Bad request - missing text or image
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Daily limit reached
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                 credits:
+ *                   type: integer
+ *                 maxCredits:
+ *                   type: integer
+ *       404:
+ *         description: User or conversation not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+
 export async function POST(req: Request) {
     try {
         // 1. Authentication

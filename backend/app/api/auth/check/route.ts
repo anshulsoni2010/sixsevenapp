@@ -1,6 +1,53 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '../../../../lib/prisma';
 
+/**
+ * @swagger
+ * /api/auth/check:
+ *   post:
+ *     summary: Check user existence
+ *     description: Check if a user exists by email and their onboarding status
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: User email address
+ *     responses:
+ *       200:
+ *         description: User check completed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 exists:
+ *                   type: boolean
+ *                   description: Whether the user exists
+ *                 onboarded:
+ *                   type: boolean
+ *                   description: Whether the user has completed onboarding
+ *       400:
+ *         description: Missing email
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();

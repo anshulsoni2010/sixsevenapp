@@ -4,6 +4,58 @@ import { prisma } from '../../../../../lib/prisma';
 import { serialize } from 'cookie';
 
 // Apple uses POST for the callback
+/**
+ * @swagger
+ * /api/auth/apple/callback:
+ *   post:
+ *     summary: Apple OAuth callback
+ *     description: Handle Apple OAuth callback for authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/x-www-form-urlencoded:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               code:
+ *                 type: string
+ *                 description: Authorization code from Apple
+ *               id_token:
+ *                 type: string
+ *                 description: ID token from Apple
+ *               user:
+ *                 type: string
+ *                 description: User data from Apple (JSON string, first sign-in only)
+ *               error:
+ *                 type: string
+ *                 description: Error from Apple OAuth
+ *     responses:
+ *       302:
+ *         description: Redirect to app with authentication token
+ *       400:
+ *         description: No ID token received or email required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Authentication failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *   get:
+ *     summary: Apple OAuth callback (GET)
+ *     description: Handle Apple OAuth callback via GET (not recommended)
+ *     responses:
+ *       405:
+ *         description: Use POST method for Apple callback
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();

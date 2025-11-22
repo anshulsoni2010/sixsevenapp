@@ -2,6 +2,23 @@ import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 
+/**
+ * @swagger
+ * /api/auth/apple/initiate:
+ *   get:
+ *     summary: Initiate Apple OAuth
+ *     description: Redirect to Apple OAuth consent screen for authentication
+ *     responses:
+ *       302:
+ *         description: Redirect to Apple OAuth consent screen
+ *       500:
+ *         description: Failed to initiate Apple OAuth
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+
 export async function GET(req: Request) {
   try {
     const clientId = process.env.APPLE_CLIENT_ID;

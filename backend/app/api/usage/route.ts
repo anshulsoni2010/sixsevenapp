@@ -4,6 +4,74 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+/**
+ * @swagger
+ * /api/usage:
+ *   get:
+ *     summary: Get usage statistics
+ *     description: Retrieve usage statistics for the authenticated user
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Start date for filtering usage logs (ISO date string)
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: End date for filtering usage logs (ISO date string)
+ *     responses:
+ *       200:
+ *         description: Usage statistics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalTokens:
+ *                   type: integer
+ *                   description: Total tokens used
+ *                 messageCount:
+ *                   type: integer
+ *                   description: Total number of messages
+ *                 successCount:
+ *                   type: integer
+ *                   description: Number of successful requests
+ *                 successRate:
+ *                   type: number
+ *                   format: float
+ *                   description: Success rate as percentage
+ *                 modelBreakdown:
+ *                   type: object
+ *                   description: Usage breakdown by model
+ *                   additionalProperties:
+ *                     type: object
+ *                     properties:
+ *                       count:
+ *                         type: integer
+ *                         description: Number of requests for this model
+ *                       tokens:
+ *                         type: integer
+ *                         description: Tokens used for this model
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+
 export async function GET(req: Request) {
     try {
         // Authentication

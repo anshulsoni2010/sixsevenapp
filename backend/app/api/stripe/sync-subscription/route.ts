@@ -9,6 +9,53 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-10-29.clover',
 });
 
+/**
+ * @swagger
+ * /api/stripe/sync-subscription:
+ *   post:
+ *     summary: Sync subscription status
+ *     description: Sync the user's subscription status with Stripe
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Subscription synced successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 subscriptionEndsAt:
+ *                   type: string
+ *                   format: date-time
+ *                   nullable: true
+ *                   description: Subscription end date
+ *                 status:
+ *                   type: string
+ *                   description: Subscription status from Stripe
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: No subscription found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Failed to sync subscription
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+
 export async function POST(req: Request) {
   try {
     // Get user from JWT token

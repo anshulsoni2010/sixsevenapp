@@ -1,6 +1,30 @@
 import { NextResponse } from 'next/server';
 import { google } from 'googleapis';
 
+/**
+ * @swagger
+ * /api/auth/google/initiate:
+ *   get:
+ *     summary: Initiate Google OAuth
+ *     description: Redirect to Google OAuth consent screen for authentication
+ *     parameters:
+ *       - in: query
+ *         name: redirect_uri
+ *         schema:
+ *           type: string
+ *           format: uri
+ *         description: URI to redirect back to after authentication
+ *     responses:
+ *       302:
+ *         description: Redirect to Google OAuth consent screen
+ *       500:
+ *         description: Failed to initiate OAuth
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+
 export async function GET(req: Request) {
   try {
     const clientId = process.env.GOOGLE_CLIENT_ID;

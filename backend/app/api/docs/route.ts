@@ -2,6 +2,28 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
+/**
+ * @swagger
+ * /api/docs:
+ *   get:
+ *     summary: API Documentation
+ *     description: Serve Swagger UI for API documentation
+ *     responses:
+ *       200:
+ *         description: Swagger UI HTML page
+ *         content:
+ *           text/html:
+ *             schema:
+ *               type: string
+ *               description: HTML content for Swagger UI
+ *       500:
+ *         description: Failed to load API documentation
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+
 export async function GET(req: NextRequest) {
   try {
     // Read the generated swagger spec
