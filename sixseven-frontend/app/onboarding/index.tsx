@@ -183,8 +183,8 @@ export default function OnboardingStart() {
 
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dy) > 5,
       onPanResponderMove: (_evt, gestureState) => {
         const dy = Math.max(0, gestureState.dy);
         sheetTranslateY.setValue(dy);
