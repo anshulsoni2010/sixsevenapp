@@ -118,18 +118,48 @@ export async function POST(req: Request) {
             });
         }
 
-        // 5. Upload Image to ImageKit (if present)
+        // 5. Parallel Processing: ImageKit upload + OCR (if image present)
         let imageUrl: string | null = null;
+        let extractedText = text;
+
         if (image) {
             const fileName = `chat-${userId}-${Date.now()}.jpg`;
-            imageUrl = await uploadImageToImageKit(image, fileName);
-            if (!imageUrl) {
-                console.error('Failed to upload image to ImageKit');
+            const base64Image = image.startsWith('data:') ? image : `data:image/jpeg;base64,${image}`;
+
+            // Run ImageKit upload and OCR in parallel for speed
+            const [uploadResult, ocrResult] = await Promise.allSettled([
+                uploadImageToImageKit(image, fileName),
+                (async () => {
+                    const formData = new FormData();
+                    formData.append('base64Image', base64Image);
+                    formData.append('apikey', process.env.OCR_SPACE_API_KEY || 'helloworld');
+                    formData.append('language', 'eng');
+                    formData.append('isOverlayRequired', 'false');
+
+                    const response = await fetch('https://api.ocr.space/parse/image', {
+                        method: 'POST',
+                        body: formData,
+                    });
+                    return response.json();
+                })()
+            ]);
+
+            // Process ImageKit result
+            if (uploadResult.status === 'fulfilled' && uploadResult.value) {
+                imageUrl = uploadResult.value;
+            }
+
+            // Process OCR result
+            if (ocrResult.status === 'fulfilled') {
+                const ocrData = ocrResult.value;
+                if (ocrData.OCRExitCode === 1 && ocrData.ParsedResults?.[0]?.ParsedText) {
+                    extractedText = ocrData.ParsedResults[0].ParsedText.trim() || text || 'No text detected';
+                }
             }
         }
 
-        // 6. Save User Message
-        const userMessage = await prisma.message.create({
+        // 6. Save User Message (non-blocking - don't await)
+        const userMessagePromise = prisma.message.create({
             data: {
                 conversationId: conversation.id,
                 role: 'user',
@@ -138,56 +168,6 @@ export async function POST(req: Request) {
                 model: selectedModel,
             }
         });
-
-        // 7. OCR Processing
-        let extractedText = text;
-
-        if (image) {
-            try {
-                console.log('Starting OCR processing...');
-                // Call OCR.space API
-                const formData = new FormData();
-                const base64Image = image.startsWith('data:') ? image : `data:image/jpeg;base64,${image}`;
-
-                formData.append('base64Image', base64Image);
-                formData.append('apikey', process.env.OCR_SPACE_API_KEY || 'helloworld');
-                formData.append('language', 'eng');
-                formData.append('isOverlayRequired', 'false');
-
-                const ocrResponse = await fetch('https://api.ocr.space/parse/image', {
-                    method: 'POST',
-                    body: formData,
-                });
-
-                if (!ocrResponse.ok) {
-                    console.error('OCR API returned error status:', ocrResponse.status);
-                    const errorText = await ocrResponse.text();
-                    console.error('OCR Error response:', errorText);
-                } else {
-                    const ocrData = await ocrResponse.json();
-                    console.log('OCR Response:', JSON.stringify(ocrData, null, 2));
-
-                    if (ocrData.OCRExitCode === 1 && ocrData.ParsedResults?.length > 0) {
-                        const parsedText = ocrData.ParsedResults[0].ParsedText;
-                        if (parsedText && parsedText.trim()) {
-                            extractedText = parsedText.trim();
-                            console.log('OCR Success! Extracted text:', extractedText.substring(0, 100) + '...');
-                        } else {
-                            console.warn('OCR: No text found in image');
-                            extractedText = text || 'No text detected in image';
-                        }
-                    } else {
-                        console.error('OCR Error - Exit Code:', ocrData.OCRExitCode);
-                        console.error('OCR Error Message:', ocrData.ErrorMessage);
-                        console.error('OCR Error Details:', ocrData.ErrorDetails);
-                        extractedText = text || 'Failed to extract text from image';
-                    }
-                }
-            } catch (ocrError) {
-                console.error('OCR Request Failed:', ocrError);
-                extractedText = text || 'Error processing image';
-            }
-        }
 
         // 8. Call Gemini
         let responseText: string;
@@ -203,10 +183,11 @@ export async function POST(req: Request) {
                     model: "gemini-2.0-flash-exp",
                     systemInstruction: systemPrompt,
                     generationConfig: {
-                        temperature: 1.0,
-                        topP: 0.95,
-                        topK: 40,
-                        maxOutputTokens: 500, // Limit output for faster responses
+                        temperature: 1.2,
+                        topP: 0.98,
+                        topK: 20,
+                        maxOutputTokens: 400,
+                        candidateCount: 1,
                     },
                 });
 
@@ -221,19 +202,30 @@ export async function POST(req: Request) {
             }
         }
 
-        // 9. Save AI Response Message
-        const aiMessage = await prisma.message.create({
-            data: {
-                conversationId: conversation.id,
-                role: 'assistant',
-                content: responseText,
-                model: selectedModel,
-                tokensUsed: tokensUsed,
-            }
-        });
+        // 9-11. Parallel: Save message, log usage, update credits (all non-blocking)
+        const [userMessage, aiMessage, updatedUser] = await Promise.all([
+            userMessagePromise, // Await the earlier promise
+            prisma.message.create({
+                data: {
+                    conversationId: conversation.id,
+                    role: 'assistant',
+                    content: responseText,
+                    model: selectedModel,
+                    tokensUsed: tokensUsed,
+                }
+            }),
+            prisma.user.update({
+                where: { id: userId },
+                data: {
+                    dailyTokenCount: isNewDay ? tokensUsed : { increment: tokensUsed },
+                    lastTokenUsageDate: now,
+                },
+                select: { dailyTokenCount: true }
+            })
+        ]);
 
-        // 10. Log Usage
-        await prisma.usageLog.create({
+        // Log usage (fire and forget - don't await)
+        prisma.usageLog.create({
             data: {
                 userId: userId,
                 messageId: aiMessage.id,
@@ -242,19 +234,7 @@ export async function POST(req: Request) {
                 success: success,
                 errorMessage: errorMessage,
             }
-        });
-
-        // 11. Update Credits
-        const updatedUser = await prisma.user.update({
-            where: { id: userId },
-            data: {
-                dailyTokenCount: isNewDay ? tokensUsed : { increment: tokensUsed },
-                lastTokenUsageDate: now,
-            },
-            select: {
-                dailyTokenCount: true
-            }
-        });
+        }).catch(err => console.error('Usage log error:', err));
 
         return NextResponse.json({
             text: responseText,
