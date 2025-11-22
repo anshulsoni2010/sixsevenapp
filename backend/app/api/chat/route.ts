@@ -200,8 +200,14 @@ export async function POST(req: Request) {
         } else {
             try {
                 const geminiModel = genAI.getGenerativeModel({
-                    model: "gemini-2.5-flash",
+                    model: "gemini-2.0-flash-exp",
                     systemInstruction: systemPrompt,
+                    generationConfig: {
+                        temperature: 1.0,
+                        topP: 0.95,
+                        topK: 40,
+                        maxOutputTokens: 500, // Limit output for faster responses
+                    },
                 });
 
                 const result = await geminiModel.generateContent(extractedText);
