@@ -507,6 +507,18 @@ export default function ChatScreen() {
       return;
     }
 
+    // Configure smooth animation for message addition
+    LayoutAnimation.configureNext({
+      duration: 200,
+      create: {
+        type: LayoutAnimation.Types.easeInEaseOut,
+        property: LayoutAnimation.Properties.opacity,
+      },
+      update: {
+        type: LayoutAnimation.Types.easeInEaseOut,
+      },
+    });
+
     if (!hasChatStarted) {
       setHasChatStarted(true);
     }
@@ -522,6 +534,7 @@ export default function ChatScreen() {
       image: imageToSend ? `data:image/jpeg;base64,${imageToSend}` : undefined,
     };
 
+    // Batch state updates to prevent flickering
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     setInputText('');
@@ -563,6 +576,19 @@ export default function ChatScreen() {
         isUser: false,
         timestamp: new Date(),
       };
+
+      // Smooth animation for AI response
+      LayoutAnimation.configureNext({
+        duration: 200,
+        create: {
+          type: LayoutAnimation.Types.easeInEaseOut,
+          property: LayoutAnimation.Properties.opacity,
+        },
+        update: {
+          type: LayoutAnimation.Types.easeInEaseOut,
+        },
+      });
+
       setMessages(prev => [...prev, aiMessage]);
 
       if (data.credits !== undefined) {
