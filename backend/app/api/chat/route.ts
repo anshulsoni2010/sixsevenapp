@@ -73,7 +73,12 @@ export async function POST(req: Request) {
         }
 
         const selectedModel = (model as string || '1x').toLowerCase();
-        const systemPrompt = SYSTEM_PROMPTS[selectedModel as keyof typeof SYSTEM_PROMPTS] || SYSTEM_PROMPTS['1x'];
+        let systemPrompt = SYSTEM_PROMPTS[selectedModel as keyof typeof SYSTEM_PROMPTS] || SYSTEM_PROMPTS['1x'];
+
+        // If image is present, add context that this is a chat screenshot
+        if (image) {
+            systemPrompt += `\n\n<ocr_context>\nThe user has uploaded a screenshot of a chat conversation. The text you receive is the extracted text from this image. Treat it as a conversation context and translate the messages found within it to the requested Gen Alpha slang style. If the text seems disjointed, it's likely due to OCR imperfections; do your best to reconstruct the flow and translate the core meaning.\n</ocr_context>`;
+        }
 
         // 4. Get or Create Conversation
         let conversation;
