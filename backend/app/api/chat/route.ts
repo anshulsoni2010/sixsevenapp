@@ -101,117 +101,136 @@ export async function POST(req: Request) {
                 } catch (e) {
                     console.error("Failed to generate title:", e);
                 }
-
-                // Create new conversation
-                conversation = await prisma.conversation.create({
-                    data: {
-                        userId: userId,
-                        title: title,
-                    }
-                });
             }
 
-            // 5. Save User Message
-            const userMessage = await prisma.message.create({
+            // Create new conversation
+            conversation = await prisma.conversation.create({
                 data: {
-                    conversationId: conversation.id,
-                    role: 'user',
-                    content: text || '[Image]',
-                    image: image, // Save image base64 if present (consider uploading to storage in prod)
-                    model: selectedModel,
+                    userId: userId,
+                    title: title,
                 }
             });
+        }
 
-            // 6. Call Gemini
-            let responseText: string;
-            let success = true;
-            let errorMessage: string | undefined;
-            let tokensUsed = 1; // Default fallback
+        // 5. Save User Message
+        const userMessage = await prisma.message.create({
+            data: {
+                conversationId: conversation.id,
+                role: 'user',
+                content: text || '[Image]',
+                image: image,
+                model: selectedModel,
+            }
+        });
 
+        // 6. OCR Processing
+        let extractedText = text;
+
+        if (image) {
+            try {
+                // Call OCR.space API
+                const formData = new FormData();
+                const base64Image = image.startsWith('data:') ? image : `data:image/jpeg;base64,${image}`;
+
+                formData.append('base64Image', base64Image);
+                formData.append('apikey', process.env.OCR_SPACE_API_KEY || 'helloworld');
+                formData.append('language', 'eng');
+                formData.append('isOverlayRequired', 'false');
+
+                const ocrResponse = await fetch('https://api.ocr.space/parse/image', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const ocrData = await ocrResponse.json();
+
+                if (ocrData.OCRExitCode === 1 && ocrData.ParsedResults?.length > 0) {
+                    const parsedText = ocrData.ParsedResults[0].ParsedText;
+                    if (parsedText) {
+                        extractedText = parsedText;
+                        console.log('OCR Success:', extractedText.substring(0, 50) + '...');
+                    } else {
+                        console.warn('OCR: No text found in image');
+                    }
+                } else {
+                    console.error('OCR Error:', ocrData.ErrorMessage || ocrData.ErrorDetails);
+                }
+            } catch (ocrError) {
+                console.error('OCR Request Failed:', ocrError);
+            }
+        }
+
+        // 7. Call Gemini
+        let responseText: string;
+        let success = true;
+        let errorMessage: string | undefined;
+        let tokensUsed = 1;
+
+        if (!extractedText) {
+            responseText = "I couldn't find any text in that image to translate. Try sending an image with clearer text! 📸";
+        } else {
             try {
                 const geminiModel = genAI.getGenerativeModel({
                     model: "gemini-2.5-flash",
                     systemInstruction: systemPrompt,
                 });
 
-                let result;
-                if (image) {
-                    // Remove header if present (e.g., "data:image/jpeg;base64,")
-                    const base64Image = image.replace(/^data:image\/\w+;base64,/, "");
-
-                    const prompt = text ? text : "Translate the text in this image to the selected Gen Alpha slang style. If there is no text, describe the image in Gen Alpha slang.";
-
-                    result = await geminiModel.generateContent([
-                        prompt,
-                        {
-                            inlineData: {
-                                data: base64Image,
-                                mimeType: "image/jpeg",
-                            },
-                        },
-                    ]);
-                } else {
-                    result = await geminiModel.generateContent(text);
-                }
-
+                const result = await geminiModel.generateContent(extractedText);
                 responseText = result.response.text();
-
-                // Get actual token usage from Gemini
                 tokensUsed = result.response.usageMetadata?.totalTokenCount || 1;
             } catch (error: any) {
                 success = false;
                 errorMessage = error.message || 'Gemini API error';
                 responseText = 'Sorry, I encountered an error processing your request.';
-
-                // Log the error but continue to save the failed attempt
                 console.error('Gemini API Error:', error);
             }
-
-            // 7. Save AI Response Message
-            const aiMessage = await prisma.message.create({
-                data: {
-                    conversationId: conversation.id,
-                    role: 'assistant',
-                    content: responseText,
-                    model: selectedModel,
-                    tokensUsed: tokensUsed,
-                }
-            });
-
-            // 8. Log Usage
-            await prisma.usageLog.create({
-                data: {
-                    userId: userId,
-                    messageId: aiMessage.id,
-                    model: selectedModel,
-                    tokensUsed: tokensUsed,
-                    success: success,
-                    errorMessage: errorMessage,
-                }
-            });
-
-            // 9. Update Credits
-            const updatedUser = await prisma.user.update({
-                where: { id: userId },
-                data: {
-                    dailyTokenCount: isNewDay ? tokensUsed : { increment: tokensUsed },
-                    lastTokenUsageDate: now,
-                },
-                select: {
-                    dailyTokenCount: true
-                }
-            });
-
-            return NextResponse.json({
-                text: responseText,
-                credits: DAILY_TOKEN_LIMIT - updatedUser.dailyTokenCount,
-                maxCredits: DAILY_TOKEN_LIMIT,
-                conversationId: conversation.id,
-                messageId: aiMessage.id,
-            });
-
-        } catch (error) {
-            console.error('Chat API Error:', error);
-            return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
         }
+
+        // 8. Save AI Response Message
+        const aiMessage = await prisma.message.create({
+            data: {
+                conversationId: conversation.id,
+                role: 'assistant',
+                content: responseText,
+                model: selectedModel,
+                tokensUsed: tokensUsed,
+            }
+        });
+
+        // 9. Log Usage
+        await prisma.usageLog.create({
+            data: {
+                userId: userId,
+                messageId: aiMessage.id,
+                model: selectedModel,
+                tokensUsed: tokensUsed,
+                success: success,
+                errorMessage: errorMessage,
+            }
+        });
+
+        // 10. Update Credits
+        const updatedUser = await prisma.user.update({
+            where: { id: userId },
+            data: {
+                dailyTokenCount: isNewDay ? tokensUsed : { increment: tokensUsed },
+                lastTokenUsageDate: now,
+            },
+            select: {
+                dailyTokenCount: true
+            }
+        });
+
+        return NextResponse.json({
+            text: responseText,
+            credits: DAILY_TOKEN_LIMIT - updatedUser.dailyTokenCount,
+            maxCredits: DAILY_TOKEN_LIMIT,
+            conversationId: conversation.id,
+            messageId: aiMessage.id,
+        });
+
+    } catch (error) {
+        console.error('Chat API Error:', error);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
+}
