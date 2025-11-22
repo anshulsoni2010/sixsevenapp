@@ -1444,10 +1444,11 @@ const styles = StyleSheet.create({
     marginVertical: 4,
   },
   messageImage: {
-    width: '100%',
-    height: 150, // Or dynamic height based on aspect ratio
+    width: 200,
+    height: 200,
     borderRadius: 12,
     marginBottom: 8,
+    backgroundColor: '#1A1A1A', // Fallback background
   },
 
   userMessage: {
