@@ -11,7 +11,7 @@ const prisma = new PrismaClient();
 // Note: Make sure GEMINI_API_KEY is set in .env
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
-const DAILY_TOKEN_LIMIT = 20000;
+const DAILY_TOKEN_LIMIT = 50000;
 
 export async function POST(req: Request) {
     try {
