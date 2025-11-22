@@ -510,12 +510,16 @@ export default function ChatScreen() {
     if (!hasChatStarted) {
       setHasChatStarted(true);
     }
+
+    // Store image before clearing state
+    const imageToSend = selectedImage;
+
     const userMessage: Message = {
       id: Date.now().toString(),
       text: inputText.trim(),
       isUser: true,
       timestamp: new Date(),
-      image: selectedImage ? `data:image/jpeg;base64,${selectedImage}` : undefined,
+      image: imageToSend ? `data:image/jpeg;base64,${imageToSend}` : undefined,
     };
 
     const newMessages = [...messages, userMessage];
@@ -541,7 +545,7 @@ export default function ChatScreen() {
         },
         body: JSON.stringify({
           text: userMessage.text,
-          image: selectedImage,
+          image: imageToSend,
           model: selectedModel,
           conversationId: conversationId,
         }),
@@ -799,8 +803,9 @@ export default function ChatScreen() {
 
             {/* Input Section */}
             <KeyboardAvoidingView
-              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-              keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 20}
+              style={{ width: '100%' }}
             >
               <View style={styles.inputContainer}>
                 {selectedImage && (
@@ -1087,18 +1092,32 @@ export default function ChatScreen() {
 /* ---------- Internal components (in-file) ---------- */
 
 function MessageBubble({ message }: { message: Message }) {
+  // Debug logging
+  if (message.image) {
+    console.log('MessageBubble - Image URI:', message.image?.substring(0, 80));
+    console.log('MessageBubble - Is base64:', message.image?.startsWith('data:'));
+    console.log('MessageBubble - Is URL:', message.image?.startsWith('http'));
+  }
+
   return (
     <View style={[styles.messageBubble, message.isUser ? styles.userMessage : styles.aiMessage]}>
       {message.image && (
-        <ExpoImage
+        <Image
           source={{ uri: message.image }}
           style={styles.messageImage}
-          contentFit="cover"
+          resizeMode="cover"
+          onError={(error) => {
+            console.log('Image load error:', error.nativeEvent.error);
+            console.log('Failed URI:', message.image?.substring(0, 100));
+          }}
+          onLoad={() => console.log('Image loaded successfully:', message.image?.substring(0, 50))}
         />
       )}
-      <Text style={[styles.messageText, message.isUser ? styles.userText : styles.aiText]}>
-        {message.text}
-      </Text>
+      {message.text && (
+        <Text style={[styles.messageText, message.isUser ? styles.userText : styles.aiText]}>
+          {message.text}
+        </Text>
+      )}
     </View>
   );
 }
