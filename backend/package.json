@@ -18,6 +18,7 @@
     "cookie": "^0.5.0",
     "google-auth-library": "^9.0.0",
     "googleapis": "^144.0.0",
+    "imagekit": "^6.0.0",
     "jsonwebtoken": "^9.0.2",
     "next": "16.0.0",
     "nodemailer": "^7.0.10",

@@ -76,7 +76,7 @@
     "extra": {
       "GOOGLE_WEB_CLIENT_ID": "835051220341-681sotsfbku3vi0n4r23o4cfbvgpp8o5.apps.googleusercontent.com",
       "GOOGLE_IOS_CLIENT_ID": "835051220341-ue1ognnm5sa7u3npi2gokm0fstf21ard.apps.googleusercontent.com",
-      "BACKEND_URL": "https://sixsevenapi.vercel.app",
+      "BACKEND_URL": "http://192.168.1.8:3000",
       "router": {},
       "eas": {
         "projectId": "c9a7bd8f-1acb-4c65-8051-39007e62322f"

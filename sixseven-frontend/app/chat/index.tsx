@@ -821,7 +821,7 @@ export default function ChatScreen() {
                 <View style={styles.inputRow}>
                   <TouchableOpacity onPress={pickImage} style={styles.imageButton}>
                     <View style={styles.imageButtonInner}>
-                      <Ionicons name="image-outline" size={20} color="#000" />
+                      <Ionicons name="image-outline" size={24} color="#000" />
                     </View>
                   </TouchableOpacity>
                   <ChatInput
@@ -1519,12 +1519,68 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     borderWidth: 1,
     borderColor: '#21201C',
-    paddingBottom: 16, // Adjusted padding for image preview
+  },
+
+  imagePreviewContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+    position: 'relative',
+    alignSelf: 'flex-start',
+  },
+
+  imagePreview: {
+    width: 100,
+    height: 100,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#FFE0C2',
+    backgroundColor: '#1A1A1A',
+  },
+
+  removeImageButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: '#000',
+    borderRadius: 16,
+    padding: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+  },
+
+  imageButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  imageButtonInner: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFE0C2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#FFE0C2',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
 
   inputInner: {
     width: '100%',
-    padding: 16,
     gap: 38,
   },
 
@@ -1533,7 +1589,11 @@ const styles = StyleSheet.create({
     color: '#B4B4B4',
     maxHeight: 160,
     fontFamily: 'SpaceGrotesk_400Regular',
-    flex: 1, // Allow TextInput to take available space
+    flex: 1,
+  },
+
+  inputWrapper: {
+    flex: 1,
   },
 
   topContainer: {
