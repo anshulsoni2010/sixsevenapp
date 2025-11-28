@@ -69,7 +69,7 @@ export default function EditProfileScreen() {
           // Populate form fields
           const userName = data.name || '';
           const userAge = data.age ? data.age.toString() : '';
-          const userGender = data.gender || '';
+          const userGender = data.gender ? data.gender.toLowerCase() : '';
           const userAlphaLevel = data.alphaLevel || '';
           const userNotifications = data.notifications || false;
 

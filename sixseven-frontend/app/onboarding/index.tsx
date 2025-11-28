@@ -467,7 +467,11 @@ export default function OnboardingStart() {
                 />
               </View>
 
-              <View style={styles.secondContainer} />
+              <Image
+                source={require('../../assets/images/onboardingstartchatdemoimg.png')}
+                style={styles.secondContainer}
+                resizeMode="contain"
+              />
 
               <View style={styles.textBlock}>
                 <Text style={styles.headline}>{`Talk the Alpha,\nWalk the Alpha`}</Text>
@@ -544,7 +548,7 @@ export default function OnboardingStart() {
               <View style={{ flex: 1, backgroundColor: '#151515' }} pointerEvents="auto">
                 {!showEmailInput && !showOtpInput && (
                   <>
-                    <View style={styles.authSection}>
+                    <View style={styles.authSection} pointerEvents="auto">
                       <View style={styles.sheetHeader}>
                         <View style={styles.tabBar} />
                         <Text style={styles.sheetHeading}>
@@ -558,7 +562,7 @@ export default function OnboardingStart() {
                         </Text>
                       </View>
 
-                      <View style={styles.buttonContainer}>
+                      <View style={styles.buttonContainer} pointerEvents="auto">
                         <TouchableOpacity
                           style={[styles.authButton, isAuthInProgress && styles.authButtonDisabled]}
                           onPress={handleGooglePress}
@@ -799,8 +803,6 @@ const styles = StyleSheet.create({
   secondContainer: {
     width: '100%',
     height: 250,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
   },
   scaleWrapper: {
     alignItems: 'center',

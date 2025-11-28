@@ -403,7 +403,7 @@ export default function ProfileScreen() {
                 <Ionicons name="chevron-forward" size={16} color={iconColor} />
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.menuItem}
+                style={[styles.menuItem, { borderBottomColor: textColor + '10' }]}
                 onPress={() => router.push('/terms' as any)}
               >
                 <View style={styles.menuItemLeft}>
@@ -411,6 +411,17 @@ export default function ProfileScreen() {
                   <Text style={[styles.menuItemText, { color: textColor }]}>Terms of Service</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color={iconColor} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={handleDeleteAccount}
+                activeOpacity={0.7}
+              >
+                <View style={styles.menuItemLeft}>
+                  <Ionicons name="trash-outline" size={20} color="#FF6B6B" />
+                  <Text style={[styles.menuItemText, { color: '#FF6B6B' }]}>Delete Account</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#FF6B6B" />
               </TouchableOpacity>
             </View>
           </View>
@@ -421,14 +432,6 @@ export default function ProfileScreen() {
             activeOpacity={0.7}
           >
             <Text style={styles.logoutText}>Log Out</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.deleteButton}
-            onPress={handleDeleteAccount}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.deleteText}>Delete Account</Text>
           </TouchableOpacity>
 
         </ScrollView>
